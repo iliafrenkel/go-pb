@@ -2,7 +2,7 @@
 
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE.txt)
 
-Yet another exercise in Go (the first one was [go-du](https://github.com/iliafrenkel/go-du).
+Yet another exercise in Go (the first one was [go-du](https://github.com/iliafrenkel/go-du)).
 This time it is a web app and an API that provides [Pastebin](https://pastebin.com)
 alternative.
 Obviously this project is a little bit more complicated and will take more time.
