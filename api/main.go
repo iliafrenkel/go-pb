@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"os"
 
 	"github.com/iliafrenkel/go-pb/api/http"
 	"github.com/iliafrenkel/go-pb/api/memory"
@@ -10,5 +10,7 @@ import (
 func main() {
 	var api *http.ApiHandler = http.New(memory.New())
 
-	log.Fatal(api.ListenAndServe(":8080"))
+	api.ListenAndServe(":8080")
+
+	os.Exit(0)
 }
