@@ -1,16 +1,14 @@
-package api
+package main
 
-import "time"
+import (
+	"log"
 
-type Paste struct {
-	ID      string
-	Title   string
-	Body    []byte
-	Expires time.Time
-}
+	"github.com/iliafrenkel/go-pb/api/http"
+	"github.com/iliafrenkel/go-pb/api/memory"
+)
 
-type PasteService interface {
-	Paste(id string) (*Paste, error)
-	Create(p Paste) error
-	Delete(id string) error
+func main() {
+	var api *http.ApiHandler = http.New(memory.New())
+
+	log.Fatal(api.ListenAndServe(":8080"))
 }
