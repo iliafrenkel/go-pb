@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iliafrenkel/go-pb/api/api"
+	"github.com/iliafrenkel/go-pb/api"
 )
 
 var service = New()

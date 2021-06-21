@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/iliafrenkel/go-pb/api/api"
+	"github.com/iliafrenkel/go-pb/api"
 )
 
 type ApiHandler struct {

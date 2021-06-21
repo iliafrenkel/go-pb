@@ -12,7 +12,7 @@ package memory
 import (
 	"errors"
 
-	"github.com/iliafrenkel/go-pb/api/api"
+	"github.com/iliafrenkel/go-pb/api"
 )
 
 // PasteService stores all the pastes in memory and implements the
