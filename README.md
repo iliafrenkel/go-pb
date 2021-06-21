@@ -7,6 +7,10 @@ This time it is a web app and an API that provides [Pastebin](https://pastebin.c
 alternative.
 Obviously this project is a little bit more complicated and will take more time.
 
+**Warning**: this project is very much work in progress. A lot of changes are
+made on a regular basis, including breaking changes. This is not a usable
+product yet!
+
 ## Features
 
 In no particular order:
