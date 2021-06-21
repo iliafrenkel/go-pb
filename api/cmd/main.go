@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	var api *http.ApiHandler = http.New(memory.New())
+	var api *http.ApiServer = http.New(memory.New())
 
 	api.ListenAndServe(":8080")
 

@@ -19,13 +19,25 @@ import (
 	"github.com/iliafrenkel/go-pb/api"
 )
 
-type ApiHandler struct {
+// ApiServer type provides an HTTP server that calls PasteService methods in
+// response to HTTP requests to certain routes.
+//
+// Use the `New` function to create an instance of ApiServer with the default
+// routes.
+type ApiServer struct {
 	PasteService api.PasteService
 	Router       *mux.Router
 }
 
-func New(svc api.PasteService) *ApiHandler {
-	var handler ApiHandler
+// New function returns an instance of ApiServer using provided PasteService
+// and the default HTTP routes for manipulating pastes.
+//
+// The routes are:
+//   GET  /paste/{id}  - get paste by ID
+//   POST /create      - create new paste
+//   PU   /delete/{id} - delete paste by ID
+func New(svc api.PasteService) *ApiServer {
+	var handler ApiServer
 
 	handler.PasteService = svc
 	handler.Router = mux.NewRouter()
@@ -36,24 +48,80 @@ func New(svc api.PasteService) *ApiHandler {
 	return &handler
 }
 
-func (h *ApiHandler) handlePaste(w http.ResponseWriter, r *http.Request) {
+// ListenAndServe starts an HTTP server and binds it to the provided address.
+//
+// The server is configured with timeouts and graceful shutdown as per
+// https://github.com/gorilla/mux#graceful-shutdown
+//
+// TODO: Timeouts should be configurable.
+func (h *ApiServer) ListenAndServe(addr string) {
+	var wait time.Duration = time.Second * 15 // shutdown timeout
+
+	srv := &http.Server{
+		Addr: addr,
+		// Good practice to set timeouts to avoid Slowloris attacks.
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      h.Router,
+	}
+
+	// Run our server in a goroutine so that it doesn't block.
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	// Optionally, you could run srv.Shutdown in a goroutine and block on
+	// <-ctx.Done() if your application should wait for other services
+	// to finalize based on context cancellation.
+	log.Println("shutting down")
+}
+
+// handlePaste is an HTTP handler for the GET /paste/{id} route, it returns
+// the paste as a JSON string or 404 Not Found.
+func (h *ApiServer) handlePaste(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	p, err := h.PasteService.Paste(vars["id"])
 	if err != nil {
-		fmt.Println(fmt.Errorf("paste %s not found", vars["id"]))
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, "paste not found", http.StatusNotFound)
 		return
 	}
 	res, err := json.Marshal(p)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error converting paste to json: %v", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("error converting paste to json: %v\n", err)
+		http.Error(w, "error converting paste to json", http.StatusInternalServerError)
 		return
 	}
 	fmt.Fprintf(w, "%s", res)
 }
 
-func (h *ApiHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
+// handleCreate is an HTTP handler for the POST /create route. It expects the
+// new paste as a JSON sting in the body of the request. Returns newly created
+// paste as a JSON string.
+//
+// The JSON object must correspond to the api.Paste struct. Absent fields will
+// get default values. Extra fields will generate an error. Only one object is
+// expected, multiple JSON objects in the body will result in an error. Body
+// size is currently limited to a hardcoded value of 10KB.
+//
+// TODO: Make maximum body size configurable.
+func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 	// Parse incoming json
 	// https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body
 
@@ -161,65 +229,26 @@ func (h *ApiHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Time{},
 	}
 	if err := h.PasteService.Create(&p); err != nil {
-		fmt.Println(fmt.Errorf("failed to create paste: %v", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("failed to create paste: %v\n", err)
+		http.Error(w, "failed to create paste", http.StatusInternalServerError)
 		return
 	}
 	res, err := json.Marshal(p)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error converting paste to json: %v", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("error converting paste to json: %v\n", err)
+		http.Error(w, "error converting paste to json", http.StatusInternalServerError)
 		return
 	}
 	fmt.Fprintf(w, "%s", res)
 }
 
-func (h *ApiHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+// handleDelete is an HTTP handler for the PUT /delete/{id} route. Returns
+// 200 OK or 404 Not Found.
+func (h *ApiServer) handleDelete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	if err := h.PasteService.Delete(vars["id"]); err != nil {
-		fmt.Println(fmt.Errorf("paste %s not found", vars["id"]))
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, "paste not found", http.StatusNotFound)
 		return
 	}
-}
-
-func (h *ApiHandler) ListenAndServe(addr string) {
-	// https://github.com/gorilla/mux#graceful-shutdown
-	var wait time.Duration = time.Second * 15
-
-	srv := &http.Server{
-		Addr: addr,
-		// Good practice to set timeouts to avoid Slowloris attacks.
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
-		IdleTimeout:  time.Second * 60,
-		Handler:      h.Router,
-	}
-
-	// Run our server in a goroutine so that it doesn't block.
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	c := make(chan os.Signal, 1)
-	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
-	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
-	signal.Notify(c, os.Interrupt)
-
-	// Block until we receive our signal.
-	<-c
-
-	// Create a deadline to wait for.
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
-	defer cancel()
-	// Doesn't block if no connections, but will otherwise wait
-	// until the timeout deadline.
-	srv.Shutdown(ctx)
-	// Optionally, you could run srv.Shutdown in a goroutine and block on
-	// <-ctx.Done() if your application should wait for other services
-	// to finalize based on context cancellation.
-	log.Println("shutting down")
 }
