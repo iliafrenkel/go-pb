@@ -158,7 +158,7 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		// which interpolates the location of the problem to make it
 		// easier for the client to fix.
 		case errors.As(err, &syntaxError):
-			msg := fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)
+			msg := fmt.Sprintf("Request body contains malformed JSON (at position %d)", syntaxError.Offset)
 			http.Error(w, msg, http.StatusBadRequest)
 
 		// In some circumstances Decode() may also return an
