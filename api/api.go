@@ -4,10 +4,10 @@ import "time"
 
 // Paste is a the type that represents a single paste.
 type Paste struct {
-	ID      string
-	Title   string
-	Body    []byte
-	Expires time.Time
+	ID      string    `json:"id,string"`
+	Title   string    `json:"title,string"`
+	Body    []byte    `json:"body"`
+	Expires time.Time `json:"expires"`
 }
 
 // PasteService is the interface that defines methods for working with Pastes.
