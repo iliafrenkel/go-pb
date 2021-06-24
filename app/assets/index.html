@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Go-pb</title>
+    <meta name="description" value="Pastebin alternative written in Golang">
+    <meta name="keywords" value="pastebin, golang, selfhosted">
+    <style type="text/css">
+        html, body {
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        body {
+            font-size: 16px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        header, section, footer {
+            width: 900px;
+            margin: 0 auto;
+        }
+        header {
+            border-bottom: solid 1px #ded;            
+            margin-bottom: 1em;
+        }
+        header p {
+            font-style: italic;
+            margin-top: -1em;
+            padding-top: 0;
+        }
+        footer {
+            border-top: solid 1px #ded;            
+            margin-top: 1em;
+            text-align: center;
+            font-size: small;
+        }
+        /* Probably the best guide to flex: https://css-tricks.com/snippets/css/a-guide-to-flexbox/ */
+        .pasteForm {
+            display: flex;
+            flex-flow: column wrap;
+            justify-content: space-between;
+            align-items: stretch;
+        }
+        .pasteForm .formLine {
+            display: flex;
+            flex-flow: row wrap;
+            align-items: center;
+            padding: 1em;
+        }
+        .pasteForm label {
+            width: 125px;
+        }
+        .pasteForm input, .pasteForm textarea {
+            flex: 1 1 auto;
+        }
+        input[type=text], textarea {
+            border: solid 1px #ccc;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        input[type=text]:focus, input[type=text]:hover, textarea:hover {
+            border-color: #ccf;
+        }
+        input[type=submit], input[type=reset] {
+            border: solid 1px #666;
+            padding: 5px;
+            min-width: 100px;
+            margin: 1em 5em;
+            cursor: pointer;
+        }
+        input[type=submit]:hover, input[type=reset]:hover {
+            color: #66f;
+            border-color: #66f;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Go Pastebin</h1>
+        <p>A nice and simple pastebin alternative that you can host yourself.</p>
+    </header>
+    <section>
+        <form method="POST" action="/api/paste/" class="pasteForm">
+            <div class="formLine">
+                <label for="title" placeholder="Paste title">Title:</label>
+                <input type="text" name="title">
+            </div>
+            <div class="formLine">
+                <label for="body">Content:</label>
+                <textarea name="body" value="" maxlength="10240" rows="8"></textarea>
+            </div>
+            <div class="formLine">
+                <label>&nbsp;</label>
+                <input type="reset" value="Clear">
+                <input type="submit" value="Paste">
+            </div>
+        </form>
+    </section>
+    <footer>
+        <p>Created by Ilia Frenkel, 2021. &nbsp;|&nbsp; <a href="https://github.com/iliafrenkel/go-pb">Code on GitHub</a></p>
+    </footer>
+</body>
+</html>
