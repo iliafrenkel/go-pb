@@ -33,17 +33,17 @@ type ApiServer struct {
 // and the default HTTP routes for manipulating pastes.
 //
 // The routes are:
-//   GET  /paste/{id}  - get paste by ID
-//   POST /create      - create new paste
-//   PU   /delete/{id} - delete paste by ID
+//   GET    /paste/{id} - get paste by ID
+//   POST   /paste      - create new paste
+//   DELETE /paste/{id} - delete paste by ID
 func New(svc api.PasteService) *ApiServer {
 	var handler ApiServer
 
 	handler.PasteService = svc
 	handler.Router = mux.NewRouter()
 	handler.Router.HandleFunc("/paste/{id}", handler.handlePaste).Methods("GET")
-	handler.Router.HandleFunc("/create", handler.handleCreate).Methods("POST")
-	handler.Router.HandleFunc("/delete/{id}", handler.handleDelete).Methods("PUT")
+	handler.Router.HandleFunc("/paste", handler.handleCreate).Methods("POST")
+	handler.Router.HandleFunc("/paste/{id}", handler.handleDelete).Methods("DELETE")
 
 	return &handler
 }
@@ -111,7 +111,7 @@ func (h *ApiServer) handlePaste(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", res)
 }
 
-// handleCreate is an HTTP handler for the POST /create route. It expects the
+// handleCreate is an HTTP handler for the POST /paste route. It expects the
 // new paste as a JSON sting in the body of the request. Returns newly created
 // paste as a JSON string.
 //
@@ -242,7 +242,7 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", res)
 }
 
-// handleDelete is an HTTP handler for the PUT /delete/{id} route. Returns
+// handleDelete is an HTTP handler for the DELETE /paste/{id} route. Returns
 // 200 OK or 404 Not Found.
 func (h *ApiServer) handleDelete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -100,13 +101,13 @@ func Test_GetPasteNotFound(t *testing.T) {
 	}
 }
 
-func Test_PostCreate(t *testing.T) {
+func Test_CreatePaste(t *testing.T) {
 	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 
 	mockServer := httptest.NewServer(apiSrv.Router)
 	want, _ := json.Marshal(paste)
-	resp, err := http.Post(mockServer.URL+"/create", "application/json", bytes.NewBuffer(want))
+	resp, err := http.Post(mockServer.URL+"/paste", "application/json", bytes.NewBuffer(want))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -125,18 +126,19 @@ func Test_PostCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	if got != string(want) {
-		t.Errorf("Response should be [%s], got [%s]", want, got)
+	body, _ := json.Marshal(paste.Body)
+	if !strings.Contains(got, string(body)) {
+		t.Errorf("Response should have body [%s], got [%s]", body, got)
 	}
 }
 
-func Test_PostCreateWrongContentType(t *testing.T) {
+func Test_CreatePasteWrongContentType(t *testing.T) {
 	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 
 	mockServer := httptest.NewServer(apiSrv.Router)
 	want, _ := json.Marshal(paste)
-	resp, err := http.Post(mockServer.URL+"/create", "application/xml", bytes.NewBuffer(want))
+	resp, err := http.Post(mockServer.URL+"/paste", "application/xml", bytes.NewBuffer(want))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -149,7 +151,7 @@ func Test_PostCreateWrongContentType(t *testing.T) {
 	}
 }
 
-func Test_PostCreateExtraField(t *testing.T) {
+func Test_CreatePasteExtraField(t *testing.T) {
 	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 	extraPaste := struct {
@@ -162,7 +164,7 @@ func Test_PostCreateExtraField(t *testing.T) {
 
 	mockServer := httptest.NewServer(apiSrv.Router)
 	body, _ := json.Marshal(extraPaste)
-	resp, err := http.Post(mockServer.URL+"/create", "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(mockServer.URL+"/paste", "application/json", bytes.NewBuffer(body))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -187,12 +189,12 @@ func Test_PostCreateExtraField(t *testing.T) {
 	}
 }
 
-func Test_PostCreateWrongJson(t *testing.T) {
+func Test_CreatePasteWrongJson(t *testing.T) {
 	var apiSrv *ApiServer = New(svc)
 
 	mockServer := httptest.NewServer(apiSrv.Router)
 	body := "this is not a json"
-	resp, err := http.Post(mockServer.URL+"/create", "application/json", bytes.NewBuffer([]byte(body)))
+	resp, err := http.Post(mockServer.URL+"/paste", "application/json", bytes.NewBuffer([]byte(body)))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -217,7 +219,7 @@ func Test_PostCreateWrongJson(t *testing.T) {
 	}
 }
 
-func Test_PutDelete(t *testing.T) {
+func Test_DeletePaste(t *testing.T) {
 	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 	if err := svc.Create(paste); err != nil {
@@ -225,7 +227,7 @@ func Test_PutDelete(t *testing.T) {
 	}
 	mockServer := httptest.NewServer(apiSrv.Router)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPut, mockServer.URL+"/delete/"+paste.ID, nil)
+	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.ID, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,12 +254,12 @@ func Test_PutDelete(t *testing.T) {
 	}
 }
 
-func Test_PutDeleteNotFound(t *testing.T) {
+func Test_DeletePasteNotFound(t *testing.T) {
 	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 	mockServer := httptest.NewServer(apiSrv.Router)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPut, mockServer.URL+"/delete/"+paste.ID, nil)
+	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.ID, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
