@@ -1,0 +1,20 @@
+<form method="POST" action="/paste/">
+    <div class="mb-3">
+        <label for="pasteTitle" placeholder="Paste title" class="form-label">Title:</label>
+        <input type="text" name="title" id="pasteTitle" class="form-control" aria-describedby="titleHelpBlock">
+        <div id="titleHelpBlock" class="form-text">
+            Title is optional but it can help you find the paste later.
+        </div>
+    </div>
+    <div class="mb-3">
+        <label for="pasteBody" class="form-label">Content:</label>
+        <textarea name="body" id="pasteBody" value="" maxlength="10240" rows="8" class="form-control" aria-describedby="bodyHelpBlock"></textarea>
+        <div id="bodyHelpBlock" class="form-text">
+            Maximum size of the text is 10K.
+        </div>
+    </div>
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <input type="reset" value="Clear" class="btn btn-outline-secondary btn-lg me-md-2 w-25">
+        <input type="submit" value="Paste" class="btn btn-primary btn-lg me-md-2 w-25">
+    </div>
+</form>
