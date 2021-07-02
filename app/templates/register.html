@@ -13,21 +13,21 @@
     {{template "header.html"}}
     <div class="row justify-content-center">
         <div class="col-3">
-            <div class="card">
+            <div class="card border-0">
                 <div class="card-body">
                     <h5 class="card-title text-center">Register</h5>
                     <form method="POST" action="/u/login">
                         <div class="mb-3">
                             <label for="username" placeholder="Username" class="form-label">Username:</label>
-                            <input type="text" name="username" id="username" class="form-control">
+                            <input type="text" name="username" id="username" class="form-control" required>
                         </div>
                         <div class="mb-3">
                             <label for="password" placeholder="password" class="form-label">Password:</label>
-                            <input type="password" name="password" id="password" class="form-control">
+                            <input type="password" name="password" id="password" class="form-control" required>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-5">
                             <label for="password" placeholder="password" class="form-label">Password again:</label>
-                            <input type="password" name="password" id="password" class="form-control">
+                            <input type="password" name="password" id="password" class="form-control" required>
                         </div>
                         <div class="d-grid d-md-flex justify-content-md-center">
                             <input type="submit" value="Register" class="btn btn-success w-50">
