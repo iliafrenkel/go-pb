@@ -2,13 +2,12 @@ package http
 
 import (
 	"context"
-	"crypto/md5"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/iliafrenkel/go-pb/api"
+	"github.com/iliafrenkel/go-pb/api/base62"
 )
 
 // ApiServer type provides an HTTP server that calls PasteService methods in
@@ -97,7 +97,14 @@ func (h *ApiServer) ListenAndServe(addr string) {
 // the paste as a JSON string or 404 Not Found.
 func (h *ApiServer) handlePaste(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	p, err := h.PasteService.Paste(vars["id"])
+
+	id, err := base62.Decode(vars["id"])
+	if err != nil {
+		http.Error(w, "wrong id", http.StatusNotFound)
+		return
+	}
+
+	p, err := h.PasteService.Paste(id)
 	if err != nil {
 		http.Error(w, "paste not found", http.StatusNotFound)
 		return
@@ -220,10 +227,9 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create new paste
-	b := make([]byte, 16)
-	rand.Read(b)
+	rand.Seed(time.Now().UnixNano())
 	p := api.Paste{
-		ID:      fmt.Sprintf("%x", md5.Sum(b)),
+		ID:      rand.Uint64(),
 		Title:   data.Title,
 		Body:    data.Body,
 		Expires: time.Time{},
@@ -233,7 +239,10 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to create paste", http.StatusInternalServerError)
 		return
 	}
-	res, err := json.Marshal(p)
+	res, err := json.Marshal(map[string]interface{}{
+		"paste": p,
+		"url":   p.URL(),
+	})
 	if err != nil {
 		log.Printf("error converting paste to json: %v\n", err)
 		http.Error(w, "error converting paste to json", http.StatusInternalServerError)
@@ -247,7 +256,13 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 func (h *ApiServer) handleDelete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	if err := h.PasteService.Delete(vars["id"]); err != nil {
+	id, err := base62.Decode(vars["id"])
+	if err != nil {
+		http.Error(w, "wrong id", http.StatusNotFound)
+		return
+	}
+
+	if err := h.PasteService.Delete(id); err != nil {
 		http.Error(w, "paste not found", http.StatusNotFound)
 		return
 	}

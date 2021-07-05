@@ -1,25 +1,24 @@
 package memory
 
 import (
-	"crypto/md5"
-	"crypto/rand"
-	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/iliafrenkel/go-pb/api"
+	"github.com/iliafrenkel/go-pb/api/base62"
 )
 
 var service = New()
 
 // createTestPaste create a paste with random ID and Body
 func createTestPaste() *api.Paste {
-	b := make([]byte, 16)
-	rand.Read(b)
+	rand.Seed(time.Now().UnixNano())
+	id := rand.Uint64()
 	var p = api.Paste{
-		ID:      fmt.Sprintf("%x", md5.Sum(b)),
+		ID:      id,
 		Title:   "Test paste",
-		Body:    b,
+		Body:    []byte(base62.Encode(id)),
 		Expires: time.Time{},
 	}
 
@@ -54,7 +53,7 @@ func Test_Paste(t *testing.T) {
 }
 
 func Test_PasteNotFound(t *testing.T) {
-	_, err := service.Paste("NotFound")
+	_, err := service.Paste(0)
 	if err == nil {
 		t.Error("No error for non-existing paste")
 	} else {
@@ -78,7 +77,7 @@ func Test_Delete(t *testing.T) {
 }
 
 func Test_DeleteNotFound(t *testing.T) {
-	err := service.Delete("NotFound")
+	err := service.Delete(0)
 	if err == nil {
 		t.Error("No error for non-existing paste")
 	} else {

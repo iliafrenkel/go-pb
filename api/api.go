@@ -1,13 +1,21 @@
 package api
 
-import "time"
+import (
+	"time"
+
+	"github.com/iliafrenkel/go-pb/api/base62"
+)
 
 // Paste is a the type that represents a single paste.
 type Paste struct {
-	ID      string    `json:"id,string"`
-	Title   string    `json:"title,string"`
+	ID      uint64    `json:"id"`
+	Title   string    `json:"title"`
 	Body    []byte    `json:"body"`
 	Expires time.Time `json:"expires"`
+}
+
+func (p *Paste) URL() string {
+	return base62.Encode(p.ID)
 }
 
 // PasteService is the interface that defines methods for working with Pastes.
@@ -15,7 +23,7 @@ type Paste struct {
 // Implementations should define the underlying storage such as database,
 // plain files or even memory.
 type PasteService interface {
-	Paste(id string) (*Paste, error)
+	Paste(id uint64) (*Paste, error)
 	Create(p *Paste) error
-	Delete(id string) error
+	Delete(id uint64) error
 }

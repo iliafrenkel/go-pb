@@ -2,11 +2,10 @@ package http
 
 import (
 	"bytes"
-	"crypto/md5"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/api"
+	"github.com/iliafrenkel/go-pb/api/base62"
 	"github.com/iliafrenkel/go-pb/api/memory"
 )
 
@@ -21,12 +21,12 @@ var svc api.PasteService = memory.New()
 
 // createTestPaste creates a paste with a random ID and a random body.
 func createTestPaste() *api.Paste {
-	b := make([]byte, 16)
-	rand.Read(b)
+	rand.Seed(time.Now().UnixNano())
+	id := rand.Uint64()
 	var p = api.Paste{
-		ID:      fmt.Sprintf("%x", md5.Sum(b)),
+		ID:      id,
 		Title:   "Test paste",
-		Body:    b,
+		Body:    []byte(base62.Encode(id)),
 		Expires: time.Time{},
 	}
 
@@ -42,7 +42,7 @@ func Test_GetPaste(t *testing.T) {
 
 	// Documentation : https://golang.org/pkg/net/http/httptest/#NewServer
 	mockServer := httptest.NewServer(apiSrv.Router)
-	resp, err := http.Get(mockServer.URL + "/paste/" + paste.ID)
+	resp, err := http.Get(mockServer.URL + "/paste/" + paste.URL())
 
 	// Handle any unexpected error
 	if err != nil {
@@ -76,7 +76,7 @@ func Test_GetPasteNotFound(t *testing.T) {
 	var paste = createTestPaste()
 
 	mockServer := httptest.NewServer(apiSrv.Router)
-	resp, err := http.Get(mockServer.URL + "/paste/" + paste.ID)
+	resp, err := http.Get(mockServer.URL + "/paste/" + paste.URL())
 
 	// Handle any unexpected error
 	if err != nil {
@@ -227,7 +227,7 @@ func Test_DeletePaste(t *testing.T) {
 	}
 	mockServer := httptest.NewServer(apiSrv.Router)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.ID, nil)
+	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.URL(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +259,7 @@ func Test_DeletePasteNotFound(t *testing.T) {
 	var paste = createTestPaste()
 	mockServer := httptest.NewServer(apiSrv.Router)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.ID, nil)
+	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.URL(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
