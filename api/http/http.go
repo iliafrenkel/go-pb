@@ -116,6 +116,9 @@ func (h *ApiServer) handlePaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintf(w, "%s", res)
+	if p.DeleteAfterRead {
+		h.PasteService.Delete(p.ID)
+	}
 }
 
 // handleCreate is an HTTP handler for the POST /paste route. It expects the
@@ -229,10 +232,13 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 	// Create new paste
 	rand.Seed(time.Now().UnixNano())
 	p := api.Paste{
-		ID:      rand.Uint64(),
-		Title:   data.Title,
-		Body:    data.Body,
-		Expires: time.Time{},
+		ID:              rand.Uint64(),
+		Title:           data.Title,
+		Body:            data.Body,
+		Expires:         time.Time{},
+		Created:         time.Now(),
+		DeleteAfterRead: data.DeleteAfterRead,
+		Syntax:          data.Syntax,
 	}
 	if err := h.PasteService.Create(&p); err != nil {
 		log.Printf("failed to create paste: %v\n", err)
@@ -248,6 +254,7 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error converting paste to json", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Add("Content-Type", "application/json")
 	fmt.Fprintf(w, "%s", res)
 }
 

@@ -26,7 +26,7 @@ func createTestPaste() *api.Paste {
 	var p = api.Paste{
 		ID:      id,
 		Title:   "Test paste",
-		Body:    []byte(base62.Encode(id)),
+		Body:    base62.Encode(id),
 		Expires: time.Time{},
 	}
 
