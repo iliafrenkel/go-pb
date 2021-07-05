@@ -1,10 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/iliafrenkel/go-pb/api"
 )
 
 func main() {
@@ -68,5 +74,99 @@ func main() {
 		)
 	})
 
-	router.Run("127.0.0.1:8080")
+	router.GET("/p/:id", func(c *gin.Context) {
+		var p api.Paste
+		id := c.Param("id")
+		resp, err := http.Get("http://localhost:8080/paste/" + id)
+
+		if err != nil {
+			log.Println(err)
+			c.String(http.StatusInternalServerError, "unexpected api error")
+			return
+		}
+		// Check API response status
+		if resp.StatusCode != http.StatusOK {
+			c.String(resp.StatusCode, "api: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+			return
+		}
+		// Get the paste from the body
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println(err)
+			c.String(http.StatusInternalServerError, "unexpected api error")
+			return
+		}
+		// Try to parse JSON into api.Paste
+		if err := json.Unmarshal(b, &p); err != nil {
+			log.Println(err)
+			c.String(http.StatusInternalServerError, "failed to parse api response")
+			return
+		}
+		// Send HTML
+		c.HTML(
+			http.StatusOK,
+			"view.html",
+			gin.H{
+				"Title":    p.Title,
+				"Body":     p.Body,
+				"Language": p.Syntax,
+			},
+		)
+	})
+
+	router.POST("/p/", func(c *gin.Context) {
+		var p api.Paste
+		var data struct {
+			api.Paste
+			Url string
+		}
+
+		// Get the paste title and body from the form
+		if b, ok := c.GetPostForm("body"); !ok || len(b) == 0 {
+			c.String(http.StatusBadRequest, "body cannot be empty")
+			return
+		}
+		p.Body = c.PostForm("body")
+		p.Title = c.DefaultPostForm("title", "untitled")
+		p.DeleteAfterRead, _ = strconv.ParseBool(c.PostForm("delete_after_read"))
+		p.Syntax = c.DefaultPostForm("syntax", "none")
+
+		// Try to create a new paste by calling the API
+		paste, _ := json.Marshal(p)
+		resp, err := http.Post("http://localhost:8080/paste", "application/json", bytes.NewBuffer(paste))
+
+		if err != nil {
+			log.Println(err)
+			c.String(http.StatusInternalServerError, "unexpected api error")
+			return
+		}
+
+		// Check API response status
+		if resp.StatusCode != http.StatusOK {
+			c.String(resp.StatusCode, "api: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+			return
+		}
+
+		// Get API response body
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println(err)
+			c.String(http.StatusInternalServerError, "unexpected error parsing api response")
+			return
+		}
+
+		if err := json.Unmarshal(b, &data); err != nil {
+			log.Println(err)
+			c.String(http.StatusInternalServerError, "failed to parse api response")
+			return
+		}
+
+		c.Redirect(http.StatusFound, "/p/"+data.Url)
+	})
+
+	router.Static("/assets", "../assets")
+
+	router.Run("127.0.0.1:8000")
 }
