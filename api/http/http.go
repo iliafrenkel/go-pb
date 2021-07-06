@@ -254,7 +254,9 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error converting paste to json", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Add("Location", p.URL())
 	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s", res)
 }
 
