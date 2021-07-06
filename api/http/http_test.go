@@ -115,7 +115,7 @@ func Test_CreatePaste(t *testing.T) {
 	}
 
 	// Check status
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		t.Errorf("Status should be OK, got %d", resp.StatusCode)
 	}
 

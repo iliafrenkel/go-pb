@@ -26,3 +26,6 @@ coverage.txt
 # Build folder
 build
 dist/
+
+# goland folder
+.idea/
