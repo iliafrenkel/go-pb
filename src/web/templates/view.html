@@ -21,6 +21,12 @@
                     <h5 class="card-title text-center">{{ .Title }}</h5>
                     {{end}}
                     <div class="card-text">
+                        {{if .URL }}
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="url" onClick="this.select();" readonly value="{{ .Server }}/p/{{ .URL }}" placeholder="">
+                            <label for="url">URL</label>
+                        </div>
+                        {{end}}
                         <pre><code class="language-{{ .Language }}">{{ .Body }}</code></pre>
                     </div>
                 </div>

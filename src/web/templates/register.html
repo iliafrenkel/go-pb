@@ -17,17 +17,17 @@
                 <div class="card-body">
                     <h5 class="card-title text-center">Register</h5>
                     <form method="POST" action="/u/login">
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email:</label>
+                        <div class="form-floating mb-3">
                             <input type="text" name="email" id="email" placeholder="john.doe@example.com" class="form-control" required>
+                            <label for="email" class="form-label">Email</label>
                         </div>
-                        <div class="mb-3">
-                            <label for="password" placeholder="password" class="form-label">Password:</label>
-                            <input type="password" name="password" id="password" class="form-control" required>
+                        <div class="form-floating mb-3">
+                            <input type="password" name="password" id="password" class="form-control" placeholder="password" required>
+                            <label for="password" class="form-label">Password</label>
                         </div>
-                        <div class="mb-5">
-                            <label for="password" placeholder="password" class="form-label">Password again:</label>
-                            <input type="password" name="password" id="password" class="form-control" required>
+                        <div class="form-floating mb-5">
+                            <input type="password" name="password" id="password" class="form-control" placeholder="password" required>
+                            <label for="password" class="form-label">Password again</label>
                         </div>
                         <div class="d-grid d-md-flex justify-content-md-center">
                             <input type="submit" value="Register" class="btn btn-success w-50">
