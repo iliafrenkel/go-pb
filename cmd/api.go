@@ -1,16 +1,12 @@
 package main
 
 import (
-	"os"
-
-	"github.com/iliafrenkel/go-pb/api/http"
-	"github.com/iliafrenkel/go-pb/api/memory"
+	"github.com/iliafrenkel/go-pb/src/api/db/memory"
+	"github.com/iliafrenkel/go-pb/src/api/http"
 )
 
-func main() {
+func StartApiServer() error {
 	var api *http.ApiServer = http.New(memory.New())
 
-	api.ListenAndServe(":8080")
-
-	os.Exit(0)
+	return api.ListenAndServe(":8080")
 }

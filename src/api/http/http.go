@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,14 +8,12 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
-	"os/signal"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/iliafrenkel/go-pb/api"
-	"github.com/iliafrenkel/go-pb/api/base62"
+	"github.com/iliafrenkel/go-pb/src/api"
+	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
 // ApiServer type provides an HTTP server that calls PasteService methods in
@@ -54,9 +51,7 @@ func New(svc api.PasteService) *ApiServer {
 // https://github.com/gorilla/mux#graceful-shutdown
 //
 // TODO: Timeouts should be configurable.
-func (h *ApiServer) ListenAndServe(addr string) {
-	var wait time.Duration = time.Second * 15 // shutdown timeout
-
+func (h *ApiServer) ListenAndServe(addr string) error {
 	srv := &http.Server{
 		Addr: addr,
 		// Good practice to set timeouts to avoid Slowloris attacks.
@@ -66,31 +61,7 @@ func (h *ApiServer) ListenAndServe(addr string) {
 		Handler:      h.Router,
 	}
 
-	// Run our server in a goroutine so that it doesn't block.
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	c := make(chan os.Signal, 1)
-	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
-	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
-	signal.Notify(c, os.Interrupt)
-
-	// Block until we receive our signal.
-	<-c
-
-	// Create a deadline to wait for.
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
-	defer cancel()
-	// Doesn't block if no connections, but will otherwise wait
-	// until the timeout deadline.
-	srv.Shutdown(ctx)
-	// Optionally, you could run srv.Shutdown in a goroutine and block on
-	// <-ctx.Done() if your application should wait for other services
-	// to finalize based on context cancellation.
-	log.Println("shutting down")
+	return srv.ListenAndServe()
 }
 
 // handlePaste is an HTTP handler for the GET /paste/{id} route, it returns
@@ -245,19 +216,19 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to create paste", http.StatusInternalServerError)
 		return
 	}
-	res, err := json.Marshal(map[string]interface{}{
-		"paste": p,
-		"url":   p.URL(),
-	})
-	if err != nil {
-		log.Printf("error converting paste to json: %v\n", err)
-		http.Error(w, "error converting paste to json", http.StatusInternalServerError)
-		return
-	}
+	// res, err := json.Marshal(map[string]interface{}{
+	// 	"paste": p,
+	// 	"url":   p.URL(),
+	// })
+	// if err != nil {
+	// 	log.Printf("error converting paste to json: %v\n", err)
+	// 	http.Error(w, "error converting paste to json", http.StatusInternalServerError)
+	// 	return
+	// }
 	w.Header().Add("Location", p.URL())
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s", res)
+	_ = json.NewEncoder(w).Encode(p)
 }
 
 // handleDelete is an HTTP handler for the DELETE /paste/{id} route. Returns

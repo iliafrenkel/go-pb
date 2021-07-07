@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iliafrenkel/go-pb/api"
-	"github.com/iliafrenkel/go-pb/api/base62"
+	"github.com/iliafrenkel/go-pb/src/api"
+	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
 var service = New()

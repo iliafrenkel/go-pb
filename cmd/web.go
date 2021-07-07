@@ -10,10 +10,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/iliafrenkel/go-pb/api"
+	"github.com/iliafrenkel/go-pb/src/api"
 )
 
-func main() {
+func StartWebServer() error {
 	// // Load templates
 	// pattern := filepath.Join("..", "templates", "*.html")
 	// templates := template.Must(template.ParseGlob(pattern))
@@ -36,7 +36,7 @@ func main() {
 
 	router := gin.Default()
 
-	router.LoadHTMLGlob(filepath.Join("..", "templates", "*.html"))
+	router.LoadHTMLGlob(filepath.Join("..", "src", "web", "templates", "*.html"))
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -111,17 +111,15 @@ func main() {
 				"Title":    p.Title,
 				"Body":     p.Body,
 				"Language": p.Syntax,
+				"URL":      p.URL(),
+				"Server":   "http://localhost:8000", //TODO: this has to come from somewhere
 			},
 		)
 	})
 
 	router.POST("/p/", func(c *gin.Context) {
 		var p api.Paste
-		var data struct {
-			api.Paste
-			Url string
-		}
-
+		var data api.Paste
 		// Get the paste title and body from the form
 		if b, ok := c.GetPostForm("body"); !ok || len(b) == 0 {
 			c.String(http.StatusBadRequest, "body cannot be empty")
@@ -143,7 +141,7 @@ func main() {
 		}
 
 		// Check API response status
-		if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode != http.StatusCreated {
 			c.String(resp.StatusCode, "api: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 			return
 		}
@@ -163,10 +161,20 @@ func main() {
 			return
 		}
 
-		c.Redirect(http.StatusFound, "/p/"+data.Url)
+		c.HTML(
+			http.StatusOK,
+			"view.html",
+			gin.H{
+				"Title":    data.Title,
+				"Body":     data.Body,
+				"Language": data.Syntax,
+				"URL":      resp.Header.Get("Location"),
+				"Server":   "http://localhost:8000", //TODO: this has to come from somewhere
+			},
+		)
 	})
 
-	router.Static("/assets", "../assets")
+	router.Static("/assets", "../src/web/assets")
 
-	router.Run("127.0.0.1:8000")
+	return router.Run("127.0.0.1:8000")
 }
