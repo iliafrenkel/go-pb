@@ -1,11 +1,11 @@
 <form method="POST" action="/p/">
     <div class="form-floating mb-3">
         <input type="text" name="title" id="pasteTitle"  placeholder="Paste title" class="form-control" aria-describedby="titleHelpBlock">
-        <label for="pasteTitle" class="form-label">Title (optional)</label>
+        <label for="pasteTitle" class="form-label text-muted">Title (optional)</label>
     </div>
     <div class="form-floating mb-3">
         <textarea name="body" id="pasteBody" required value="" placeholder="" maxlength="10240" style="height: 20em; font-size: 80%;" class="form-control" aria-describedby="bodyHelpBlock"></textarea>
-        <label for="pasteBody" class="form-label">Content (max 10K)</label>
+        <label for="pasteBody" class="form-label text-muted">Content (max 10K)</label>
     </div>
     <div class="mb-5 row">
         <div class="col">
@@ -166,7 +166,7 @@
                     <option value="xquery">XQuery</option>
                     <option value="yaml">YAML</option>
                 </select>
-                <label for="pasteSyntax" class="form-label">Syntax highlighting</label>
+                <label for="pasteSyntax" class="form-label text-muted">Syntax highlighting</label>
             </div>
         </div>
         <div class="col">
@@ -175,7 +175,7 @@
                     <option value="false" selected>No</option>
                     <option value="true">Yes</option>
                 </select>
-                <label for="pasteDeleteAfterRead" class="form-label">Delete after first read</label>
+                <label for="pasteDeleteAfterRead" class="form-label text-muted">Delete after first read</label>
             </div>
         </div>
     </div>
