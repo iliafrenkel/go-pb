@@ -6,7 +6,6 @@ require (
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/gorilla/mux v1.8.0
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect

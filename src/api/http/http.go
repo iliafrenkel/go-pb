@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
@@ -23,7 +23,7 @@ import (
 // routes.
 type ApiServer struct {
 	PasteService api.PasteService
-	Router       *mux.Router
+	Router       *gin.Engine
 }
 
 // New function returns an instance of ApiServer using provided PasteService
@@ -37,10 +37,10 @@ func New(svc api.PasteService) *ApiServer {
 	var handler ApiServer
 
 	handler.PasteService = svc
-	handler.Router = mux.NewRouter()
-	handler.Router.HandleFunc("/paste/{id}", handler.handlePaste).Methods("GET")
-	handler.Router.HandleFunc("/paste", handler.handleCreate).Methods("POST")
-	handler.Router.HandleFunc("/paste/{id}", handler.handleDelete).Methods("DELETE")
+	handler.Router = gin.Default()
+	handler.Router.GET("/paste/:id", handler.handlePaste)
+	handler.Router.POST("/paste", handler.handleCreate)
+	handler.Router.DELETE("/paste/:id", handler.handleDelete)
 
 	return &handler
 }
@@ -66,27 +66,26 @@ func (h *ApiServer) ListenAndServe(addr string) error {
 
 // handlePaste is an HTTP handler for the GET /paste/{id} route, it returns
 // the paste as a JSON string or 404 Not Found.
-func (h *ApiServer) handlePaste(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	id, err := base62.Decode(vars["id"])
+func (h *ApiServer) handlePaste(c *gin.Context) {
+	// We expect the id parameter as base62 encoded string, we try to decode
+	// it into a uint64 paste id and return 404 if we can't.
+	id, err := base62.Decode(c.Param("id"))
 	if err != nil {
-		http.Error(w, "wrong id", http.StatusNotFound)
+		log.Println(err)
+		c.String(http.StatusNotFound, "paste not found")
 		return
 	}
 
 	p, err := h.PasteService.Paste(id)
 	if err != nil {
-		http.Error(w, "paste not found", http.StatusNotFound)
+		log.Println(err)
+		c.String(http.StatusNotFound, "paste not found")
 		return
 	}
-	res, err := json.Marshal(p)
-	if err != nil {
-		log.Printf("error converting paste to json: %v\n", err)
-		http.Error(w, "error converting paste to json", http.StatusInternalServerError)
-		return
-	}
-	fmt.Fprintf(w, "%s", res)
+
+	c.JSON(http.StatusOK, p)
+
+	// We "burn" the paste if DeleteAfterRead flag is set.
 	if p.DeleteAfterRead {
 		h.PasteService.Delete(p.ID)
 	}
@@ -94,7 +93,7 @@ func (h *ApiServer) handlePaste(w http.ResponseWriter, r *http.Request) {
 
 // handleCreate is an HTTP handler for the POST /paste route. It expects the
 // new paste as a JSON sting in the body of the request. Returns newly created
-// paste as a JSON string.
+// paste as a JSON string and the 'Location' header set to the new paste URL.
 //
 // The JSON object must correspond to the api.Paste struct. Absent fields will
 // get default values. Extra fields will generate an error. Only one object is
@@ -102,16 +101,15 @@ func (h *ApiServer) handlePaste(w http.ResponseWriter, r *http.Request) {
 // size is currently limited to a hardcoded value of 10KB.
 //
 // TODO: Make maximum body size configurable.
-func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
+func (h *ApiServer) handleCreate(c *gin.Context) {
 	// Parse incoming json
 	// https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body
 
 	// If the Content-Type header is present, check that it has the value
 	// application/json.
-	if h := r.Header.Get("Content-Type"); h != "" {
+	if h := c.GetHeader("Content-Type"); h != "" {
 		if h != "application/json" {
-			msg := "Content-Type header is not application/json"
-			http.Error(w, msg, http.StatusUnsupportedMediaType)
+			c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect application/json")
 			return
 		}
 	}
@@ -119,14 +117,14 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 	// Use http.MaxBytesReader to enforce a maximum read of 10KB from the
 	// response body. A request body larger than that will now result in
 	// Decode() returning a "http: request body too large" error.
-	r.Body = http.MaxBytesReader(w, r.Body, 10240)
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10240)
 
 	// Setup the decoder and call the DisallowUnknownFields() method on it.
 	// This will cause Decode() to return a "json: unknown field ..." error
 	// if it encounters any extra unexpected fields in the JSON. Strictly
 	// speaking, it returns an error for "keys which do not match any
 	// non-ignored, exported fields in the destination".
-	dec := json.NewDecoder(r.Body)
+	dec := json.NewDecoder(c.Request.Body)
 	dec.DisallowUnknownFields()
 
 	var data api.Paste
@@ -140,7 +138,7 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		// easier for the client to fix.
 		case errors.As(err, &syntaxError):
 			msg := fmt.Sprintf("Request body contains malformed JSON (at position %d)", syntaxError.Offset)
-			http.Error(w, msg, http.StatusBadRequest)
+			c.String(http.StatusBadRequest, msg)
 
 		// In some circumstances Decode() may also return an
 		// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
@@ -148,15 +146,15 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		// https://github.com/golang/go/issues/25956.
 		case errors.Is(err, io.ErrUnexpectedEOF):
 			msg := "Request body contains badly-formed JSON"
-			http.Error(w, msg, http.StatusBadRequest)
+			c.String(http.StatusBadRequest, msg)
 
 		// Catch any type errors, like trying to assign a string in the
-		// JSON request body to a int field in our Person struct. We can
+		// JSON request body to a int field in our Paste struct. We can
 		// interpolate the relevant field name and position into the error
 		// message to make it easier for the client to fix.
 		case errors.As(err, &unmarshalTypeError):
 			msg := fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
-			http.Error(w, msg, http.StatusBadRequest)
+			c.String(http.StatusBadRequest, msg)
 
 		// Catch the error caused by extra unexpected fields in the request
 		// body. We extract the field name from the error message and
@@ -166,26 +164,26 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 		case strings.HasPrefix(err.Error(), "json: unknown field "):
 			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
 			msg := fmt.Sprintf("Request body contains unknown field %s", fieldName)
-			http.Error(w, msg, http.StatusBadRequest)
+			c.String(http.StatusBadRequest, msg)
 
 		// An io.EOF error is returned by Decode() if the request body is
 		// empty.
 		case errors.Is(err, io.EOF):
 			msg := "Request body must not be empty"
-			http.Error(w, msg, http.StatusBadRequest)
+			c.String(http.StatusBadRequest, msg)
 
 		// Catch the error caused by the request body being too large. Again
 		// there is an open issue regarding turning this into a sentinel
 		// error at https://github.com/golang/go/issues/30715.
 		case err.Error() == "http: request body too large":
 			msg := "Request body must not be larger than 10KB"
-			http.Error(w, msg, http.StatusRequestEntityTooLarge)
+			c.String(http.StatusBadRequest, msg)
 
 		// Otherwise default to logging the error and sending a 500 Internal
 		// Server Error response.
 		default:
 			log.Println(err.Error())
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			c.String(http.StatusBadRequest, http.StatusText(http.StatusInternalServerError))
 		}
 		return
 	}
@@ -196,7 +194,7 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 
 	if err := dec.Decode(&struct{}{}); err != io.EOF {
 		msg := "Request body must only contain a single JSON object"
-		http.Error(w, msg, http.StatusBadRequest)
+		c.String(http.StatusBadRequest, msg)
 		return
 	}
 
@@ -213,37 +211,24 @@ func (h *ApiServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := h.PasteService.Create(&p); err != nil {
 		log.Printf("failed to create paste: %v\n", err)
-		http.Error(w, "failed to create paste", http.StatusInternalServerError)
+		c.String(http.StatusBadRequest, "failed to create paste")
 		return
 	}
-	// res, err := json.Marshal(map[string]interface{}{
-	// 	"paste": p,
-	// 	"url":   p.URL(),
-	// })
-	// if err != nil {
-	// 	log.Printf("error converting paste to json: %v\n", err)
-	// 	http.Error(w, "error converting paste to json", http.StatusInternalServerError)
-	// 	return
-	// }
-	w.Header().Add("Location", p.URL())
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(p)
+	c.Header("Location", p.URL())
+	c.JSON(http.StatusCreated, p)
 }
 
-// handleDelete is an HTTP handler for the DELETE /paste/{id} route. Returns
-// 200 OK or 404 Not Found.
-func (h *ApiServer) handleDelete(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	id, err := base62.Decode(vars["id"])
+// handleDelete is an HTTP handler for the DELETE /paste/{id} route. Deletes
+// the paste by id and returns 200 OK or 404 Not Found.
+func (h *ApiServer) handleDelete(c *gin.Context) {
+	id, err := base62.Decode(c.Param("id"))
 	if err != nil {
-		http.Error(w, "wrong id", http.StatusNotFound)
+		c.String(http.StatusNotFound, "paste not found")
 		return
 	}
 
 	if err := h.PasteService.Delete(id); err != nil {
-		http.Error(w, "paste not found", http.StatusNotFound)
+		c.String(http.StatusNotFound, "paste not found")
 		return
 	}
 }

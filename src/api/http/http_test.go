@@ -95,7 +95,36 @@ func Test_GetPasteNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := "paste not found\n"
+	want := "paste not found"
+	if got != want {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
+
+func Test_GetPasteWrongID(t *testing.T) {
+	var apiSrv *ApiServer = New(svc)
+
+	mockServer := httptest.NewServer(apiSrv.Router)
+	resp, err := http.Get(mockServer.URL + "/paste/SD)W*^W#4^&*S;!")
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("Status should be 404 Not Found, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want := "paste not found"
 	if got != want {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
@@ -183,7 +212,7 @@ func Test_CreatePasteExtraField(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("Request body contains unknown field \"%s\"\n", "extraField")
+	want := fmt.Sprintf("Request body contains unknown field \"%s\"", "extraField")
 	if got != want {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
@@ -213,7 +242,7 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("Request body contains malformed JSON (at position %d)\n", 2)
+	want := fmt.Sprintf("Request body contains malformed JSON (at position %d)", 2)
 	if got != want {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
@@ -280,12 +309,16 @@ func Test_DeletePasteNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := "paste not found\n"
+	want := "paste not found"
 	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
 
 // TODO:
-//  - wrong HTTP methods for all endpoints
-//  - multiple json objects for create
+//  - [ ] wrong HTTP methods for all endpoints
+//  - [ ] multiple json objects for create
+//  - [x] get paste with wrong id (not properly base62 encoded)
+//  - [ ] test DeleteAfterRead
+//  - [ ] test wrong JSON field type
+//  - [ ] test create with empty body
