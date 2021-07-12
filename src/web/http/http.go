@@ -110,13 +110,20 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 	// API server maybe down or some other network error
 	if err != nil {
 		log.Println("handlePaste: error querying API: ", err)
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		h.showError(c)
 		return
 	}
 	// If API response code is not 200 return it and log an error
 	if resp.StatusCode != http.StatusOK {
 		log.Println("handlePaste: API returned: ", resp.StatusCode)
-		c.String(resp.StatusCode, http.StatusText(resp.StatusCode))
+		c.Set("errorCode", resp.StatusCode)
+		c.Set("errorText", http.StatusText(resp.StatusCode))
+		if resp.StatusCode == http.StatusNotFound {
+			c.Set("errorMessage", "The paste cannot be found.")
+		}
+		h.showError(c)
 		return
 	}
 	// Read response body and try to parse it as JSON
@@ -125,12 +132,18 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("handlePaste: failed to read API response body: ", err)
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
 		return
 	}
 	if err := json.Unmarshal(b, &p); err != nil {
 		log.Println("handlePaste: failed to parse API response", err)
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
 		return
 	}
 	// Send HTML
@@ -152,7 +165,9 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	// Try to parse the form
 	if err := c.ShouldBind(&p); err != nil {
 		log.Println("handlePasteCreate: failed to bind to form data: ", err)
-		c.String(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		c.Set("errorCode", http.StatusBadRequest)
+		c.Set("errorText", http.StatusText(http.StatusBadRequest))
+		h.showError(c)
 		return
 	}
 	// Try to create a new paste by calling the API
@@ -161,13 +176,18 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 
 	if err != nil {
 		log.Println("handlePasteCreate: error talking to API: ", err)
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
 		return
 	}
 	// Check API response status
 	if resp.StatusCode != http.StatusCreated {
 		log.Println("handlePasteCreate: API returned: ", resp.StatusCode)
-		c.String(resp.StatusCode, http.StatusText(resp.StatusCode))
+		c.Set("errorCode", resp.StatusCode)
+		c.Set("errorText", http.StatusText(resp.StatusCode))
+		h.showError(c)
 		return
 	}
 	// Get API response body and try to parse it as JSON
@@ -176,12 +196,18 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("handlePasteCreate: failed to read API response body: ", err)
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
 		return
 	}
 	if err := json.Unmarshal(b, &data); err != nil {
 		log.Println("handlePasteCreate: failed to parse API response", err)
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
 		return
 	}
 	// Send back HTML that display newly created paste
@@ -194,6 +220,22 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 			"Language": data.Syntax,
 			"URL":      resp.Header.Get("Location"),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
+		},
+	)
+}
+
+// showError displays a custom error page using error.html template.
+// The context must have "errorCode" and "errorText" keys.
+func (h *WebServer) showError(c *gin.Context) {
+	msg, _ := c.Get("errorMessage")
+	c.HTML(
+		http.StatusOK,
+		"error.html",
+		gin.H{
+			"title":        "Error",
+			"errorCode":    c.MustGet("errorCode"),
+			"errorText":    c.MustGet("errorText"),
+			"errorMessage": msg,
 		},
 	)
 }
