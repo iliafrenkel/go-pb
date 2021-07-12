@@ -28,7 +28,7 @@ type ApiServer struct {
 }
 
 // New function returns an instance of ApiServer using provided PasteService
-// and the default HTTP routes for manipulating pastes.
+// and all the HTTP routes for manipulating pastes.
 //
 // The routes are:
 //   GET    /paste/{id} - get paste by ID
@@ -58,8 +58,6 @@ func (h *ApiServer) ListenAndServe(addr string) error {
 		IdleTimeout:  time.Second * 60,
 		Handler:      h.Router,
 	}
-
-	log.Println("API server listening on ", addr)
 
 	return h.Server.ListenAndServe()
 }
