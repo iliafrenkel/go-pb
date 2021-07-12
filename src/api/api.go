@@ -9,13 +9,13 @@ import (
 // Paste is a the type that represents a single paste.
 type Paste struct {
 	ID              uint64    `json:"id"`
-	Title           string    `json:"title" form:"title" binding:"required"`
-	Body            string    `json:"body" form:"title" binding:"required"`
+	Title           string    `json:"title" form:"title"`
+	Body            string    `json:"body" form:"body" binding:"required"`
 	Expires         time.Time `json:"expires"`
-	DeleteAfterRead bool      `json:"delete_after_read"`
+	DeleteAfterRead bool      `json:"delete_after_read" form:"delete_after_read" binding:"-"`
 	Password        string    `json:"password"`
 	Created         time.Time `json:"created"`
-	Syntax          string    `json:"syntax"`
+	Syntax          string    `json:"syntax" form:"syntax" binding:"required"`
 	// userID          uint64
 }
 

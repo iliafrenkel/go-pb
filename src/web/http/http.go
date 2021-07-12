@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -150,35 +149,29 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 
 func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	var p api.Paste
-	var data api.Paste
-	// Get the paste title and body from the form
-	if b, ok := c.GetPostForm("body"); !ok || len(b) == 0 {
-		c.String(http.StatusBadRequest, "body cannot be empty")
+	// Try to parse the form
+	if err := c.ShouldBind(&p); err != nil {
+		log.Println("handlePasteCreate: failed to bind to form data: ", err)
+		c.String(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
-	p.Body = c.PostForm("body")
-	p.Title = c.DefaultPostForm("title", "untitled")
-	p.DeleteAfterRead, _ = strconv.ParseBool(c.PostForm("delete_after_read"))
-	p.Syntax = c.DefaultPostForm("syntax", "none")
-
 	// Try to create a new paste by calling the API
 	paste, _ := json.Marshal(p)
-	resp, err := http.Post("http://localhost:8000/paste", "application/json", bytes.NewBuffer(paste))
+	resp, err := http.Post("http://localhost:8000/paste", "application/json", bytes.NewBuffer(paste)) // TODO: API address must come from configuration
 
 	if err != nil {
 		log.Println("handlePasteCreate: error talking to API: ", err)
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-
 	// Check API response status
 	if resp.StatusCode != http.StatusCreated {
 		log.Println("handlePasteCreate: API returned: ", resp.StatusCode)
 		c.String(resp.StatusCode, http.StatusText(resp.StatusCode))
 		return
 	}
-
 	// Get API response body and try to parse it as JSON
+	var data api.Paste
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
