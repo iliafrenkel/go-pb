@@ -2,16 +2,20 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
 )
+
+var webServer *http.Server
 
 func StartWebServer() error {
 	// // Load templates
@@ -176,5 +180,24 @@ func StartWebServer() error {
 
 	router.Static("/assets", "../src/web/assets")
 
-	return router.Run("127.0.0.1:8000")
+	addr := "127.0.0.1:8000"
+	webServer := &http.Server{
+		Addr:         addr,
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      router,
+	}
+
+	log.Println("Web server listening on ", addr)
+
+	return webServer.ListenAndServe()
+}
+
+func StopWebServer(ctx context.Context) error {
+	if webServer != nil {
+		return webServer.Shutdown(ctx)
+	}
+
+	return nil
 }

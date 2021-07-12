@@ -24,6 +24,7 @@ import (
 type ApiServer struct {
 	PasteService api.PasteService
 	Router       *gin.Engine
+	Server       *http.Server
 }
 
 // New function returns an instance of ApiServer using provided PasteService
@@ -47,12 +48,9 @@ func New(svc api.PasteService) *ApiServer {
 
 // ListenAndServe starts an HTTP server and binds it to the provided address.
 //
-// The server is configured with timeouts and graceful shutdown as per
-// https://github.com/gorilla/mux#graceful-shutdown
-//
 // TODO: Timeouts should be configurable.
 func (h *ApiServer) ListenAndServe(addr string) error {
-	srv := &http.Server{
+	h.Server = &http.Server{
 		Addr: addr,
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
@@ -61,7 +59,9 @@ func (h *ApiServer) ListenAndServe(addr string) error {
 		Handler:      h.Router,
 	}
 
-	return srv.ListenAndServe()
+	log.Println("API server listening on ", addr)
+
+	return h.Server.ListenAndServe()
 }
 
 // handlePaste is an HTTP handler for the GET /paste/{id} route, it returns
