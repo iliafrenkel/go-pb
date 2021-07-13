@@ -18,6 +18,10 @@
                     <h5 class="card-title text-center">Register</h5>
                     <form method="POST" action="/u/login">
                         <div class="form-floating mb-3">
+                            <input type="text" name="username" id="username" placeholder="username" class="form-control" required>
+                            <label for="username" class="form-label text-muted">Username</label>
+                        </div>
+                        <div class="form-floating mb-3">
                             <input type="text" name="email" id="email" placeholder="john.doe@example.com" class="form-control" required>
                             <label for="email" class="form-label text-muted">Email</label>
                         </div>
@@ -26,8 +30,8 @@
                             <label for="password" class="form-label text-muted">Password</label>
                         </div>
                         <div class="form-floating mb-5">
-                            <input type="password" name="password" id="password" class="form-control" placeholder="password" required>
-                            <label for="password" class="form-label text-muted">Password again</label>
+                            <input type="password" name="repassword" id="repassword" class="form-control" placeholder="password" required>
+                            <label for="repassword" class="form-label text-muted">Password again</label>
                         </div>
                         <div class="d-grid d-md-flex justify-content-md-center">
                             <input type="submit" value="Register" class="btn btn-success w-50">
