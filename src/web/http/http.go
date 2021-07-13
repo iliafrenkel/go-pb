@@ -44,6 +44,14 @@ func New(opts WebServerOptions) *WebServer {
 	handler.Router.GET("/p/:id", handler.handlePaste)
 	handler.Router.POST("/p/", handler.handlePasteCreate)
 
+	// Catch all route just shows the 404 error page
+	handler.Router.NoRoute(func(c *gin.Context) {
+		c.Set("errorCode", http.StatusNotFound)
+		c.Set("errorText", http.StatusText(http.StatusNotFound))
+		c.Set("errorMessage", "Unfortunately the page you are looking for is not there 🙁")
+		handler.showError(c)
+	})
+
 	return &handler
 }
 
