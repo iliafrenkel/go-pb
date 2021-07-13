@@ -13,10 +13,16 @@ import (
 	"github.com/iliafrenkel/go-pb/src/api"
 )
 
+// WebServerOptions defines various parameters needed to run the WebServer
 type WebServerOptions struct {
+	// ApiURL specifies the full URL of the ApiServer withouth the trailing
+	// backslash such as "http://localhost:8000".
 	ApiURL string
 }
 
+// WebServer encapsulates a router and a server.
+// Normally, you'd create a new instance by calling New which configures the
+// rotuer and then call ListenAndServe to start serving incoming requests.
 type WebServer struct {
 	Router  *gin.Engine
 	Server  *http.Server
@@ -174,6 +180,8 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 	)
 }
 
+// handlePasteCreate collects information from the new paste form and calls
+// the API to create a new paste. If successful it shows the new paste.
 func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	var p api.Paste
 	// Try to parse the form
@@ -239,13 +247,30 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 }
 
 // showError displays a custom error page using error.html template.
-// The context must have "errorCode" and "errorText" keys.
+// The context can use "errorCode", "errorText" and "errorMessage" keys to
+// customise what is shown on the page.
 func (h *WebServer) showError(c *gin.Context) {
-	errorCode := c.MustGet("errorCode")
-	errorText := c.MustGet("errorText")
-	errorMsg, _ := c.Get("errorMessage")
+	var (
+		errorCode int
+		errorText string
+		errorMsg  string
+	)
+	if val, ok := c.Get("errorCode"); ok {
+		errorCode = val.(int)
+	} else {
+		errorCode = http.StatusNotImplemented
+	}
+	if val, ok := c.Get("errorText"); ok {
+		errorText = val.(string)
+	} else {
+		errorText = http.StatusText(http.StatusNotImplemented)
+	}
+	if val, ok := c.Get("errorMessage"); ok {
+		errorMsg = val.(string)
+	}
+
 	c.HTML(
-		errorCode.(int),
+		errorCode,
 		"error.html",
 		gin.H{
 			"title":        "Error",
