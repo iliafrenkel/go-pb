@@ -11,7 +11,7 @@ var webServer *http.WebServer
 
 func StartWebServer() error {
 	addr := "127.0.0.1:8080"
-	webServer := http.New()
+	webServer := http.New(http.WebServerOptions{ApiURL: "http://127.0.0.1:8000"})
 
 	log.Println("Web server listening on ", addr)
 

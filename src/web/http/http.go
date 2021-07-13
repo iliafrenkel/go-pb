@@ -13,17 +13,23 @@ import (
 	"github.com/iliafrenkel/go-pb/src/api"
 )
 
+type WebServerOptions struct {
+	ApiURL string
+}
+
 type WebServer struct {
-	Router *gin.Engine
-	Server *http.Server
+	Router  *gin.Engine
+	Server  *http.Server
+	Options WebServerOptions
 }
 
 // New returns an instance of the WebServer with initialised middleware,
 // loaded templates and routes. You can call ListenAndServe on a newly
 // created instance to initialise the HTTP server and start handling incoming
 // requests.
-func New() *WebServer {
+func New(opts WebServerOptions) *WebServer {
 	var handler WebServer
+	handler.Options = opts
 
 	// Initialise the router and load the templates from /src/web/templates folder.
 	handler.Router = gin.Default()
@@ -64,7 +70,7 @@ func (h *WebServer) handleRoot(c *gin.Context) {
 		http.StatusOK,
 		"index.html",
 		gin.H{
-			"title": " Go PB - Home",
+			"title": "Go PB - Home",
 		},
 	)
 }
@@ -84,7 +90,7 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 		http.StatusOK,
 		"login.html",
 		gin.H{
-			"title": " Go PB - Login",
+			"title": "Go PB - Login",
 		},
 	)
 }
@@ -97,7 +103,7 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 		http.StatusOK,
 		"register.html",
 		gin.H{
-			"title": " Go PB - Register",
+			"title": "Go PB - Register",
 		},
 	)
 }
@@ -106,7 +112,7 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 func (h *WebServer) handlePaste(c *gin.Context) {
 	// Query the API for a paste by ID
 	id := c.Param("id")
-	resp, err := http.Get("http://localhost:8000/paste/" + id) // TODO: API address has to come from configuration
+	resp, err := http.Get(h.Options.ApiURL + "/paste/" + id)
 	// API server maybe down or some other network error
 	if err != nil {
 		log.Println("handlePaste: error querying API: ", err)
@@ -172,7 +178,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	}
 	// Try to create a new paste by calling the API
 	paste, _ := json.Marshal(p)
-	resp, err := http.Post("http://localhost:8000/paste", "application/json", bytes.NewBuffer(paste)) // TODO: API address must come from configuration
+	resp, err := http.Post(h.Options.ApiURL+"/paste", "application/json", bytes.NewBuffer(paste)) // TODO: API address must come from configuration
 
 	if err != nil {
 		log.Println("handlePasteCreate: error talking to API: ", err)
@@ -227,15 +233,17 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 // showError displays a custom error page using error.html template.
 // The context must have "errorCode" and "errorText" keys.
 func (h *WebServer) showError(c *gin.Context) {
-	msg, _ := c.Get("errorMessage")
+	errorCode := c.MustGet("errorCode")
+	errorText := c.MustGet("errorText")
+	errorMsg, _ := c.Get("errorMessage")
 	c.HTML(
-		http.StatusOK,
+		errorCode.(int),
 		"error.html",
 		gin.H{
 			"title":        "Error",
-			"errorCode":    c.MustGet("errorCode"),
-			"errorText":    c.MustGet("errorText"),
-			"errorMessage": msg,
+			"errorCode":    errorCode,
+			"errorText":    errorText,
+			"errorMessage": errorMsg,
 		},
 	)
 }
