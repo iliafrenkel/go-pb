@@ -7,14 +7,27 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	hapi "github.com/iliafrenkel/go-pb/src/api/http"
+	hweb "github.com/iliafrenkel/go-pb/src/web/http"
 )
 
 func main() {
+	// Set API and Web servers options
+	var apiOpts = hapi.ApiServerOptions{
+		Addr:        "127.0.0.1:8000",
+		MaxBodySize: 10240,
+	}
+	var webOpts = hweb.WebServerOptions{
+		Addr:   "127.0.0.1:8080",
+		ApiURL: "http://127.0.0.1:8000",
+	}
+
 	log.Println("Starting servers...")
 	// We start the Web server after the API one so that no web requests
 	// come before API is ready. The shutdown is done in reverse order.
-	go StartApiServer()
-	go StartWebServer()
+	go StartApiServer(apiOpts)
+	go StartWebServer(webOpts)
 
 	// Graceful shutdown - we create a channel for system signals and
 	// "subscribe" to SIGINT or SIGTERM. We then wait indefinitely for

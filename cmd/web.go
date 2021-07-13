@@ -9,13 +9,12 @@ import (
 
 var webServer *http.WebServer
 
-func StartWebServer() error {
-	addr := "127.0.0.1:8080"
-	webServer := http.New(http.WebServerOptions{ApiURL: "http://127.0.0.1:8000"})
+func StartWebServer(opts http.WebServerOptions) error {
+	webServer := http.New(opts)
 
-	log.Println("Web server listening on ", addr)
+	log.Println("Web server listening on ", opts.Addr)
 
-	return webServer.ListenAndServe(addr)
+	return webServer.ListenAndServe()
 }
 
 func StopWebServer(ctx context.Context) error {

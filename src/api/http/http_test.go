@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +18,9 @@ import (
 	"github.com/iliafrenkel/go-pb/src/api/db/memory"
 )
 
-var svc api.PasteService = memory.New()
+var memSvc api.PasteService = memory.New()
+var apiSrv *ApiServer
+var mckSrv *httptest.Server
 
 // createTestPaste creates a paste with a random ID and a random body.
 func createTestPaste() *api.Paste {
@@ -33,16 +36,20 @@ func createTestPaste() *api.Paste {
 	return &p
 }
 
+func TestMain(m *testing.M) {
+	apiSrv = New(memSvc, ApiServerOptions{MaxBodySize: 10240})
+	mckSrv = httptest.NewServer(apiSrv.Router)
+
+	os.Exit(m.Run())
+}
+
 func Test_GetPaste(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
-	if err := svc.Create(paste); err != nil {
+	if err := memSvc.Create(paste); err != nil {
 		t.Fatal(err)
 	}
 
-	// Documentation : https://golang.org/pkg/net/http/httptest/#NewServer
-	mockServer := httptest.NewServer(apiSrv.Router)
-	resp, err := http.Get(mockServer.URL + "/paste/" + paste.URL())
+	resp, err := http.Get(mckSrv.URL + "/paste/" + paste.URL())
 
 	// Handle any unexpected error
 	if err != nil {
@@ -72,11 +79,9 @@ func Test_GetPaste(t *testing.T) {
 }
 
 func Test_GetPasteNotFound(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 
-	mockServer := httptest.NewServer(apiSrv.Router)
-	resp, err := http.Get(mockServer.URL + "/paste/" + paste.URL())
+	resp, err := http.Get(mckSrv.URL + "/paste/" + paste.URL())
 
 	// Handle any unexpected error
 	if err != nil {
@@ -102,10 +107,7 @@ func Test_GetPasteNotFound(t *testing.T) {
 }
 
 func Test_GetPasteWrongID(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
-
-	mockServer := httptest.NewServer(apiSrv.Router)
-	resp, err := http.Get(mockServer.URL + "/paste/SD)W*^W#4^&*S;!")
+	resp, err := http.Get(mckSrv.URL + "/paste/SD)W*^W#4^&*S;!")
 
 	// Handle any unexpected error
 	if err != nil {
@@ -131,12 +133,10 @@ func Test_GetPasteWrongID(t *testing.T) {
 }
 
 func Test_CreatePaste(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 
-	mockServer := httptest.NewServer(apiSrv.Router)
 	want, _ := json.Marshal(paste)
-	resp, err := http.Post(mockServer.URL+"/paste", "application/json", bytes.NewBuffer(want))
+	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer(want))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -162,12 +162,10 @@ func Test_CreatePaste(t *testing.T) {
 }
 
 func Test_CreatePasteWrongContentType(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 
-	mockServer := httptest.NewServer(apiSrv.Router)
 	want, _ := json.Marshal(paste)
-	resp, err := http.Post(mockServer.URL+"/paste", "application/xml", bytes.NewBuffer(want))
+	resp, err := http.Post(mckSrv.URL+"/paste", "application/xml", bytes.NewBuffer(want))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -181,7 +179,6 @@ func Test_CreatePasteWrongContentType(t *testing.T) {
 }
 
 func Test_CreatePasteExtraField(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
 	extraPaste := struct {
 		api.Paste
@@ -191,9 +188,8 @@ func Test_CreatePasteExtraField(t *testing.T) {
 		"Extra field",
 	}
 
-	mockServer := httptest.NewServer(apiSrv.Router)
 	body, _ := json.Marshal(extraPaste)
-	resp, err := http.Post(mockServer.URL+"/paste", "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer(body))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -219,11 +215,8 @@ func Test_CreatePasteExtraField(t *testing.T) {
 }
 
 func Test_CreatePasteWrongJson(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
-
-	mockServer := httptest.NewServer(apiSrv.Router)
 	body := "this is not a json"
-	resp, err := http.Post(mockServer.URL+"/paste", "application/json", bytes.NewBuffer([]byte(body)))
+	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer([]byte(body)))
 
 	// Handle any unexpected error
 	if err != nil {
@@ -249,14 +242,12 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 }
 
 func Test_DeletePaste(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
-	if err := svc.Create(paste); err != nil {
+	if err := memSvc.Create(paste); err != nil {
 		t.Fatal(err)
 	}
-	mockServer := httptest.NewServer(apiSrv.Router)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.URL(), nil)
+	req, err := http.NewRequest(http.MethodDelete, mckSrv.URL+"/paste/"+paste.URL(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,11 +275,9 @@ func Test_DeletePaste(t *testing.T) {
 }
 
 func Test_DeletePasteNotFound(t *testing.T) {
-	var apiSrv *ApiServer = New(svc)
 	var paste = createTestPaste()
-	mockServer := httptest.NewServer(apiSrv.Router)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodDelete, mockServer.URL+"/paste/"+paste.URL(), nil)
+	req, err := http.NewRequest(http.MethodDelete, mckSrv.URL+"/paste/"+paste.URL(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

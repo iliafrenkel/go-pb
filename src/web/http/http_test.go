@@ -37,7 +37,7 @@ func createTestPaste() *api.Paste {
 
 func TestMain(m *testing.M) {
 	os.Chdir("../../") // Needed for proper template loading
-	apiSrv = apihttp.New(memSvc)
+	apiSrv = apihttp.New(memSvc, apihttp.ApiServerOptions{MaxBodySize: 10240})
 	mckSrv = httptest.NewServer(apiSrv.Router)
 	webSrv = New(WebServerOptions{ApiURL: mckSrv.URL})
 

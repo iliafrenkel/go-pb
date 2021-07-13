@@ -15,6 +15,9 @@ import (
 
 // WebServerOptions defines various parameters needed to run the WebServer
 type WebServerOptions struct {
+	// Addr will be passed to http.Server to listen on, see http.Server
+	// documentation for more information.
+	Addr string
 	// ApiURL specifies the full URL of the ApiServer withouth the trailing
 	// backslash such as "http://localhost:8000".
 	ApiURL string
@@ -64,9 +67,9 @@ func New(opts WebServerOptions) *WebServer {
 // ListenAndServe starts an HTTP server and binds it to the provided address.
 //
 // TODO: Timeouts should be configurable.
-func (h *WebServer) ListenAndServe(addr string) error {
+func (h *WebServer) ListenAndServe() error {
 	h.Server = &http.Server{
-		Addr:         addr,
+		Addr:         h.Options.Addr,
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,

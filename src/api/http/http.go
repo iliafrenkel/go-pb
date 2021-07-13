@@ -16,6 +16,16 @@ import (
 	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
+// ApiServerOptions defines various parameters needed to run the ApiServer
+type ApiServerOptions struct {
+	// Addr will be passed to http.Server to listen on, see http.Server
+	// documentation for more information.
+	Addr string
+	// Maximum size of the POST request body, anything larger than this will
+	// be rejected with an error.
+	MaxBodySize int64
+}
+
 // ApiServer type provides an HTTP server that calls PasteService methods in
 // response to HTTP requests to certain routes.
 //
@@ -25,6 +35,7 @@ type ApiServer struct {
 	PasteService api.PasteService
 	Router       *gin.Engine
 	Server       *http.Server
+	Options      ApiServerOptions
 }
 
 // New function returns an instance of ApiServer using provided PasteService
@@ -34,8 +45,9 @@ type ApiServer struct {
 //   GET    /paste/{id} - get paste by ID
 //   POST   /paste      - create new paste
 //   DELETE /paste/{id} - delete paste by ID
-func New(svc api.PasteService) *ApiServer {
+func New(svc api.PasteService, opts ApiServerOptions) *ApiServer {
 	var handler ApiServer
+	handler.Options = opts
 
 	handler.PasteService = svc
 	handler.Router = gin.Default()
@@ -49,9 +61,9 @@ func New(svc api.PasteService) *ApiServer {
 // ListenAndServe starts an HTTP server and binds it to the provided address.
 //
 // TODO: Timeouts should be configurable.
-func (h *ApiServer) ListenAndServe(addr string) error {
+func (h *ApiServer) ListenAndServe() error {
 	h.Server = &http.Server{
-		Addr: addr,
+		Addr: h.Options.Addr,
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
@@ -105,8 +117,8 @@ func (h *ApiServer) handleCreate(c *gin.Context) {
 
 	// If the Content-Type header is present, check that it has the value
 	// application/json.
-	if h := c.GetHeader("Content-Type"); h != "" {
-		if h != "application/json" {
+	if hdr := c.GetHeader("Content-Type"); hdr != "" {
+		if hdr != "application/json" {
 			c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect application/json")
 			return
 		}
@@ -115,7 +127,7 @@ func (h *ApiServer) handleCreate(c *gin.Context) {
 	// Use http.MaxBytesReader to enforce a maximum read of 10KB from the
 	// response body. A request body larger than that will now result in
 	// Decode() returning a "http: request body too large" error.
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10240)
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.Options.MaxBodySize)
 
 	// Setup the decoder and call the DisallowUnknownFields() method on it.
 	// This will cause Decode() to return a "json: unknown field ..." error
