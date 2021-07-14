@@ -14,11 +14,14 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
+	"github.com/iliafrenkel/go-pb/src/api/auth"
+	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
-	"github.com/iliafrenkel/go-pb/src/api/db/memory"
+	pasteMem "github.com/iliafrenkel/go-pb/src/api/db/memory"
 )
 
-var memSvc api.PasteService = memory.New()
+var pasteSvc api.PasteService = pasteMem.New()
+var userSvc auth.UserService = userMem.New()
 var apiSrv *ApiServer
 var mckSrv *httptest.Server
 
@@ -37,7 +40,7 @@ func createTestPaste() *api.Paste {
 }
 
 func TestMain(m *testing.M) {
-	apiSrv = New(memSvc, ApiServerOptions{MaxBodySize: 10240})
+	apiSrv = New(pasteSvc, userSvc, ApiServerOptions{MaxBodySize: 10240})
 	mckSrv = httptest.NewServer(apiSrv.Router)
 
 	os.Exit(m.Run())
@@ -45,7 +48,7 @@ func TestMain(m *testing.M) {
 
 func Test_GetPaste(t *testing.T) {
 	var paste = createTestPaste()
-	if err := memSvc.Create(paste); err != nil {
+	if err := pasteSvc.Create(paste); err != nil {
 		t.Fatal(err)
 	}
 
@@ -243,7 +246,7 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 
 func Test_DeletePaste(t *testing.T) {
 	var paste = createTestPaste()
-	if err := memSvc.Create(paste); err != nil {
+	if err := pasteSvc.Create(paste); err != nil {
 		t.Fatal(err)
 	}
 	client := &http.Client{}

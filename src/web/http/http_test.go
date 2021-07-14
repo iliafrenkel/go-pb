@@ -11,14 +11,17 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
+	"github.com/iliafrenkel/go-pb/src/api/auth"
+	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
-	"github.com/iliafrenkel/go-pb/src/api/db/memory"
+	pasteMem "github.com/iliafrenkel/go-pb/src/api/db/memory"
 	apihttp "github.com/iliafrenkel/go-pb/src/api/http"
 )
 
 var webSrv *WebServer
 var apiSrv *apihttp.ApiServer
-var memSvc api.PasteService = memory.New()
+var pasteSvc api.PasteService = pasteMem.New()
+var userSvc auth.UserService = userMem.New()
 var mckSrv *httptest.Server
 
 // createTestPaste creates a paste with a random ID and a random body.
@@ -37,7 +40,7 @@ func createTestPaste() *api.Paste {
 
 func TestMain(m *testing.M) {
 	os.Chdir("../../") // Needed for proper template loading
-	apiSrv = apihttp.New(memSvc, apihttp.ApiServerOptions{MaxBodySize: 10240})
+	apiSrv = apihttp.New(pasteSvc, userSvc, apihttp.ApiServerOptions{MaxBodySize: 10240})
 	mckSrv = httptest.NewServer(apiSrv.Router)
 	webSrv = New(WebServerOptions{ApiURL: mckSrv.URL})
 
@@ -126,7 +129,7 @@ func Test_PasteNotFoundRoute(t *testing.T) {
 
 func Test_PasteRoute(t *testing.T) {
 	p := createTestPaste()
-	if err := memSvc.Create(p); err != nil {
+	if err := pasteSvc.Create(p); err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()

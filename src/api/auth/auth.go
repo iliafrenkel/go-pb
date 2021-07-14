@@ -34,5 +34,5 @@ type UserService interface {
 	// provided password matches. On success returns a JWT token.
 	Authenticate(u UserLogin) (string, error)
 	// Validates given token for a given user.
-	Validate(u User, t string) bool
+	Validate(u User, t string) (bool, error)
 }

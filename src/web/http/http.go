@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
+	"github.com/iliafrenkel/go-pb/src/api/auth"
 )
 
 // WebServerOptions defines various parameters needed to run the WebServer
@@ -49,7 +50,10 @@ func New(opts WebServerOptions) *WebServer {
 	handler.Router.GET("/", handler.handleRoot)
 	handler.Router.GET("/ping", handler.handlePing)
 	handler.Router.GET("/u/login", handler.handleUserLogin)
+	handler.Router.POST("/u/login", handler.handleDoUserLogin)
+	handler.Router.GET("/u/logout", handler.handleDoUserLogout)
 	handler.Router.GET("/u/register", handler.handleUserRegister)
+	handler.Router.POST("/u/register", handler.handleDoUserRegister)
 	handler.Router.GET("/p/:id", handler.handlePaste)
 	handler.Router.POST("/p/", handler.handlePasteCreate)
 
@@ -112,6 +116,72 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 	)
 }
 
+// handleDoUserLogin recieves login form data and calls the user API
+// to authenticate the user. If successful, it set the token cookie and
+// redirects to the home page.
+func (h *WebServer) handleDoUserLogin(c *gin.Context) {
+	var u auth.UserLogin
+	// Try to parse the form
+	if err := c.ShouldBind(&u); err != nil {
+		log.Println("handleDoUserLogin: failed to bind to form data: ", err)
+		c.Set("errorCode", http.StatusBadRequest)
+		c.Set("errorText", http.StatusText(http.StatusBadRequest))
+		h.showError(c)
+		return
+	}
+	// Call the API to login
+	user, _ := json.Marshal(u)
+	resp, err := http.Post(h.Options.ApiURL+"/user/login", "application/json", bytes.NewBuffer(user))
+
+	if err != nil {
+		log.Println("handleDoUserLogin: error talking to API: ", err)
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
+		return
+	}
+	// Check API response status
+	if resp.StatusCode != http.StatusOK {
+		log.Println("handleDoUserLogin: API returned: ", resp.StatusCode)
+		c.Set("errorCode", resp.StatusCode)
+		c.Set("errorText", http.StatusText(resp.StatusCode))
+		h.showError(c)
+		return
+	}
+	// Get API response body and try to parse it as JSON
+	var data struct {
+		Token string `json:"token"`
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("handleDoUserLogin: failed to read API response body: ", err)
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
+		return
+	}
+	if err := json.Unmarshal(b, &data); err != nil {
+		log.Println("handleDoUserLogin: failed to parse API response", err)
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
+		return
+	}
+	c.SetCookie("token", data.Token, 24*3600, "/", "localhost", false, true)
+	c.Redirect(http.StatusFound, "/")
+}
+
+// handleDoUserLogout logs the user out by clearing the token cookie.
+// It redirects to the home page after that.
+func (h *WebServer) handleDoUserLogout(c *gin.Context) {
+	c.SetCookie("token", "", -1, "/", "localhost", false, true)
+	c.Redirect(http.StatusFound, "/")
+}
+
 // handleUserRegister returns a page with the registration form. It assumes
 // that there is a template named "register.html" and that it was already
 // loaded.
@@ -123,6 +193,53 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 			"title": "Go PB - Register",
 		},
 	)
+}
+
+// handleDoUserRegister recieves the registration form data and calls the user
+// API to create new user. If successful it redirects to the login page.
+func (h *WebServer) handleDoUserRegister(c *gin.Context) {
+	var u auth.UserRegister
+	// Try to parse the form
+	if err := c.ShouldBind(&u); err != nil {
+		log.Println("handleDoUserRegister: failed to bind to form data: ", err)
+		c.Set("errorCode", http.StatusBadRequest)
+		c.Set("errorText", http.StatusText(http.StatusBadRequest))
+		h.showError(c)
+		return
+	}
+	// Call the API to login
+	user, _ := json.Marshal(u)
+	resp, err := http.Post(h.Options.ApiURL+"/user/register", "application/json", bytes.NewBuffer(user))
+
+	if err != nil {
+		log.Println("handleDoUserRegister: error talking to API: ", err)
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
+		return
+	}
+	// Check API response status
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusConflict {
+			defer resp.Body.Close()
+			b, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println("handleDoUserRegister: failed to read API response body: ", err)
+				b = []byte("")
+			}
+			c.Set("errorCode", resp.StatusCode)
+			c.Set("errorText", string(b))
+			h.showError(c)
+			return
+		}
+		log.Println("handleDoUserRegister: API returned: ", resp.StatusCode)
+		c.Set("errorCode", resp.StatusCode)
+		c.Set("errorText", http.StatusText(resp.StatusCode))
+		h.showError(c)
+		return
+	}
+	c.Redirect(http.StatusFound, "/u/login")
 }
 
 // handlePaste queries the API for a paste and returns a page that displays it.
@@ -197,7 +314,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	}
 	// Try to create a new paste by calling the API
 	paste, _ := json.Marshal(p)
-	resp, err := http.Post(h.Options.ApiURL+"/paste", "application/json", bytes.NewBuffer(paste)) // TODO: API address must come from configuration
+	resp, err := http.Post(h.Options.ApiURL+"/paste", "application/json", bytes.NewBuffer(paste))
 
 	if err != nil {
 		log.Println("handlePasteCreate: error talking to API: ", err)
