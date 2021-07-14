@@ -112,7 +112,8 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 		http.StatusOK,
 		"login.html",
 		gin.H{
-			"title": "Go PB - Login",
+			"title":    "Go PB - Login",
+			"errorMsg": "",
 		},
 	)
 }
@@ -145,9 +146,14 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 	// Check API response status
 	if resp.StatusCode != http.StatusOK {
 		log.Println("handleDoUserLogin: API returned: ", resp.StatusCode)
-		c.Set("errorCode", resp.StatusCode)
-		c.Set("errorText", http.StatusText(resp.StatusCode))
-		h.showError(c)
+		c.HTML(
+			resp.StatusCode,
+			"login.html",
+			gin.H{
+				"title":    "Go PB - Login",
+				"errorMsg": "Either username or password is incorrect",
+			},
+		)
 		return
 	}
 	// Get API response body and try to parse it as JSON
