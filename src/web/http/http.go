@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"time"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
@@ -190,7 +191,8 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 		http.StatusOK,
 		"register.html",
 		gin.H{
-			"title": "Go PB - Register",
+			"title":    "Go PB - Register",
+			"errorMsg": "",
 		},
 	)
 }
@@ -228,9 +230,16 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 				log.Println("handleDoUserRegister: failed to read API response body: ", err)
 				b = []byte("")
 			}
-			c.Set("errorCode", resp.StatusCode)
-			c.Set("errorText", string(b))
-			h.showError(c)
+			msg := []rune(string(b))
+			msg[0] = unicode.ToUpper(msg[0])
+			c.HTML(
+				http.StatusConflict,
+				"register.html",
+				gin.H{
+					"title":    "Go PB - Register",
+					"errorMsg": string(msg),
+				},
+			)
 			return
 		}
 		log.Println("handleDoUserRegister: API returned: ", resp.StatusCode)
