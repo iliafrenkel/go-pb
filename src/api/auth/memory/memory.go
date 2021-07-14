@@ -22,14 +22,15 @@ type UserService struct {
 	Users map[uint64]*auth.User
 }
 
-// New creates a new UserService
+// New returns a new UserService.
+// It initialises the underlying storage which in this case is map.
 func New() *UserService {
 	var s UserService
 	s.Users = make(map[uint64]*auth.User)
 	return &s
 }
 
-// findByUsername finds a user by username
+// findByUsername finds a user by username.
 func (s *UserService) findByUsername(uname string) *auth.User {
 	for _, u := range s.Users {
 		if u.Username == uname {
@@ -40,7 +41,7 @@ func (s *UserService) findByUsername(uname string) *auth.User {
 	return nil
 }
 
-// findByEmail finds a user by email
+// findByEmail finds a user by email.
 func (s *UserService) findByEmail(email string) *auth.User {
 	for _, u := range s.Users {
 		if u.Email == email {
@@ -51,6 +52,7 @@ func (s *UserService) findByEmail(email string) *auth.User {
 	return nil
 }
 
+// authToken returns an JWT token for provided user.
 func (s *UserService) authToken(u auth.User) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorised"] = true
@@ -61,6 +63,9 @@ func (s *UserService) authToken(u auth.User) (string, error) {
 	return authToken, err
 }
 
+// Create creates a new user.
+// Returns an error if user with the same username or the same email
+// already exist or if passwords do not match.
 func (s *UserService) Create(u auth.UserRegister) error {
 	if s.findByUsername(u.Username) != nil {
 		return errors.New("user with such username already exists")
@@ -117,7 +122,8 @@ func (s *UserService) Authenticate(u auth.UserLogin) (string, error) {
 	return token, nil
 }
 
-func (s *UserService) Validate(u auth.User, t string) bool {
+// Validate checks if provided token is valid for the user.
+func (s *UserService) Validate(u auth.User, t string) (bool, error) {
 	token, err := jwt.Parse(t, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("token signing method is not valid: %v", token.Header["alg"])
@@ -125,18 +131,13 @@ func (s *UserService) Validate(u auth.User, t string) bool {
 		return tokenSecret, nil
 	})
 
-	fmt.Printf("The token: %#v \n", token)
 	if err != nil {
-		fmt.Printf("Err %v \n", err)
-		return false
+		return false, err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		fmt.Println(claims)
-		return true
+		return true, nil
 	} else {
-		fmt.Printf("The alg header %v \n", claims["alg"])
-		fmt.Println(err)
-		return false
+		return false, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
 	}
 }
