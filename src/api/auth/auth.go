@@ -24,6 +24,8 @@ type UserLogin struct {
 	Password string `json:"password" form:"password" binding:"required"`
 }
 
+// UserInfo represents the data that we send back in response to various
+// operation such as Authenticate or Validate.
 type UserInfo struct {
 	Username string `json:"username"`
 	Token    string `json:"token"`

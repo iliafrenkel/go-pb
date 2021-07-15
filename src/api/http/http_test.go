@@ -307,6 +307,192 @@ func Test_DeletePasteNotFound(t *testing.T) {
 	}
 }
 
+func Test_UserLogin(t *testing.T) {
+	var ur = auth.UserRegister{
+		Username:   "test",
+		Email:      "test@example.com",
+		Password:   "12345",
+		RePassword: "12345",
+	}
+	if err := userSvc.Create(ur); err != nil {
+		t.Fatal(err)
+	}
+
+	// Login with correct username/password
+	var ul = auth.UserLogin{
+		Username: ur.Username,
+		Password: ur.Password,
+	}
+	data, _ := json.Marshal(ul)
+	resp, err := http.Post(mckSrv.URL+"/user/login", "application/json", bytes.NewBuffer([]byte(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be OK, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ui auth.UserInfo
+	json.Unmarshal(b, &ui)
+	if ui.Username != ul.Username {
+		t.Errorf("Response should have username [%s], got [%s]", ul.Username, ui.Username)
+	}
+	if ui.Token == "" {
+		t.Errorf("Response should have token, got empty")
+	}
+
+	// Login with wrong password
+	ul = auth.UserLogin{
+		Username: ur.Username,
+		Password: "wrong",
+	}
+	data, _ = json.Marshal(ul)
+	resp, err = http.Post(mckSrv.URL+"/user/login", "application/json", bytes.NewBuffer([]byte(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("Status should be Unauthorized, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want := "Invalid credentials"
+	if got != want {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+
+	// Login with wrong username
+	ul = auth.UserLogin{
+		Username: "wrong",
+		Password: ur.Password,
+	}
+	data, _ = json.Marshal(ul)
+	resp, err = http.Post(mckSrv.URL+"/user/login", "application/json", bytes.NewBuffer([]byte(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("Status should be Unauthorized, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = string(b)
+	want = "Invalid credentials"
+	if got != want {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
+
+func Test_UserRegister(t *testing.T) {
+	var ur = auth.UserRegister{
+		Username:   "test-register",
+		Email:      "test-register@example.com",
+		Password:   "12345",
+		RePassword: "12345",
+	}
+	data, _ := json.Marshal(ur)
+	resp, err := http.Post(mckSrv.URL+"/user/register", "application/json", bytes.NewBuffer([]byte(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be OK, got %d", resp.StatusCode)
+	}
+
+	// Register with existing username
+	ur = auth.UserRegister{
+		Username:   "test-register",
+		Email:      "test-register2@example.com",
+		Password:   "12345",
+		RePassword: "12345",
+	}
+	data, _ = json.Marshal(ur)
+	resp, err = http.Post(mckSrv.URL+"/user/register", "application/json", bytes.NewBuffer([]byte(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusConflict {
+		t.Errorf("Status should be Conflict, got %d", resp.StatusCode)
+	}
+
+	// Register with existing email
+	ur = auth.UserRegister{
+		Username:   "test-register2",
+		Email:      "test-register@example.com",
+		Password:   "12345",
+		RePassword: "12345",
+	}
+	data, _ = json.Marshal(ur)
+	resp, err = http.Post(mckSrv.URL+"/user/register", "application/json", bytes.NewBuffer([]byte(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusConflict {
+		t.Errorf("Status should be Conflict, got %d", resp.StatusCode)
+	}
+}
+
+func Test_UserValidate(t *testing.T) {
+	var ur = auth.UserRegister{
+		Username:   "test-validate",
+		Email:      "test-validate@example.com",
+		Password:   "12345",
+		RePassword: "12345",
+	}
+	if err := userSvc.Create(ur); err != nil {
+		t.Fatal(err)
+	}
+	var ul = auth.UserLogin{
+		Username: ur.Username,
+		Password: ur.Password,
+	}
+	ui, err := userSvc.Authenticate(ul)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Post(mckSrv.URL+"/user/validate", "text/plain", bytes.NewBuffer([]byte(ui.Token)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be OK, got %d", resp.StatusCode)
+	}
+
+	// Wrong token
+	resp, err = http.Post(mckSrv.URL+"/user/validate", "text/plain", bytes.NewBuffer([]byte(ui.Token+"wrong")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Check status
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("Status should be Unauthorized, got %d", resp.StatusCode)
+	}
+}
+
 // TODO:
 //  - [ ] wrong HTTP methods for all endpoints
 //  - [ ] multiple json objects for create

@@ -258,7 +258,7 @@ func (h *ApiServer) handleDelete(c *gin.Context) {
 }
 
 // handleUserLogin is an HTTP handler for POST /user/login route. It returns
-// JWT token on success.
+// auth.UserInfo with the username and JWT token on success.
 func (h *ApiServer) handleUserLogin(c *gin.Context) {
 	// If the Content-Type header is present, check that it has the value
 	// application/json.

@@ -47,7 +47,7 @@ func New(opts WebServerOptions) *WebServer {
 	// Initialise the router and load the templates from /src/web/templates folder.
 	handler.Router = gin.Default()
 
-	// Sessions management
+	// Sessions management - setup sessions with the cookie store.
 	store := cookie.NewStore([]byte("hardcodedsecret")) //TODO: move the secret to env
 	store.Options(sessions.Options{
 		Path:     "/",
@@ -87,6 +87,7 @@ func New(opts WebServerOptions) *WebServer {
 }
 
 // ListenAndServe starts an HTTP server and binds it to the provided address.
+// You have to call New() first to initialise the WebServer.
 //
 // TODO: Timeouts should be configurable.
 func (h *WebServer) ListenAndServe() error {
@@ -102,23 +103,42 @@ func (h *WebServer) ListenAndServe() error {
 }
 
 // handleSession validates JWT token and updates the session accordingly and
-// it does so for every request
+// it does so for every request.
+//
+// The process is as follows:
+// 1. We check if there is a JWT token cookie. If there isn't we don't do
+//    anything, if there is we go to the next step.
+// 2. We validate the token by calling the API /user/validate endpoint.
+// 3. If there are any errors we don't change anything and just call the
+//    next handler.
+// 4. If the API says that the token is not valid we clear the session and
+//    remove the token cookie.
+// 5. If the token is valid we update the session with the username and call
+//    the next handler.
 func (h *WebServer) handleSession(c *gin.Context) {
 	// We call the next handler no matter what, even if we encounter some
 	// errors here.
 	defer c.Next()
 
 	session := sessions.Default(c)
+	// Check if there is a JWT token cookie, if there isn't, don't do anything
 	token, _ := c.Cookie("token")
 	if token != "" {
+		// Validate the token by calling the API /user/validate endpoint
 		resp, err := http.Post(h.Options.ApiURL+"/user/validate", "text/plain", bytes.NewBuffer([]byte(token)))
+		// In case of any errors we don't change anything and just call the
+		// next handler
 		if err != nil {
-			log.Println("handleRoot: error talking to API: ", err)
+			log.Println("handleSession: error talking to API: ", err)
+			return
 		}
+		// If the API says that the token is not valid we clear the session and
+		// remove the token cookie so that we don't have to all of this again
 		if resp.StatusCode != http.StatusOK {
 			session.Clear()
 			session.Save()
 			c.SetCookie("token", "", -1, "/", "localhost", false, true)
+			return
 		}
 		var data auth.UserInfo
 		defer resp.Body.Close()
@@ -131,6 +151,7 @@ func (h *WebServer) handleSession(c *gin.Context) {
 			log.Println("handleSession: failed to parse API response", err)
 			return
 		}
+		// If the token is valid we update the session with the username
 		session.Set("username", data.Username)
 		session.Save()
 		c.Set("username", data.Username)
@@ -176,8 +197,8 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 	)
 }
 
-// handleDoUserLogin recieves login form data and calls the user API
-// to authenticate the user. If successful, it set the token cookie and
+// handleDoUserLogin recieves login form data and calls the user API to
+// authenticate the user. If successful, it sets the token cookie and
 // redirects to the home page.
 func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 	var u auth.UserLogin
@@ -201,8 +222,8 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		h.showError(c)
 		return
 	}
-	// Check API response status
-	if resp.StatusCode != http.StatusOK {
+	// Check if API responded with NotAuthorized
+	if resp.StatusCode == http.StatusUnauthorized {
 		log.Println("handleDoUserLogin: API returned: ", resp.StatusCode)
 		c.HTML(
 			resp.StatusCode,
@@ -212,6 +233,15 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 				"errorMsg": "Either username or password is incorrect",
 			},
 		)
+		return
+	}
+	// Check if API responded with some other error
+	if resp.StatusCode != http.StatusOK {
+		log.Println("handleDoUserLogin: API returned an error: ", err)
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
 		return
 	}
 	// Get API response body and try to parse it as JSON
@@ -238,8 +268,8 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/")
 }
 
-// handleDoUserLogout logs the user out by clearing the token cookie.
-// It redirects to the home page after that.
+// handleDoUserLogout logs the user out by clearing the session and the
+// token cookie. It redirects to the home page after that.
 func (h *WebServer) handleDoUserLogout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
@@ -319,6 +349,7 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 }
 
 // handlePaste queries the API for a paste and returns a page that displays it.
+// It uses the "view.html" template.
 func (h *WebServer) handlePaste(c *gin.Context) {
 	// Query the API for a paste by ID
 	id := c.Param("id")
@@ -380,6 +411,7 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 
 // handlePasteCreate collects information from the new paste form and calls
 // the API to create a new paste. If successful it shows the new paste.
+// It uses the "view.html" template.
 func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	var p api.Paste
 	// Try to parse the form
@@ -449,6 +481,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 // showError displays a custom error page using error.html template.
 // The context can use "errorCode", "errorText" and "errorMessage" keys to
 // customise what is shown on the page.
+// It uses the "error.html" template.
 func (h *WebServer) showError(c *gin.Context) {
 	var (
 		errorCode int

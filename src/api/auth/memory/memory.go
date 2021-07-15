@@ -126,7 +126,9 @@ func (s *UserService) Authenticate(u auth.UserLogin) (auth.UserInfo, error) {
 	return inf, nil
 }
 
-// Validate checks if provided token is valid for the user.
+// Validate checks if provided token is valid. It returns auth.UserInfo with
+// Username and Token if the token is valid or an empty UserInfo and an error
+// if the token is invalid or if there was another error.
 func (s *UserService) Validate(u auth.User, t string) (auth.UserInfo, error) {
 	token, err := jwt.Parse(t, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -144,7 +146,7 @@ func (s *UserService) Validate(u auth.User, t string) (auth.UserInfo, error) {
 		if usr != nil {
 			return auth.UserInfo{Username: usr.Username, Token: token.Raw}, nil
 		} else {
-			return auth.UserInfo{}, fmt.Errorf("token of user [%s] is valid but the user doesn't exist", claims["username"].(string))
+			return auth.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
 		}
 	} else {
 		return auth.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
