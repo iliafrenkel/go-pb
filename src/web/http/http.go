@@ -49,7 +49,16 @@ func New(opts WebServerOptions) *WebServer {
 
 	// Sessions management
 	store := cookie.NewStore([]byte("hardcodedsecret")) //TODO: move the secret to env
+	store.Options(sessions.Options{
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   0,
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	handler.Router.Use(sessions.Sessions("gopb", store))
+	handler.Router.Use(handler.handleSession)
 
 	// Templates and static files
 	handler.Router.LoadHTMLGlob(filepath.Join("..", "src", "web", "templates", "*.html"))
@@ -92,12 +101,48 @@ func (h *WebServer) ListenAndServe() error {
 	return h.Server.ListenAndServe()
 }
 
+// handleSession validates JWT token and updates the session accordingly and
+// it does so for every request
+func (h *WebServer) handleSession(c *gin.Context) {
+	// We call the next handler no matter what, even if we encounter some
+	// errors here.
+	defer c.Next()
+
+	session := sessions.Default(c)
+	token, _ := c.Cookie("token")
+	if token != "" {
+		resp, err := http.Post(h.Options.ApiURL+"/user/validate", "text/plain", bytes.NewBuffer([]byte(token)))
+		if err != nil {
+			log.Println("handleRoot: error talking to API: ", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			session.Clear()
+			session.Save()
+			c.SetCookie("token", "", -1, "/", "localhost", false, true)
+		}
+		var data auth.UserInfo
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("handleSession: failed to read API response body: ", err)
+			return
+		}
+		if err := json.Unmarshal(b, &data); err != nil {
+			log.Println("handleSession: failed to parse API response", err)
+			return
+		}
+		session.Set("username", data.Username)
+		session.Save()
+		c.Set("username", data.Username)
+	}
+}
+
 // handleRoot returns the home page and should be bound to the '/' URL.
 // It assumes that there is a template named "index.html" and that it
 // was already loaded.
 func (h *WebServer) handleRoot(c *gin.Context) {
-	session := sessions.Default(c)
-	username := session.Get("username")
+	username, _ := c.Get("username")
+
 	c.HTML(
 		http.StatusOK,
 		"index.html",
@@ -119,8 +164,7 @@ func (h *WebServer) handlePing(c *gin.Context) {
 // handleUserLogin returns a page with the login form. It assumes that there is
 // a template named "login.html" and that it was already loaded.
 func (h *WebServer) handleUserLogin(c *gin.Context) {
-	session := sessions.Default(c)
-	username := session.Get("username")
+	username, _ := c.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"login.html",
@@ -191,10 +235,6 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		return
 	}
 	c.SetCookie("token", data.Token, 24*3600, "/", "localhost", false, true)
-	session := sessions.Default(c)
-	session.Set("username", data.Username)
-	session.Save()
-
 	c.Redirect(http.StatusFound, "/")
 }
 
@@ -212,8 +252,7 @@ func (h *WebServer) handleDoUserLogout(c *gin.Context) {
 // that there is a template named "register.html" and that it was already
 // loaded.
 func (h *WebServer) handleUserRegister(c *gin.Context) {
-	session := sessions.Default(c)
-	username := session.Get("username")
+	username, _ := c.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"register.html",
@@ -324,8 +363,7 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 		return
 	}
 	// Send HTML
-	session := sessions.Default(c)
-	username := session.Get("username")
+	username, _ := c.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"view.html",
@@ -393,8 +431,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 		return
 	}
 	// Send back HTML that display newly created paste
-	session := sessions.Default(c)
-	username := session.Get("username")
+	username, _ := c.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"view.html",
@@ -432,8 +469,7 @@ func (h *WebServer) showError(c *gin.Context) {
 		errorMsg = val.(string)
 	}
 
-	session := sessions.Default(c)
-	username := session.Get("username")
+	username, _ := c.Get("username")
 	c.HTML(
 		errorCode,
 		"error.html",
