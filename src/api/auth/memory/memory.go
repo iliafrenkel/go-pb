@@ -102,24 +102,27 @@ func (s *UserService) Create(u auth.UserRegister) error {
 // provided password matches. On success returns a JWT token.
 // While this method returns different errors for different failures the
 // end user should only see a generic "invalid credentials" message.
-func (s *UserService) Authenticate(u auth.UserLogin) (string, error) {
+func (s *UserService) Authenticate(u auth.UserLogin) (auth.UserInfo, error) {
+	inf := auth.UserInfo{Username: "", Token: ""}
 	usr := s.findByUsername(u.Username)
 	if usr == nil {
-		return "", errors.New("user doesn't exist")
+		return inf, errors.New("user doesn't exist")
 	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(u.Password))
 	if err != nil {
-		return "", errors.New("invalid password")
+		return inf, errors.New("invalid password")
 	}
 
 	token, err := s.authToken(*usr)
 
 	if err != nil {
-		return "", err
+		return inf, err
 	}
 
-	return token, nil
+	inf.Username = usr.Username
+	inf.Token = token
+	return inf, nil
 }
 
 // Validate checks if provided token is valid for the user.

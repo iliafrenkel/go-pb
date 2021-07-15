@@ -110,13 +110,13 @@ func Test_AuthenticateUser(t *testing.T) {
 		Password: usr.Password,
 	}
 
-	token, err := usrSvc.Authenticate(usrLogin)
+	inf, err := usrSvc.Authenticate(usrLogin)
 
 	if err != nil {
 		t.Errorf("Failed to authenticate a user: %v", err)
 	}
 
-	if err == nil && token == "" {
+	if err == nil && inf.Token == "" {
 		t.Errorf("Failed to authenticate a user: error is nil but token is empty")
 	}
 
@@ -161,19 +161,19 @@ func Test_ValidateToken(t *testing.T) {
 		Password: usr.Password,
 	}
 
-	token, err := usrSvc.Authenticate(usrLogin)
+	inf, err := usrSvc.Authenticate(usrLogin)
 
 	if err != nil {
 		t.Errorf("Failed to authenticate a user: %v", err)
 	}
 
 	u := usrSvc.findByUsername(usr.Username)
-	v, err := usrSvc.Validate(*u, token)
+	v, err := usrSvc.Validate(*u, inf.Token)
 	if err != nil {
 		t.Errorf("Failed to validate token: %v", err)
 	}
 	if !v {
-		t.Errorf("Token validation failed: %s - %#v", token, *u)
+		t.Errorf("Token validation failed: %s - %#v", inf.Token, *u)
 
 	}
 }

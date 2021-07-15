@@ -10,6 +10,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
 	"github.com/iliafrenkel/go-pb/src/api/auth"
@@ -44,6 +46,12 @@ func New(opts WebServerOptions) *WebServer {
 
 	// Initialise the router and load the templates from /src/web/templates folder.
 	handler.Router = gin.Default()
+
+	// Sessions management
+	store := cookie.NewStore([]byte("hardcodedsecret")) //TODO: move the secret to env
+	handler.Router.Use(sessions.Sessions("gopb", store))
+
+	// Templates and static files
 	handler.Router.LoadHTMLGlob(filepath.Join("..", "src", "web", "templates", "*.html"))
 	handler.Router.Static("/assets", "../src/web/assets")
 
@@ -88,11 +96,14 @@ func (h *WebServer) ListenAndServe() error {
 // It assumes that there is a template named "index.html" and that it
 // was already loaded.
 func (h *WebServer) handleRoot(c *gin.Context) {
+	session := sessions.Default(c)
+	username := session.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"index.html",
 		gin.H{
-			"title": "Go PB - Home",
+			"title":    "Go PB - Home",
+			"username": username,
 		},
 	)
 }
@@ -108,12 +119,15 @@ func (h *WebServer) handlePing(c *gin.Context) {
 // handleUserLogin returns a page with the login form. It assumes that there is
 // a template named "login.html" and that it was already loaded.
 func (h *WebServer) handleUserLogin(c *gin.Context) {
+	session := sessions.Default(c)
+	username := session.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"login.html",
 		gin.H{
 			"title":    "Go PB - Login",
 			"errorMsg": "",
+			"username": username,
 		},
 	)
 }
@@ -157,9 +171,7 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		return
 	}
 	// Get API response body and try to parse it as JSON
-	var data struct {
-		Token string `json:"token"`
-	}
+	var data auth.UserInfo
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -179,12 +191,19 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		return
 	}
 	c.SetCookie("token", data.Token, 24*3600, "/", "localhost", false, true)
+	session := sessions.Default(c)
+	session.Set("username", data.Username)
+	session.Save()
+
 	c.Redirect(http.StatusFound, "/")
 }
 
 // handleDoUserLogout logs the user out by clearing the token cookie.
 // It redirects to the home page after that.
 func (h *WebServer) handleDoUserLogout(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear()
+	session.Save()
 	c.SetCookie("token", "", -1, "/", "localhost", false, true)
 	c.Redirect(http.StatusFound, "/")
 }
@@ -193,12 +212,15 @@ func (h *WebServer) handleDoUserLogout(c *gin.Context) {
 // that there is a template named "register.html" and that it was already
 // loaded.
 func (h *WebServer) handleUserRegister(c *gin.Context) {
+	session := sessions.Default(c)
+	username := session.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"register.html",
 		gin.H{
 			"title":    "Go PB - Register",
 			"errorMsg": "",
+			"username": username,
 		},
 	)
 }
@@ -302,6 +324,8 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 		return
 	}
 	// Send HTML
+	session := sessions.Default(c)
+	username := session.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"view.html",
@@ -311,6 +335,7 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 			"Language": p.Syntax,
 			"URL":      p.URL(),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
+			"username": username,
 		},
 	)
 }
@@ -368,6 +393,8 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 		return
 	}
 	// Send back HTML that display newly created paste
+	session := sessions.Default(c)
+	username := session.Get("username")
 	c.HTML(
 		http.StatusOK,
 		"view.html",
@@ -377,6 +404,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 			"Language": data.Syntax,
 			"URL":      resp.Header.Get("Location"),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
+			"username": username,
 		},
 	)
 }
@@ -404,6 +432,8 @@ func (h *WebServer) showError(c *gin.Context) {
 		errorMsg = val.(string)
 	}
 
+	session := sessions.Default(c)
+	username := session.Get("username")
 	c.HTML(
 		errorCode,
 		"error.html",
@@ -412,6 +442,7 @@ func (h *WebServer) showError(c *gin.Context) {
 			"errorCode":    errorCode,
 			"errorText":    errorText,
 			"errorMessage": errorMsg,
+			"username":     username,
 		},
 	)
 }

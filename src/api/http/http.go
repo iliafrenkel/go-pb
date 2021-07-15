@@ -351,15 +351,16 @@ func (h *ApiServer) handleUserLogin(c *gin.Context) {
 		return
 	}
 
-	// Login returns JWT token
-	token, err := h.UserService.Authenticate(data)
+	// Login returns Username and JWT token
+	var usr auth.UserInfo
+	usr, err := h.UserService.Authenticate(data)
 	if err != nil {
 		log.Printf("failed to login: %v\n", err)
 		c.String(http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
-	c.JSON(http.StatusOK, struct{ Token string }{Token: token})
+	c.JSON(http.StatusOK, usr)
 }
 
 // handleUserRegister is an HTTP handler for POST /user/register route. It

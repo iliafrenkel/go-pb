@@ -24,6 +24,11 @@ type UserLogin struct {
 	Password string `json:"password" form:"password" binding:"required"`
 }
 
+type UserInfo struct {
+	Username string `json:"username"`
+	Token    string `json:"token"`
+}
+
 // UserService is the interface that defines methods to work with Users
 type UserService interface {
 	// Creates a new user.
@@ -32,7 +37,7 @@ type UserService interface {
 	Create(u UserRegister) error
 	// Authenticates a user by validating that it exists and hash of the
 	// provided password matches. On success returns a JWT token.
-	Authenticate(u UserLogin) (string, error)
+	Authenticate(u UserLogin) (UserInfo, error)
 	// Validates given token for a given user.
 	Validate(u User, t string) (bool, error)
 }
