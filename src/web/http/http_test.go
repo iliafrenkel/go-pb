@@ -11,17 +11,16 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
-	"github.com/iliafrenkel/go-pb/src/api/auth"
 	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
-	pasteMem "github.com/iliafrenkel/go-pb/src/api/db/memory"
 	apihttp "github.com/iliafrenkel/go-pb/src/api/http"
+	pasteMem "github.com/iliafrenkel/go-pb/src/api/paste/memory"
 )
 
 var webSrv *WebServer
 var apiSrv *apihttp.ApiServer
 var pasteSvc api.PasteService = pasteMem.New()
-var userSvc auth.UserService = userMem.New()
+var userSvc api.UserService = userMem.New()
 var mckSrv *httptest.Server
 
 // createTestPaste creates a paste with a random ID and a random body.

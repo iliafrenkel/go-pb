@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/iliafrenkel/go-pb/src/api/auth"
+	"github.com/iliafrenkel/go-pb/src/api"
 )
 
 var usrSvc *UserService
@@ -16,7 +16,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_CreateUser(t *testing.T) {
-	var usr = auth.UserRegister{
+	var usr = api.UserRegister{
 		Username:   "test",
 		Email:      "test@example.com",
 		Password:   "12345",
@@ -56,7 +56,7 @@ func Test_CreateUser(t *testing.T) {
 }
 
 func Test_CreateUserEmptyUsername(t *testing.T) {
-	var usr = auth.UserRegister{
+	var usr = api.UserRegister{
 		Username:   "",
 		Email:      "emptyusername@example.com",
 		Password:   "12345",
@@ -68,7 +68,7 @@ func Test_CreateUserEmptyUsername(t *testing.T) {
 	}
 }
 func Test_CreateUserEmptyEmail(t *testing.T) {
-	var usr = auth.UserRegister{
+	var usr = api.UserRegister{
 		Username:   "emptyemail",
 		Email:      "",
 		Password:   "12345",
@@ -81,7 +81,7 @@ func Test_CreateUserEmptyEmail(t *testing.T) {
 }
 
 func Test_CreateUserPasswordsDontMatch(t *testing.T) {
-	var usr = auth.UserRegister{
+	var usr = api.UserRegister{
 		Username:   "nonmatchingpasswords",
 		Email:      "nonmatchingpasswords@example.com",
 		Password:   "12345",
@@ -94,7 +94,7 @@ func Test_CreateUserPasswordsDontMatch(t *testing.T) {
 }
 
 func Test_AuthenticateUser(t *testing.T) {
-	var usr = auth.UserRegister{
+	var usr = api.UserRegister{
 		Username:   "auth",
 		Email:      "auth@example.com",
 		Password:   "12345",
@@ -105,7 +105,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		t.Errorf("Failed to create a user: %v", err)
 	}
 
-	var usrLogin = auth.UserLogin{
+	var usrLogin = api.UserLogin{
 		Username: usr.Username,
 		Password: usr.Password,
 	}
@@ -121,7 +121,7 @@ func Test_AuthenticateUser(t *testing.T) {
 	}
 
 	//user doesn't exist
-	usrLogin = auth.UserLogin{
+	usrLogin = api.UserLogin{
 		Username: "idontexist",
 		Password: "idontmatter",
 	}
@@ -133,7 +133,7 @@ func Test_AuthenticateUser(t *testing.T) {
 	}
 
 	//wrong password
-	usrLogin = auth.UserLogin{
+	usrLogin = api.UserLogin{
 		Username: usr.Username,
 		Password: "wrong",
 	}
@@ -145,7 +145,7 @@ func Test_AuthenticateUser(t *testing.T) {
 }
 
 func Test_ValidateToken(t *testing.T) {
-	var usr = auth.UserRegister{
+	var usr = api.UserRegister{
 		Username:   "validate",
 		Email:      "validate@example.com",
 		Password:   "12345",
@@ -156,7 +156,7 @@ func Test_ValidateToken(t *testing.T) {
 		t.Errorf("Failed to create a user: %v", err)
 	}
 
-	var usrLogin = auth.UserLogin{
+	var usrLogin = api.UserLogin{
 		Username: usr.Username,
 		Password: usr.Password,
 	}

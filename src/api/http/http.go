@@ -14,7 +14,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
-	"github.com/iliafrenkel/go-pb/src/api/auth"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
@@ -35,7 +34,7 @@ type ApiServerOptions struct {
 // routes.
 type ApiServer struct {
 	PasteService api.PasteService
-	UserService  auth.UserService
+	UserService  api.UserService
 	Router       *gin.Engine
 	Server       *http.Server
 	Options      ApiServerOptions
@@ -50,7 +49,7 @@ type ApiServer struct {
 //   DELETE /paste/{id}    - delete paste by ID
 //   POST   /user/login    - authenticate user
 //   POST   /user/register - register new user
-func New(pSvc api.PasteService, uSvc auth.UserService, opts ApiServerOptions) *ApiServer {
+func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *ApiServer {
 	var handler ApiServer
 	handler.Options = opts
 
@@ -282,7 +281,7 @@ func (h *ApiServer) handleUserLogin(c *gin.Context) {
 	dec := json.NewDecoder(c.Request.Body)
 	dec.DisallowUnknownFields()
 
-	var data auth.UserLogin
+	var data api.UserLogin
 	if err := dec.Decode(&data); err != nil {
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
@@ -354,7 +353,7 @@ func (h *ApiServer) handleUserLogin(c *gin.Context) {
 	}
 
 	// Login returns Username and JWT token
-	var usr auth.UserInfo
+	var usr api.UserInfo
 	usr, err := h.UserService.Authenticate(data)
 	if err != nil {
 		log.Printf("failed to login: %v\n", err)
@@ -390,7 +389,7 @@ func (h *ApiServer) handleUserRegister(c *gin.Context) {
 	dec := json.NewDecoder(c.Request.Body)
 	dec.DisallowUnknownFields()
 
-	var data auth.UserRegister
+	var data api.UserRegister
 	if err := dec.Decode(&data); err != nil {
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
@@ -487,7 +486,7 @@ func (h *ApiServer) handleUserValidate(c *gin.Context) {
 		log.Println(err.Error())
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
-	usr, err := h.UserService.Validate(auth.User{}, string(token))
+	usr, err := h.UserService.Validate(api.User{}, string(token))
 	if err != nil {
 		log.Printf("handleUserValidate: validation failed: %v", err.Error())
 		c.Status(http.StatusUnauthorized)

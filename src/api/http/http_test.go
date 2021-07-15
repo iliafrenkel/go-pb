@@ -14,14 +14,13 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
-	"github.com/iliafrenkel/go-pb/src/api/auth"
 	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
-	pasteMem "github.com/iliafrenkel/go-pb/src/api/db/memory"
+	pasteMem "github.com/iliafrenkel/go-pb/src/api/paste/memory"
 )
 
 var pasteSvc api.PasteService = pasteMem.New()
-var userSvc auth.UserService = userMem.New()
+var userSvc api.UserService = userMem.New()
 var apiSrv *ApiServer
 var mckSrv *httptest.Server
 
@@ -308,7 +307,7 @@ func Test_DeletePasteNotFound(t *testing.T) {
 }
 
 func Test_UserLogin(t *testing.T) {
-	var ur = auth.UserRegister{
+	var ur = api.UserRegister{
 		Username:   "test",
 		Email:      "test@example.com",
 		Password:   "12345",
@@ -319,7 +318,7 @@ func Test_UserLogin(t *testing.T) {
 	}
 
 	// Login with correct username/password
-	var ul = auth.UserLogin{
+	var ul = api.UserLogin{
 		Username: ur.Username,
 		Password: ur.Password,
 	}
@@ -339,7 +338,7 @@ func Test_UserLogin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var ui auth.UserInfo
+	var ui api.UserInfo
 	json.Unmarshal(b, &ui)
 	if ui.Username != ul.Username {
 		t.Errorf("Response should have username [%s], got [%s]", ul.Username, ui.Username)
@@ -349,7 +348,7 @@ func Test_UserLogin(t *testing.T) {
 	}
 
 	// Login with wrong password
-	ul = auth.UserLogin{
+	ul = api.UserLogin{
 		Username: ur.Username,
 		Password: "wrong",
 	}
@@ -376,7 +375,7 @@ func Test_UserLogin(t *testing.T) {
 	}
 
 	// Login with wrong username
-	ul = auth.UserLogin{
+	ul = api.UserLogin{
 		Username: "wrong",
 		Password: ur.Password,
 	}
@@ -404,7 +403,7 @@ func Test_UserLogin(t *testing.T) {
 }
 
 func Test_UserRegister(t *testing.T) {
-	var ur = auth.UserRegister{
+	var ur = api.UserRegister{
 		Username:   "test-register",
 		Email:      "test-register@example.com",
 		Password:   "12345",
@@ -421,7 +420,7 @@ func Test_UserRegister(t *testing.T) {
 	}
 
 	// Register with existing username
-	ur = auth.UserRegister{
+	ur = api.UserRegister{
 		Username:   "test-register",
 		Email:      "test-register2@example.com",
 		Password:   "12345",
@@ -438,7 +437,7 @@ func Test_UserRegister(t *testing.T) {
 	}
 
 	// Register with existing email
-	ur = auth.UserRegister{
+	ur = api.UserRegister{
 		Username:   "test-register2",
 		Email:      "test-register@example.com",
 		Password:   "12345",
@@ -456,7 +455,7 @@ func Test_UserRegister(t *testing.T) {
 }
 
 func Test_UserValidate(t *testing.T) {
-	var ur = auth.UserRegister{
+	var ur = api.UserRegister{
 		Username:   "test-validate",
 		Email:      "test-validate@example.com",
 		Password:   "12345",
@@ -465,7 +464,7 @@ func Test_UserValidate(t *testing.T) {
 	if err := userSvc.Create(ur); err != nil {
 		t.Fatal(err)
 	}
-	var ul = auth.UserLogin{
+	var ul = api.UserLogin{
 		Username: ur.Username,
 		Password: ur.Password,
 	}

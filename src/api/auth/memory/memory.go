@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/iliafrenkel/go-pb/src/api/auth"
+	"github.com/iliafrenkel/go-pb/src/api"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,19 +19,19 @@ var (
 // UserService stores all the users in memory and implements auth.UserService
 // interface.
 type UserService struct {
-	Users map[uint64]*auth.User
+	Users map[uint64]*api.User
 }
 
 // New returns a new UserService.
 // It initialises the underlying storage which in this case is map.
 func New() *UserService {
 	var s UserService
-	s.Users = make(map[uint64]*auth.User)
+	s.Users = make(map[uint64]*api.User)
 	return &s
 }
 
 // findByUsername finds a user by username.
-func (s *UserService) findByUsername(uname string) *auth.User {
+func (s *UserService) findByUsername(uname string) *api.User {
 	for _, u := range s.Users {
 		if u.Username == uname {
 			return u
@@ -42,7 +42,7 @@ func (s *UserService) findByUsername(uname string) *auth.User {
 }
 
 // findByEmail finds a user by email.
-func (s *UserService) findByEmail(email string) *auth.User {
+func (s *UserService) findByEmail(email string) *api.User {
 	for _, u := range s.Users {
 		if u.Email == email {
 			return u
@@ -53,7 +53,7 @@ func (s *UserService) findByEmail(email string) *auth.User {
 }
 
 // authToken returns an JWT token for provided user.
-func (s *UserService) authToken(u auth.User) (string, error) {
+func (s *UserService) authToken(u api.User) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorised"] = true
 	claims["user_id"] = u.ID
@@ -67,7 +67,7 @@ func (s *UserService) authToken(u auth.User) (string, error) {
 // Create creates a new user.
 // Returns an error if user with the same username or the same email
 // already exist or if passwords do not match.
-func (s *UserService) Create(u auth.UserRegister) error {
+func (s *UserService) Create(u api.UserRegister) error {
 	if s.findByUsername(u.Username) != nil {
 		return errors.New("user with such username already exists")
 	}
@@ -84,7 +84,7 @@ func (s *UserService) Create(u auth.UserRegister) error {
 		return errors.New("username cannot be empty")
 	}
 
-	var usr auth.User
+	var usr api.User
 	rand.Seed(time.Now().UnixNano())
 	usr.ID = rand.Uint64()
 	usr.Username = u.Username
@@ -103,8 +103,8 @@ func (s *UserService) Create(u auth.UserRegister) error {
 // provided password matches. On success returns a JWT token.
 // While this method returns different errors for different failures the
 // end user should only see a generic "invalid credentials" message.
-func (s *UserService) Authenticate(u auth.UserLogin) (auth.UserInfo, error) {
-	inf := auth.UserInfo{Username: "", Token: ""}
+func (s *UserService) Authenticate(u api.UserLogin) (api.UserInfo, error) {
+	inf := api.UserInfo{Username: "", Token: ""}
 	usr := s.findByUsername(u.Username)
 	if usr == nil {
 		return inf, errors.New("user doesn't exist")
@@ -129,7 +129,7 @@ func (s *UserService) Authenticate(u auth.UserLogin) (auth.UserInfo, error) {
 // Validate checks if provided token is valid. It returns auth.UserInfo with
 // Username and Token if the token is valid or an empty UserInfo and an error
 // if the token is invalid or if there was another error.
-func (s *UserService) Validate(u auth.User, t string) (auth.UserInfo, error) {
+func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 	token, err := jwt.Parse(t, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("token signing method is not valid: %v", token.Header["alg"])
@@ -138,17 +138,17 @@ func (s *UserService) Validate(u auth.User, t string) (auth.UserInfo, error) {
 	})
 
 	if err != nil {
-		return auth.UserInfo{}, err
+		return api.UserInfo{}, err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		usr := s.findByUsername(claims["username"].(string))
 		if usr != nil {
-			return auth.UserInfo{Username: usr.Username, Token: token.Raw}, nil
+			return api.UserInfo{Username: usr.Username, Token: token.Raw}, nil
 		} else {
-			return auth.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
+			return api.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
 		}
 	} else {
-		return auth.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
+		return api.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
 	}
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
-	"github.com/iliafrenkel/go-pb/src/api/auth"
 )
 
 // WebServerOptions defines various parameters needed to run the WebServer
@@ -140,7 +139,7 @@ func (h *WebServer) handleSession(c *gin.Context) {
 			c.SetCookie("token", "", -1, "/", "localhost", false, true)
 			return
 		}
-		var data auth.UserInfo
+		var data api.UserInfo
 		defer resp.Body.Close()
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -201,7 +200,7 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 // authenticate the user. If successful, it sets the token cookie and
 // redirects to the home page.
 func (h *WebServer) handleDoUserLogin(c *gin.Context) {
-	var u auth.UserLogin
+	var u api.UserLogin
 	// Try to parse the form
 	if err := c.ShouldBind(&u); err != nil {
 		log.Println("handleDoUserLogin: failed to bind to form data: ", err)
@@ -245,7 +244,7 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		return
 	}
 	// Get API response body and try to parse it as JSON
-	var data auth.UserInfo
+	var data api.UserInfo
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -297,7 +296,7 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 // handleDoUserRegister recieves the registration form data and calls the user
 // API to create new user. If successful it redirects to the login page.
 func (h *WebServer) handleDoUserRegister(c *gin.Context) {
-	var u auth.UserRegister
+	var u api.UserRegister
 	// Try to parse the form
 	if err := c.ShouldBind(&u); err != nil {
 		log.Println("handleDoUserRegister: failed to bind to form data: ", err)
