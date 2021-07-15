@@ -140,7 +140,12 @@ func (s *UserService) Validate(u auth.User, t string) (auth.UserInfo, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return auth.UserInfo{Username: claims["username"].(string), Token: token.Raw}, nil
+		usr := s.findByUsername(claims["username"].(string))
+		if usr != nil {
+			return auth.UserInfo{Username: usr.Username, Token: token.Raw}, nil
+		} else {
+			return auth.UserInfo{}, fmt.Errorf("token of user [%s] is valid but the user doesn't exist", claims["username"].(string))
+		}
 	} else {
 		return auth.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
 	}

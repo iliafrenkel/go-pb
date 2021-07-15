@@ -489,6 +489,7 @@ func (h *ApiServer) handleUserValidate(c *gin.Context) {
 	}
 	usr, err := h.UserService.Validate(auth.User{}, string(token))
 	if err != nil {
+		log.Printf("handleUserValidate: validation failed: %v", err.Error())
 		c.Status(http.StatusUnauthorized)
 		return
 	}
