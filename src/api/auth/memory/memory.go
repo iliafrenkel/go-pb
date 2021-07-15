@@ -57,6 +57,7 @@ func (s *UserService) authToken(u auth.User) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorised"] = true
 	claims["user_id"] = u.ID
+	claims["username"] = u.Username
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims)
 	authToken, err := token.SignedString(tokenSecret)
@@ -126,7 +127,7 @@ func (s *UserService) Authenticate(u auth.UserLogin) (auth.UserInfo, error) {
 }
 
 // Validate checks if provided token is valid for the user.
-func (s *UserService) Validate(u auth.User, t string) (bool, error) {
+func (s *UserService) Validate(u auth.User, t string) (auth.UserInfo, error) {
 	token, err := jwt.Parse(t, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("token signing method is not valid: %v", token.Header["alg"])
@@ -135,12 +136,12 @@ func (s *UserService) Validate(u auth.User, t string) (bool, error) {
 	})
 
 	if err != nil {
-		return false, err
+		return auth.UserInfo{}, err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return true, nil
+		return auth.UserInfo{Username: claims["username"].(string), Token: token.Raw}, nil
 	} else {
-		return false, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
+		return auth.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
 	}
 }

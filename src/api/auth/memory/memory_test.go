@@ -172,8 +172,8 @@ func Test_ValidateToken(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to validate token: %v", err)
 	}
-	if !v {
-		t.Errorf("Token validation failed: %s - %#v", inf.Token, *u)
+	if v.Username == "" || v.Token == "" {
+		t.Errorf("Token validation failed: %s - %#v", inf.Token, v)
 
 	}
 }
