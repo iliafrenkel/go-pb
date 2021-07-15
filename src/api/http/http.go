@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -65,6 +66,7 @@ func New(pSvc api.PasteService, uSvc auth.UserService, opts ApiServerOptions) *A
 	{
 		user.POST("/login", handler.handleUserLogin)
 		user.POST("/register", handler.handleUserRegister)
+		user.POST("/validate", handler.handleUserValidate)
 	}
 
 	return &handler
@@ -468,4 +470,27 @@ func (h *ApiServer) handleUserRegister(c *gin.Context) {
 	}
 
 	c.Status(http.StatusOK)
+}
+
+// handleUserValidate verifyes that the JWT token is correct
+func (h *ApiServer) handleUserValidate(c *gin.Context) {
+	if hdr := c.GetHeader("Content-Type"); hdr != "" {
+		if hdr != "text/plain" {
+			c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect text/plain")
+			return
+		}
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.Options.MaxBodySize)
+	defer c.Request.Body.Close()
+	token, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Println(err.Error())
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+	usr, err := h.UserService.Validate(auth.User{}, string(token))
+	if err != nil {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	c.JSON(http.StatusOK, usr)
 }
