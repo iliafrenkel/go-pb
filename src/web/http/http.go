@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -99,6 +100,32 @@ func (h *WebServer) ListenAndServe() error {
 	}
 
 	return h.Server.ListenAndServe()
+}
+
+// makeAPICall makes a call to our API and returns the response body.
+func (h *WebServer) makeAPICall(endpoint string, method string, body io.Reader, expectedCodes map[int]struct{}) ([]byte, int, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest(method, h.Options.ApiURL+endpoint, body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	// Check the response code and see if we expect it
+	if _, ok := expectedCodes[resp.StatusCode]; !ok {
+		return nil, resp.StatusCode, nil
+	}
+	// Read the body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return b, resp.StatusCode, nil
 }
 
 // handleSession validates JWT token and updates the session accordingly and
@@ -213,21 +240,28 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 	}
 	// Call the API to login
 	user, _ := json.Marshal(u)
-	resp, err := http.Post(h.Options.ApiURL+"/user/login", "application/json", bytes.NewBuffer(user))
+	data, code, err := h.makeAPICall(
+		"/user/login",
+		"POST",
+		bytes.NewBuffer(user),
+		map[int]struct{}{
+			http.StatusOK:           {},
+			http.StatusUnauthorized: {},
+		})
 
 	if err != nil {
 		log.Println("handleDoUserLogin: error talking to API: ", err)
-		c.Set("errorCode", http.StatusInternalServerError)
-		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorCode", code)
+		c.Set("errorText", http.StatusText(code))
 		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
 		h.showError(c)
 		return
 	}
 	// Check if API responded with NotAuthorized
-	if resp.StatusCode == http.StatusUnauthorized {
-		log.Println("handleDoUserLogin: API returned: ", resp.StatusCode)
+	if code == http.StatusUnauthorized {
+		log.Println("handleDoUserLogin: API returned: ", code)
 		c.HTML(
-			resp.StatusCode,
+			code,
 			"login.html",
 			gin.H{
 				"title":    "Go PB - Login",
@@ -237,7 +271,7 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		return
 	}
 	// Check if API responded with some other error
-	if resp.StatusCode != http.StatusOK {
+	if code != http.StatusOK {
 		log.Println("handleDoUserLogin: API returned an error: ", err)
 		c.Set("errorCode", http.StatusInternalServerError)
 		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
@@ -246,18 +280,8 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		return
 	}
 	// Get API response body and try to parse it as JSON
-	var data api.UserInfo
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("handleDoUserLogin: failed to read API response body: ", err)
-		c.Set("errorCode", http.StatusInternalServerError)
-		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
-		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
-		h.showError(c)
-		return
-	}
-	if err := json.Unmarshal(b, &data); err != nil {
+	var usr api.UserInfo
+	if err := json.Unmarshal(data, &usr); err != nil {
 		log.Println("handleDoUserLogin: failed to parse API response", err)
 		c.Set("errorCode", http.StatusInternalServerError)
 		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
@@ -266,7 +290,7 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		return
 	}
 	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie("token", data.Token, 24*3600, "/", "localhost", false, true)
+	c.SetCookie("token", usr.Token, 24*3600, "/", "localhost", false, true)
 	c.Redirect(http.StatusFound, "/")
 }
 
@@ -310,7 +334,14 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 	}
 	// Call the API to login
 	user, _ := json.Marshal(u)
-	resp, err := http.Post(h.Options.ApiURL+"/user/register", "application/json", bytes.NewBuffer(user))
+	data, code, err := h.makeAPICall(
+		"/user/register",
+		"POST",
+		bytes.NewBuffer(user),
+		map[int]struct{}{
+			http.StatusOK:       {},
+			http.StatusConflict: {},
+		})
 
 	if err != nil {
 		log.Println("handleDoUserRegister: error talking to API: ", err)
@@ -321,29 +352,26 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 		return
 	}
 	// Check API response status
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusConflict {
-			defer resp.Body.Close()
-			b, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Println("handleDoUserRegister: failed to read API response body: ", err)
-				b = []byte("")
-			}
-			msg := []rune(string(b))
-			msg[0] = unicode.ToUpper(msg[0])
+	if code != http.StatusOK {
+		if code == http.StatusConflict {
+			var msg struct{ Message string }
+			json.Unmarshal(data, &msg)
+			m := []rune(msg.Message)
+			m[0] = unicode.ToUpper(m[0])
+			msg.Message = string(m)
 			c.HTML(
 				http.StatusConflict,
 				"register.html",
 				gin.H{
 					"title":    "Go PB - Register",
-					"errorMsg": string(msg),
+					"errorMsg": msg.Message,
 				},
 			)
 			return
 		}
-		log.Println("handleDoUserRegister: API returned: ", resp.StatusCode)
-		c.Set("errorCode", resp.StatusCode)
-		c.Set("errorText", http.StatusText(resp.StatusCode))
+		log.Println("handleDoUserRegister: API returned: ", code)
+		c.Set("errorCode", code)
+		c.Set("errorText", http.StatusText(code))
 		h.showError(c)
 		return
 	}
