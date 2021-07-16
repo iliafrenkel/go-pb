@@ -5,8 +5,8 @@ import (
 	"log"
 
 	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
-	pasteMem "github.com/iliafrenkel/go-pb/src/api/db/memory"
 	"github.com/iliafrenkel/go-pb/src/api/http"
+	pasteMem "github.com/iliafrenkel/go-pb/src/api/paste/memory"
 )
 
 var apiServer *http.ApiServer
