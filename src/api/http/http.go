@@ -290,7 +290,8 @@ func (h *ApiServer) handleUserRegister(c *gin.Context) {
 	err := h.UserService.Create(*data)
 	if err != nil {
 		log.Printf("failed to create new user: %v\n", err)
-		c.String(http.StatusConflict, err.Error())
+		var msg = struct{ Message string }{Message: err.Error()}
+		c.JSON(http.StatusConflict, msg)
 		return
 	}
 
