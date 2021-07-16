@@ -210,7 +210,7 @@ func Test_CreatePasteExtraField(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("Request body contains unknown field \"%s\"", "extraField")
+	want := fmt.Sprintf("request body contains unknown field \"%s\"", "extraField")
 	if got != want {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
@@ -237,7 +237,7 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("Request body contains malformed JSON (at position %d)", 2)
+	want := fmt.Sprintf("request body contains malformed JSON (at position %d)", 2)
 	if got != want {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}

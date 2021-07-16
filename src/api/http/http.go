@@ -58,13 +58,13 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 
 	handler.Router = gin.Default()
 	handler.Router.GET("/paste/:id", handler.handlePaste)
-	handler.Router.POST("/paste", handler.handleCreate)
+	handler.Router.POST("/paste", handler.verifyJsonMiddleware(new(api.Paste)), handler.handleCreate)
 	handler.Router.DELETE("/paste/:id", handler.handleDelete)
 
 	user := handler.Router.Group("/user")
 	{
-		user.POST("/login", handler.handleUserLogin)
-		user.POST("/register", handler.handleUserRegister)
+		user.POST("/login", handler.verifyJsonMiddleware(new(api.UserLogin)), handler.handleUserLogin)
+		user.POST("/register", handler.verifyJsonMiddleware(new(api.UserRegister)), handler.handleUserRegister)
 		user.POST("/validate", handler.handleUserValidate)
 	}
 
@@ -85,6 +85,111 @@ func (h *ApiServer) ListenAndServe() error {
 	}
 
 	return h.Server.ListenAndServe()
+}
+
+// verifyPayload checks that the incoming Json payload arrived with the correct
+// content type and can be properly decoded.
+// The JSON object must correspond to the struct referenced by the "payload"
+// context. Absent fields will get default values. Extra fields will generate
+// an error. Only one object is expected, multiple JSON objects in the body
+// will result in an error. Body size is limited to the value of
+// Options.MaxBodySize parameter.
+
+func (h *ApiServer) verifyJsonMiddleware(data interface{}) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Parse incoming json
+		// https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body
+
+		// If the Content-Type header is present, check that it has the value
+		// application/json.
+		if hdr := c.GetHeader("Content-Type"); hdr != "" {
+			if hdr != "application/json" {
+				c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect application/json")
+				c.Abort()
+				return
+			}
+		}
+
+		// Use http.MaxBytesReader to enforce a maximum read size from the
+		// response body. A request body larger than that will now result in
+		// Decode() returning a "http: request body too large" error.
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.Options.MaxBodySize)
+
+		// Setup the decoder and call the DisallowUnknownFields() method on it.
+		// This will cause Decode() to return a "json: unknown field ..." error
+		// if it encounters any extra unexpected fields in the JSON. Strictly
+		// speaking, it returns an error for "keys which do not match any
+		// non-ignored, exported fields in the destination".
+		dec := json.NewDecoder(c.Request.Body)
+		dec.DisallowUnknownFields()
+
+		if err := dec.Decode(&data); err != nil {
+			var syntaxError *json.SyntaxError
+			var unmarshalTypeError *json.UnmarshalTypeError
+			switch {
+			// Catch any syntax errors in the JSON and send an error message
+			// which interpolates the location of the problem to make it
+			// easier for the client to fix.
+			case errors.As(err, &syntaxError):
+				c.String(http.StatusBadRequest, fmt.Sprintf("request body contains malformed JSON (at position %d)", syntaxError.Offset))
+
+			// In some circumstances Decode() may also return an
+			// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
+			// is an open issue regarding this at
+			// https://github.com/golang/go/issues/25956.
+			case errors.Is(err, io.ErrUnexpectedEOF):
+				c.String(http.StatusBadRequest, "request body contains malformed JSON")
+
+			// Catch any type errors, like trying to assign a string in the
+			// JSON request body to a int field in our Paste struct. We can
+			// interpolate the relevant field name and position into the error
+			// message to make it easier for the client to fix.
+			case errors.As(err, &unmarshalTypeError):
+				c.String(http.StatusBadRequest, fmt.Sprintf("request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset))
+
+			// Catch the error caused by extra unexpected fields in the request
+			// body. We extract the field name from the error message and
+			// interpolate it in our custom error message. There is an open
+			// issue at https://github.com/golang/go/issues/29035 regarding
+			// turning this into a sentinel error.
+			case strings.HasPrefix(err.Error(), "json: unknown field "):
+				fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
+				c.String(http.StatusBadRequest, fmt.Sprintf("request body contains unknown field %s", fieldName))
+
+			// An io.EOF error is returned by Decode() if the request body is
+			// empty.
+			case errors.Is(err, io.EOF):
+				c.String(http.StatusBadRequest, "request body must not be empty")
+
+			// Catch the error caused by the request body being too large. Again
+			// there is an open issue regarding turning this into a sentinel
+			// error at https://github.com/golang/go/issues/30715.
+			case err.Error() == "http: request body too large":
+				c.String(http.StatusBadRequest, fmt.Sprintf("request body must not be larger than %d bytes", h.Options.MaxBodySize))
+
+			// Otherwise default to logging the error and sending a 500 Internal
+			// Server Error response.
+			default:
+				log.Println("verifyJsonMiddleware: ", err.Error())
+				c.String(http.StatusInternalServerError, err.Error())
+			}
+			c.Abort()
+			return
+		}
+
+		// Call decode again, using a pointer to an empty anonymous struct as
+		// the destination. If the request body only contained a single JSON
+		// object this will return an io.EOF error. So if we get anything else,
+		// we know that there is additional data in the request body.
+		if err := dec.Decode(&struct{}{}); err != io.EOF {
+			c.String(http.StatusInternalServerError, "request body must only contain a single JSON object")
+			c.Abort()
+			return
+		}
+
+		c.Set("payload", data)
+		c.Next()
+	}
 }
 
 // handlePaste is an HTTP handler for the GET /paste/{id} route, it returns
@@ -121,105 +226,9 @@ func (h *ApiServer) handlePaste(c *gin.Context) {
 // The JSON object must correspond to the api.Paste struct. Absent fields will
 // get default values. Extra fields will generate an error. Only one object is
 // expected, multiple JSON objects in the body will result in an error. Body
-// size is currently limited to a hardcoded value of 10KB.
-//
-// TODO: Make maximum body size configurable.
+// size is currently limited to a configurable value of Options.MaxBodySize.
 func (h *ApiServer) handleCreate(c *gin.Context) {
-	// Parse incoming json
-	// https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body
-
-	// If the Content-Type header is present, check that it has the value
-	// application/json.
-	if hdr := c.GetHeader("Content-Type"); hdr != "" {
-		if hdr != "application/json" {
-			c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect application/json")
-			return
-		}
-	}
-
-	// Use http.MaxBytesReader to enforce a maximum read of 10KB from the
-	// response body. A request body larger than that will now result in
-	// Decode() returning a "http: request body too large" error.
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.Options.MaxBodySize)
-
-	// Setup the decoder and call the DisallowUnknownFields() method on it.
-	// This will cause Decode() to return a "json: unknown field ..." error
-	// if it encounters any extra unexpected fields in the JSON. Strictly
-	// speaking, it returns an error for "keys which do not match any
-	// non-ignored, exported fields in the destination".
-	dec := json.NewDecoder(c.Request.Body)
-	dec.DisallowUnknownFields()
-
-	var data api.Paste
-	if err := dec.Decode(&data); err != nil {
-		var syntaxError *json.SyntaxError
-		var unmarshalTypeError *json.UnmarshalTypeError
-
-		switch {
-		// Catch any syntax errors in the JSON and send an error message
-		// which interpolates the location of the problem to make it
-		// easier for the client to fix.
-		case errors.As(err, &syntaxError):
-			msg := fmt.Sprintf("Request body contains malformed JSON (at position %d)", syntaxError.Offset)
-			c.String(http.StatusBadRequest, msg)
-
-		// In some circumstances Decode() may also return an
-		// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
-		// is an open issue regarding this at
-		// https://github.com/golang/go/issues/25956.
-		case errors.Is(err, io.ErrUnexpectedEOF):
-			msg := "Request body contains badly-formed JSON"
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch any type errors, like trying to assign a string in the
-		// JSON request body to a int field in our Paste struct. We can
-		// interpolate the relevant field name and position into the error
-		// message to make it easier for the client to fix.
-		case errors.As(err, &unmarshalTypeError):
-			msg := fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch the error caused by extra unexpected fields in the request
-		// body. We extract the field name from the error message and
-		// interpolate it in our custom error message. There is an open
-		// issue at https://github.com/golang/go/issues/29035 regarding
-		// turning this into a sentinel error.
-		case strings.HasPrefix(err.Error(), "json: unknown field "):
-			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-			msg := fmt.Sprintf("Request body contains unknown field %s", fieldName)
-			c.String(http.StatusBadRequest, msg)
-
-		// An io.EOF error is returned by Decode() if the request body is
-		// empty.
-		case errors.Is(err, io.EOF):
-			msg := "Request body must not be empty"
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch the error caused by the request body being too large. Again
-		// there is an open issue regarding turning this into a sentinel
-		// error at https://github.com/golang/go/issues/30715.
-		case err.Error() == "http: request body too large":
-			msg := "Request body must not be larger than 10KB"
-			c.String(http.StatusRequestEntityTooLarge, msg)
-
-		// Otherwise default to logging the error and sending a 500 Internal
-		// Server Error response.
-		default:
-			log.Println(err.Error())
-			c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		}
-		return
-	}
-	// Call decode again, using a pointer to an empty anonymous struct as
-	// the destination. If the request body only contained a single JSON
-	// object this will return an io.EOF error. So if we get anything else,
-	// we know that there is additional data in the request body.
-
-	if err := dec.Decode(&struct{}{}); err != io.EOF {
-		msg := "Request body must only contain a single JSON object"
-		c.String(http.StatusBadRequest, msg)
-		return
-	}
+	data := c.MustGet("payload").(*api.Paste)
 
 	// Create new paste
 	rand.Seed(time.Now().UnixNano())
@@ -259,102 +268,11 @@ func (h *ApiServer) handleDelete(c *gin.Context) {
 // handleUserLogin is an HTTP handler for POST /user/login route. It returns
 // auth.UserInfo with the username and JWT token on success.
 func (h *ApiServer) handleUserLogin(c *gin.Context) {
-	// If the Content-Type header is present, check that it has the value
-	// application/json.
-	if hdr := c.GetHeader("Content-Type"); hdr != "" {
-		if hdr != "application/json" {
-			c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect application/json")
-			return
-		}
-	}
-
-	// Use http.MaxBytesReader to enforce a maximum read of 10KB from the
-	// response body. A request body larger than that will now result in
-	// Decode() returning a "http: request body too large" error.
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.Options.MaxBodySize)
-
-	// Setup the decoder and call the DisallowUnknownFields() method on it.
-	// This will cause Decode() to return a "json: unknown field ..." error
-	// if it encounters any extra unexpected fields in the JSON. Strictly
-	// speaking, it returns an error for "keys which do not match any
-	// non-ignored, exported fields in the destination".
-	dec := json.NewDecoder(c.Request.Body)
-	dec.DisallowUnknownFields()
-
-	var data api.UserLogin
-	if err := dec.Decode(&data); err != nil {
-		var syntaxError *json.SyntaxError
-		var unmarshalTypeError *json.UnmarshalTypeError
-
-		switch {
-		// Catch any syntax errors in the JSON and send an error message
-		// which interpolates the location of the problem to make it
-		// easier for the client to fix.
-		case errors.As(err, &syntaxError):
-			msg := fmt.Sprintf("Request body contains malformed JSON (at position %d)", syntaxError.Offset)
-			c.String(http.StatusBadRequest, msg)
-
-		// In some circumstances Decode() may also return an
-		// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
-		// is an open issue regarding this at
-		// https://github.com/golang/go/issues/25956.
-		case errors.Is(err, io.ErrUnexpectedEOF):
-			msg := "Request body contains badly-formed JSON"
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch any type errors, like trying to assign a string in the
-		// JSON request body to a int field in our Paste struct. We can
-		// interpolate the relevant field name and position into the error
-		// message to make it easier for the client to fix.
-		case errors.As(err, &unmarshalTypeError):
-			msg := fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch the error caused by extra unexpected fields in the request
-		// body. We extract the field name from the error message and
-		// interpolate it in our custom error message. There is an open
-		// issue at https://github.com/golang/go/issues/29035 regarding
-		// turning this into a sentinel error.
-		case strings.HasPrefix(err.Error(), "json: unknown field "):
-			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-			msg := fmt.Sprintf("Request body contains unknown field %s", fieldName)
-			c.String(http.StatusBadRequest, msg)
-
-		// An io.EOF error is returned by Decode() if the request body is
-		// empty.
-		case errors.Is(err, io.EOF):
-			msg := "Request body must not be empty"
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch the error caused by the request body being too large. Again
-		// there is an open issue regarding turning this into a sentinel
-		// error at https://github.com/golang/go/issues/30715.
-		case err.Error() == "http: request body too large":
-			msg := "Request body must not be larger than 10KB"
-			c.String(http.StatusRequestEntityTooLarge, msg)
-
-		// Otherwise default to logging the error and sending a 500 Internal
-		// Server Error response.
-		default:
-			log.Println(err.Error())
-			c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		}
-		return
-	}
-	// Call decode again, using a pointer to an empty anonymous struct as
-	// the destination. If the request body only contained a single JSON
-	// object this will return an io.EOF error. So if we get anything else,
-	// we know that there is additional data in the request body.
-
-	if err := dec.Decode(&struct{}{}); err != io.EOF {
-		msg := "Request body must only contain a single JSON object"
-		c.String(http.StatusBadRequest, msg)
-		return
-	}
+	data := c.MustGet("payload").(*api.UserLogin)
 
 	// Login returns Username and JWT token
 	var usr api.UserInfo
-	usr, err := h.UserService.Authenticate(data)
+	usr, err := h.UserService.Authenticate(*data)
 	if err != nil {
 		log.Printf("failed to login: %v\n", err)
 		c.String(http.StatusUnauthorized, "Invalid credentials")
@@ -367,101 +285,10 @@ func (h *ApiServer) handleUserLogin(c *gin.Context) {
 // handleUserRegister is an HTTP handler for POST /user/register route. It
 // tries to create a new user and returns 200 OK on success.
 func (h *ApiServer) handleUserRegister(c *gin.Context) {
-	// If the Content-Type header is present, check that it has the value
-	// application/json.
-	if hdr := c.GetHeader("Content-Type"); hdr != "" {
-		if hdr != "application/json" {
-			c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect application/json")
-			return
-		}
-	}
-
-	// Use http.MaxBytesReader to enforce a maximum read of 10KB from the
-	// response body. A request body larger than that will now result in
-	// Decode() returning a "http: request body too large" error.
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.Options.MaxBodySize)
-
-	// Setup the decoder and call the DisallowUnknownFields() method on it.
-	// This will cause Decode() to return a "json: unknown field ..." error
-	// if it encounters any extra unexpected fields in the JSON. Strictly
-	// speaking, it returns an error for "keys which do not match any
-	// non-ignored, exported fields in the destination".
-	dec := json.NewDecoder(c.Request.Body)
-	dec.DisallowUnknownFields()
-
-	var data api.UserRegister
-	if err := dec.Decode(&data); err != nil {
-		var syntaxError *json.SyntaxError
-		var unmarshalTypeError *json.UnmarshalTypeError
-
-		switch {
-		// Catch any syntax errors in the JSON and send an error message
-		// which interpolates the location of the problem to make it
-		// easier for the client to fix.
-		case errors.As(err, &syntaxError):
-			msg := fmt.Sprintf("Request body contains malformed JSON (at position %d)", syntaxError.Offset)
-			c.String(http.StatusBadRequest, msg)
-
-		// In some circumstances Decode() may also return an
-		// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
-		// is an open issue regarding this at
-		// https://github.com/golang/go/issues/25956.
-		case errors.Is(err, io.ErrUnexpectedEOF):
-			msg := "Request body contains badly-formed JSON"
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch any type errors, like trying to assign a string in the
-		// JSON request body to a int field in our Paste struct. We can
-		// interpolate the relevant field name and position into the error
-		// message to make it easier for the client to fix.
-		case errors.As(err, &unmarshalTypeError):
-			msg := fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch the error caused by extra unexpected fields in the request
-		// body. We extract the field name from the error message and
-		// interpolate it in our custom error message. There is an open
-		// issue at https://github.com/golang/go/issues/29035 regarding
-		// turning this into a sentinel error.
-		case strings.HasPrefix(err.Error(), "json: unknown field "):
-			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-			msg := fmt.Sprintf("Request body contains unknown field %s", fieldName)
-			c.String(http.StatusBadRequest, msg)
-
-		// An io.EOF error is returned by Decode() if the request body is
-		// empty.
-		case errors.Is(err, io.EOF):
-			msg := "Request body must not be empty"
-			c.String(http.StatusBadRequest, msg)
-
-		// Catch the error caused by the request body being too large. Again
-		// there is an open issue regarding turning this into a sentinel
-		// error at https://github.com/golang/go/issues/30715.
-		case err.Error() == "http: request body too large":
-			msg := "Request body must not be larger than 10KB"
-			c.String(http.StatusRequestEntityTooLarge, msg)
-
-		// Otherwise default to logging the error and sending a 500 Internal
-		// Server Error response.
-		default:
-			log.Println(err.Error())
-			c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		}
-		return
-	}
-	// Call decode again, using a pointer to an empty anonymous struct as
-	// the destination. If the request body only contained a single JSON
-	// object this will return an io.EOF error. So if we get anything else,
-	// we know that there is additional data in the request body.
-
-	if err := dec.Decode(&struct{}{}); err != io.EOF {
-		msg := "Request body must only contain a single JSON object"
-		c.String(http.StatusBadRequest, msg)
-		return
-	}
+	data := c.MustGet("payload").(*api.UserRegister)
 
 	// Register doesn't return anything
-	err := h.UserService.Create(data)
+	err := h.UserService.Create(*data)
 	if err != nil {
 		log.Printf("failed to create new user: %v\n", err)
 		c.String(http.StatusConflict, err.Error())
