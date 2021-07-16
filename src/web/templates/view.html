@@ -51,8 +51,17 @@
         <div class="col-9">
             <div class="card border-0">
                 <div class="card-body">
-                    {{if .Title }}
-                    <h5 class="card-title text-center">{{ .Title }}</h5>
+                    {{if .Paste.Title }}
+                    <h5 class="card-title text-center">{{ .Paste.Title }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        <span class="small text-uppercase fw-light">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar2 align-baseline" viewBox="0 0 16 16">
+                                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H2z"/>
+                                <path d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V4z"/>
+                            </svg>
+                            {{ .Paste.Created.Local.Format "Jan 2, 2006 15:04" }}
+                        </span>
+                    </h6>
                     {{end}}
                     <div class="card-text">
                         {{if .URL }}
@@ -61,7 +70,7 @@
                             <label for="url">URL</label>
                         </div>
                         {{end}}
-                        <pre style="font-size: 75%;"><code class="language-{{ .Language }}">{{ .Body }}</code></pre>
+                        <pre style="font-size: 75%;"><code class="language-{{ .Paste.Syntax }}">{{ .Paste.Body }}</code></pre>
                     </div>
                 </div>
             </div>

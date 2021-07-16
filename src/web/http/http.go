@@ -436,9 +436,7 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 		http.StatusOK,
 		"view.html",
 		gin.H{
-			"Title":    p.Title,
-			"Body":     p.Body,
-			"Language": p.Syntax,
+			"Paste":    p,
 			"URL":      p.URL(),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
@@ -506,9 +504,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 		http.StatusOK,
 		"view.html",
 		gin.H{
-			"Title":    data.Title,
-			"Body":     data.Body,
-			"Language": data.Syntax,
+			"Paste":    data,
 			"URL":      resp.Header.Get("Location"),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
