@@ -209,3 +209,133 @@ func Test_PasteCreateNoSyntaxRoute(t *testing.T) {
 		t.Errorf("Response should have body [%s], got [%s]", want, got)
 	}
 }
+
+func Test_DoUserLoginRoute(t *testing.T) {
+	// Create a test user
+	var ur = api.UserRegister{
+		Username:   "test",
+		Email:      "test@example.com",
+		Password:   "12345",
+		RePassword: "12345",
+	}
+	if err := userSvc.Create(ur); err != nil {
+		t.Fatal(err)
+	}
+	// "Fill" the login form with the correct details
+	form := url.Values{}
+	form.Set("username", "test")
+	form.Set("password", "12345")
+	// Simulate the POST request to the login page and record the response
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("POST", "/u/login", strings.NewReader(form.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	webSrv.Router.ServeHTTP(w, r)
+	// Check the response status code
+	if w.Code != http.StatusFound {
+		t.Errorf("Status should be %d, got %d", http.StatusFound, w.Code)
+	}
+	// Check that we were redirected to the homepage
+	want := "/"
+	got := w.Result().Header.Get("Location")
+	if !strings.Contains(got, want) {
+		t.Errorf("The Location header should be [%s], got [%s]", want, got)
+	}
+
+	// Try to login with a wrong password
+	// "Fill" the login form with the correct details
+	form.Set("username", "test")
+	form.Set("password", "54321")
+	// Simulate the POST request to the login page and record the response
+	w = httptest.NewRecorder()
+	r, _ = http.NewRequest("POST", "/u/login", strings.NewReader(form.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	webSrv.Router.ServeHTTP(w, r)
+	// Check the response status code
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Status should be %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+	// Check that the login page has generic error message
+	want = "Either username or password is incorrect"
+	got = w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have body [%s], got [%s]", want, got)
+	}
+}
+
+func Test_DoUserRegisterRoute(t *testing.T) {
+	// "Fill" the registration form with the correct details
+	form := url.Values{}
+	form.Set("username", "test-register")
+	form.Set("email", "test-register@example.com")
+	form.Set("password", "12345")
+	form.Set("repassword", "12345")
+	// Simulate the POST request to the register page and record the response
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("POST", "/u/register", strings.NewReader(form.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	webSrv.Router.ServeHTTP(w, r)
+	// Check the response status code
+	if w.Code != http.StatusFound {
+		t.Errorf("Status should be %d, got %d", http.StatusFound, w.Code)
+	}
+	// Check that we were redirected to the login page
+	want := "/u/login"
+	got := w.Result().Header.Get("Location")
+	if !strings.Contains(got, want) {
+		t.Errorf("The Location header should be [%s], got [%s]", want, got)
+	}
+
+	// Try to register the same user
+	// Simulate the POST request to the login page and record the response
+	w = httptest.NewRecorder()
+	r, _ = http.NewRequest("POST", "/u/register", strings.NewReader(form.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	webSrv.Router.ServeHTTP(w, r)
+	// Check the response status code
+	if w.Code != http.StatusConflict {
+		t.Errorf("Status should be %d, got %d", http.StatusConflict, w.Code)
+	}
+	// Check that the register page has the correct error message
+	want = "User with such username already exists"
+	got = w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have body [%s], got [%s]", want, got)
+	}
+
+	// Try to register a user when passwords do not match
+	form.Set("username", "test-wrong-password")
+	form.Set("email", "test-wrong-password@example.com")
+	form.Set("password", "12345")
+	form.Set("repassword", "wrong")
+	// Simulate the POST request to the login page and record the response
+	w = httptest.NewRecorder()
+	r, _ = http.NewRequest("POST", "/u/register", strings.NewReader(form.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	webSrv.Router.ServeHTTP(w, r)
+	// Check the response status code
+	if w.Code != http.StatusConflict {
+		t.Errorf("Status should be %d, got %d", http.StatusConflict, w.Code)
+	}
+	// Check that the register page has the correct error message
+	want = "Passwords don&#39;t match"
+	got = w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have body [%s], got [%s]", want, got)
+	}
+}
+
+func Test_UserLogoutRoute(t *testing.T) {
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/u/logout", nil)
+	webSrv.Router.ServeHTTP(w, r)
+	// Check the status
+	if w.Code != http.StatusFound {
+		t.Errorf("Status should be %d, got %d", http.StatusFound, w.Code)
+	}
+	// Check that we were redirected to the homepage
+	want := "/"
+	got := w.Result().Header.Get("Location")
+	if !strings.Contains(got, want) {
+		t.Errorf("The Location header should be [%s], got [%s]", want, got)
+	}
+}
