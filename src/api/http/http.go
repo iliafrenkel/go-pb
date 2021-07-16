@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -65,7 +64,7 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 	{
 		user.POST("/login", handler.verifyJsonMiddleware(new(api.UserLogin)), handler.handleUserLogin)
 		user.POST("/register", handler.verifyJsonMiddleware(new(api.UserRegister)), handler.handleUserRegister)
-		user.POST("/validate", handler.handleUserValidate)
+		user.POST("/validate", handler.verifyJsonMiddleware(new(api.UserInfo)), handler.handleUserValidate)
 	}
 
 	return &handler
@@ -300,20 +299,9 @@ func (h *ApiServer) handleUserRegister(c *gin.Context) {
 
 // handleUserValidate verifyes that the JWT token is correct
 func (h *ApiServer) handleUserValidate(c *gin.Context) {
-	if hdr := c.GetHeader("Content-Type"); hdr != "" {
-		if hdr != "text/plain" {
-			c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect text/plain")
-			return
-		}
-	}
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.Options.MaxBodySize)
-	defer c.Request.Body.Close()
-	token, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Println(err.Error())
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-	}
-	usr, err := h.UserService.Validate(api.User{}, string(token))
+	data := c.MustGet("payload").(*api.UserInfo)
+
+	usr, err := h.UserService.Validate(api.User{}, data.Token)
 	if err != nil {
 		log.Printf("handleUserValidate: validation failed: %v", err.Error())
 		c.Status(http.StatusUnauthorized)

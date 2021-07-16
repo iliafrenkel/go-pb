@@ -472,7 +472,8 @@ func Test_UserValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := http.Post(mckSrv.URL+"/user/validate", "text/plain", bytes.NewBuffer([]byte(ui.Token)))
+	data, _ := json.Marshal(ui)
+	resp, err := http.Post(mckSrv.URL+"/user/validate", "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -482,7 +483,9 @@ func Test_UserValidate(t *testing.T) {
 	}
 
 	// Wrong token
-	resp, err = http.Post(mckSrv.URL+"/user/validate", "text/plain", bytes.NewBuffer([]byte(ui.Token+"wrong")))
+	ui.Token += "wrong"
+	data, _ = json.Marshal(ui)
+	resp, err = http.Post(mckSrv.URL+"/user/validate", "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		t.Fatal(err)
 	}

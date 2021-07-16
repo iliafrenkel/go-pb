@@ -123,8 +123,9 @@ func (h *WebServer) handleSession(c *gin.Context) {
 	// Check if there is a JWT token cookie, if there isn't, don't do anything
 	token, _ := c.Cookie("token")
 	if token != "" {
+		payload, _ := json.Marshal(api.UserInfo{Token: token})
 		// Validate the token by calling the API /user/validate endpoint
-		resp, err := http.Post(h.Options.ApiURL+"/user/validate", "text/plain", bytes.NewBuffer([]byte(token)))
+		resp, err := http.Post(h.Options.ApiURL+"/user/validate", "application/json", bytes.NewBuffer(payload))
 		// In case of any errors we don't change anything and just call the
 		// next handler
 		if err != nil {
