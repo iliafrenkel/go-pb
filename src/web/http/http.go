@@ -155,6 +155,7 @@ func (h *WebServer) handleSession(c *gin.Context) {
 		session.Set("username", data.Username)
 		session.Save()
 		c.Set("username", data.Username)
+		c.SetSameSite(http.SameSiteStrictMode)
 	}
 }
 
@@ -264,6 +265,7 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 		h.showError(c)
 		return
 	}
+	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie("token", data.Token, 24*3600, "/", "localhost", false, true)
 	c.Redirect(http.StatusFound, "/")
 }
