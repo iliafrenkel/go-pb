@@ -12,6 +12,13 @@ import (
 	hweb "github.com/iliafrenkel/go-pb/src/web/http"
 )
 
+// Version information, comes from the build flags (see Makefile)
+var (
+	revision = "unknown"
+	version  = "unknown"
+	branch   = "unknown"
+)
+
 func main() {
 	// Set API and Web servers options
 	var apiOpts = hapi.ApiServerOptions{
@@ -19,8 +26,9 @@ func main() {
 		MaxBodySize: 10240,
 	}
 	var webOpts = hweb.WebServerOptions{
-		Addr:   "127.0.0.1:8080",
-		ApiURL: "http://127.0.0.1:8000",
+		Addr:    "127.0.0.1:8080",
+		ApiURL:  "http://127.0.0.1:8000",
+		Version: version,
 	}
 
 	log.Println("Starting servers...")

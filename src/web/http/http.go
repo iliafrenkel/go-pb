@@ -25,6 +25,8 @@ type WebServerOptions struct {
 	// ApiURL specifies the full URL of the ApiServer withouth the trailing
 	// backslash such as "http://localhost:8000".
 	ApiURL string
+	// Version that will be displayed in the footer
+	Version string
 }
 
 // WebServer encapsulates a router and a server.
@@ -198,6 +200,7 @@ func (h *WebServer) handleRoot(c *gin.Context) {
 		gin.H{
 			"title":    "Go PB - Home",
 			"username": username,
+			"version":  h.Options.Version,
 		},
 	)
 }
@@ -221,6 +224,7 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 			"title":    "Go PB - Login",
 			"errorMsg": "",
 			"username": username,
+			"version":  h.Options.Version,
 		},
 	)
 }
@@ -266,6 +270,7 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 			gin.H{
 				"title":    "Go PB - Login",
 				"errorMsg": "Either username or password is incorrect",
+				"version":  h.Options.Version,
 			},
 		)
 		return
@@ -316,6 +321,7 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 			"title":    "Go PB - Register",
 			"errorMsg": "",
 			"username": username,
+			"version":  h.Options.Version,
 		},
 	)
 }
@@ -365,6 +371,7 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 				gin.H{
 					"title":    "Go PB - Register",
 					"errorMsg": msg.Message,
+					"version":  h.Options.Version,
 				},
 			)
 			return
@@ -435,6 +442,7 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 			"URL":      p.URL(),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
+			"version":  h.Options.Version,
 		},
 	)
 }
@@ -504,6 +512,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 			"URL":      resp.Header.Get("Location"),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
+			"version":  h.Options.Version,
 		},
 	)
 }
@@ -542,6 +551,7 @@ func (h *WebServer) showError(c *gin.Context) {
 			"errorText":    errorText,
 			"errorMessage": errorMsg,
 			"username":     username,
+			"version":      h.Options.Version,
 		},
 	)
 }
