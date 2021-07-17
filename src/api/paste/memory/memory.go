@@ -105,3 +105,12 @@ func (s *PasteService) Delete(id uint64) error {
 
 	return nil
 }
+
+// List returns a slice of all the pastes
+func (s *PasteService) List() []api.Paste {
+	pastes := make([]api.Paste, 0, len(s.pastes))
+	for _, val := range s.pastes {
+		pastes = append(pastes, *val)
+	}
+	return pastes
+}

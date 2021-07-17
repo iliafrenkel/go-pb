@@ -48,6 +48,7 @@ type PasteService interface {
 	Get(id uint64) (*Paste, error)
 	Create(p PasteForm) (*Paste, error)
 	Delete(id uint64) error
+	List() []Paste
 }
 
 // User is a type that represents a single user as it is stored in the database

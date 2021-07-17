@@ -58,9 +58,14 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 	handler.UserService = uSvc
 
 	handler.Router = gin.Default()
-	handler.Router.GET("/paste/:id", handler.handlePaste)
-	handler.Router.POST("/paste", handler.verifyJsonMiddleware(new(api.PasteForm)), handler.handleCreate)
-	handler.Router.DELETE("/paste/:id", handler.handleDelete)
+
+	paste := handler.Router.Group("/paste")
+	{
+		paste.GET("/:id", handler.handlePaste)
+		paste.POST("", handler.verifyJsonMiddleware(new(api.PasteForm)), handler.handleCreate)
+		paste.DELETE("/:id", handler.handleDelete)
+		paste.GET("/list", handler.handleListPaste)
+	}
 
 	user := handler.Router.Group("/user")
 	{
@@ -254,6 +259,14 @@ func (h *ApiServer) handleDelete(c *gin.Context) {
 		c.String(http.StatusNotFound, "paste not found")
 		return
 	}
+}
+
+// handleListPaste is an HTTP handlers for GET /paste/list route. Returns
+// an array of all pastes.
+func (h *ApiServer) handleListPaste(c *gin.Context) {
+	pastes := h.PasteService.List()
+
+	c.JSON(http.StatusOK, pastes)
 }
 
 // handleUserLogin is an HTTP handler for POST /user/login route. It returns

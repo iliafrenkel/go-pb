@@ -6,7 +6,6 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -513,7 +512,6 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 	}
 	// Send back HTML that display newly created paste
 	username, _ := c.Get("username")
-	fmt.Printf("Paste: %#+v", paste)
 	c.HTML(
 		http.StatusOK,
 		"view.html",
