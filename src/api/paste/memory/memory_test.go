@@ -1,25 +1,23 @@
 package memory
 
 import (
-	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
-	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
 var service = New()
 
 // createTestPaste create a paste with random ID and Body
-func createTestPaste() *api.Paste {
-	rand.Seed(time.Now().UnixNano())
-	id := rand.Uint64()
-	var p = api.Paste{
-		ID:      id,
-		Title:   "Test paste",
-		Body:    base62.Encode(id),
-		Expires: time.Time{},
+func createTestPaste() *api.PasteForm {
+	var p = api.PasteForm{
+		Title:           "Test paste",
+		Body:            "Test body",
+		Expires:         "never",
+		DeleteAfterRead: false,
+		Password:        "",
+		Syntax:          "none",
+		UserID:          0,
 	}
 
 	return &p
@@ -27,33 +25,33 @@ func createTestPaste() *api.Paste {
 
 func Test_Create(t *testing.T) {
 	var p = createTestPaste()
-	if err := service.Create(p); err != nil {
-		t.Errorf("Failed to create a paste: %v", err)
+	if paste, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	} else {
+		if paste.Title != p.Title {
+			t.Errorf("wrong title, want %s got %s", p.Title, paste.Title)
+		}
+		if paste.Body != p.Body {
+			t.Errorf("wrong body, want %s got %s", p.Title, paste.Title)
+		}
 	}
 }
 
-func Test_CreateAlreadyExists(t *testing.T) {
+func Test_GetPaste(t *testing.T) {
 	var p = createTestPaste()
-	if err := service.Create(p); err != nil {
-		t.Errorf("Failed to create a paste: %v", err)
-	}
-	if err := service.Create(p); err == nil {
-		t.Errorf("Created a paste with existing ID: %v", p)
-	}
-}
-
-func Test_Paste(t *testing.T) {
-	var p = createTestPaste()
-	service.Create(p)
-
-	_, err := service.Paste(p.ID)
+	paste, err := service.Create(*p)
 	if err != nil {
-		t.Errorf("Failed to find a paste: %v", err)
+		t.Errorf("failed to create a paste: %v", err)
+	}
+
+	_, err = service.Get(paste.ID)
+	if err != nil {
+		t.Errorf("failed to find a paste: %v", err)
 	}
 }
 
 func Test_PasteNotFound(t *testing.T) {
-	_, err := service.Paste(0)
+	_, err := service.Get(0)
 	if err == nil {
 		t.Error("No error for non-existing paste")
 	} else {
@@ -63,14 +61,17 @@ func Test_PasteNotFound(t *testing.T) {
 
 func Test_Delete(t *testing.T) {
 	var p = createTestPaste()
-	service.Create(p)
+	paste, err := service.Create(*p)
+	if err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	}
 
-	err := service.Delete(p.ID)
+	err = service.Delete(paste.ID)
 	if err != nil {
 		t.Errorf("Failed to delete a paste: %v", err)
 	}
 
-	paste, err := service.Paste(p.ID)
+	paste, err = service.Get(paste.ID)
 	if err == nil {
 		t.Errorf("Found a paste after delete: %v", paste)
 	}

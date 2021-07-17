@@ -9,7 +9,8 @@ import (
 	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
-// Paste is a the type that represents a single paste.
+// Paste is a the type that represents a single paste as it is stored in the
+// database.
 type Paste struct {
 	ID              uint64    `json:"id"`
 	Title           string    `json:"title" form:"title"`
@@ -22,8 +23,21 @@ type Paste struct {
 	UserID          uint64    `json:"user_id"`
 }
 
+// URL generates a base62 encoded string from the ID.
 func (p *Paste) URL() string {
 	return base62.Encode(p.ID)
+}
+
+// PasteForm represents the data that we expect to recieve when the user
+// submitts the form.
+type PasteForm struct {
+	Title           string `json:"title" form:"title"`
+	Body            string `json:"body" form:"body" binding:"required"`
+	Expires         string `json:"expires" form:"expires" binding:"required"`
+	DeleteAfterRead bool   `json:"delete_after_read" form:"delete_after_read" binding:"-"`
+	Password        string `json:"password" form:"password"`
+	Syntax          string `json:"syntax" form:"syntax" binding:"required"`
+	UserID          uint64 `json:"user_id"`
 }
 
 // PasteService is the interface that defines methods for working with Pastes.
@@ -31,8 +45,8 @@ func (p *Paste) URL() string {
 // Implementations should define the underlying storage such as database,
 // plain files or even memory.
 type PasteService interface {
-	Paste(id uint64) (*Paste, error)
-	Create(p *Paste) error
+	Get(id uint64) (*Paste, error)
+	Create(p PasteForm) (*Paste, error)
 	Delete(id uint64) error
 }
 
@@ -63,6 +77,7 @@ type UserLogin struct {
 // UserInfo represents the data that we send back in response to various
 // operation such as Authenticate or Validate.
 type UserInfo struct {
+	ID       uint64 `json:"user_id"`
 	Username string `json:"username"`
 	Token    string `json:"token"`
 }

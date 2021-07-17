@@ -5,17 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
 	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
-	"github.com/iliafrenkel/go-pb/src/api/base62"
 	pasteMem "github.com/iliafrenkel/go-pb/src/api/paste/memory"
 )
 
@@ -25,14 +22,15 @@ var apiSrv *ApiServer
 var mckSrv *httptest.Server
 
 // createTestPaste creates a paste with a random ID and a random body.
-func createTestPaste() *api.Paste {
-	rand.Seed(time.Now().UnixNano())
-	id := rand.Uint64()
-	var p = api.Paste{
-		ID:      id,
-		Title:   "Test paste",
-		Body:    base62.Encode(id),
-		Expires: time.Time{},
+func createTestPaste() *api.PasteForm {
+	var p = api.PasteForm{
+		Title:           "Test paste",
+		Body:            "Test body",
+		Expires:         "never",
+		DeleteAfterRead: false,
+		Password:        "",
+		Syntax:          "none",
+		UserID:          0,
 	}
 
 	return &p
@@ -46,8 +44,9 @@ func TestMain(m *testing.M) {
 }
 
 func Test_GetPaste(t *testing.T) {
-	var paste = createTestPaste()
-	if err := pasteSvc.Create(paste); err != nil {
+	var p = createTestPaste()
+	paste, err := pasteSvc.Create(*p)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -81,9 +80,7 @@ func Test_GetPaste(t *testing.T) {
 }
 
 func Test_GetPasteNotFound(t *testing.T) {
-	var paste = createTestPaste()
-
-	resp, err := http.Get(mckSrv.URL + "/paste/" + paste.URL())
+	resp, err := http.Get(mckSrv.URL + "/paste/qweasd")
 
 	// Handle any unexpected error
 	if err != nil {
@@ -135,9 +132,9 @@ func Test_GetPasteWrongID(t *testing.T) {
 }
 
 func Test_CreatePaste(t *testing.T) {
-	var paste = createTestPaste()
+	var p = createTestPaste()
 
-	want, _ := json.Marshal(paste)
+	want, _ := json.Marshal(p)
 	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer(want))
 
 	// Handle any unexpected error
@@ -157,16 +154,16 @@ func Test_CreatePaste(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	body, _ := json.Marshal(paste.Body)
+	body, _ := json.Marshal(p.Body)
 	if !strings.Contains(got, string(body)) {
 		t.Errorf("Response should have body [%s], got [%s]", body, got)
 	}
 }
 
 func Test_CreatePasteWrongContentType(t *testing.T) {
-	var paste = createTestPaste()
+	var p = createTestPaste()
 
-	want, _ := json.Marshal(paste)
+	want, _ := json.Marshal(p)
 	resp, err := http.Post(mckSrv.URL+"/paste", "application/xml", bytes.NewBuffer(want))
 
 	// Handle any unexpected error
@@ -181,12 +178,12 @@ func Test_CreatePasteWrongContentType(t *testing.T) {
 }
 
 func Test_CreatePasteExtraField(t *testing.T) {
-	var paste = createTestPaste()
+	var p = createTestPaste()
 	extraPaste := struct {
-		api.Paste
+		api.PasteForm
 		ExtraField string `json:"extraField"`
 	}{
-		*paste,
+		*p,
 		"Extra field",
 	}
 
@@ -244,8 +241,9 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 }
 
 func Test_DeletePaste(t *testing.T) {
-	var paste = createTestPaste()
-	if err := pasteSvc.Create(paste); err != nil {
+	var p = createTestPaste()
+	paste, err := pasteSvc.Create(*p)
+	if err != nil {
 		t.Fatal(err)
 	}
 	client := &http.Client{}
@@ -277,9 +275,8 @@ func Test_DeletePaste(t *testing.T) {
 }
 
 func Test_DeletePasteNotFound(t *testing.T) {
-	var paste = createTestPaste()
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodDelete, mckSrv.URL+"/paste/"+paste.URL(), nil)
+	req, err := http.NewRequest(http.MethodDelete, mckSrv.URL+"/paste/qweasd", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

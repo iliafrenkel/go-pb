@@ -1,3 +1,6 @@
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.package main
 package http
 
 import (
@@ -6,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -57,7 +59,7 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 
 	handler.Router = gin.Default()
 	handler.Router.GET("/paste/:id", handler.handlePaste)
-	handler.Router.POST("/paste", handler.verifyJsonMiddleware(new(api.Paste)), handler.handleCreate)
+	handler.Router.POST("/paste", handler.verifyJsonMiddleware(new(api.PasteForm)), handler.handleCreate)
 	handler.Router.DELETE("/paste/:id", handler.handleDelete)
 
 	user := handler.Router.Group("/user")
@@ -203,7 +205,7 @@ func (h *ApiServer) handlePaste(c *gin.Context) {
 		return
 	}
 
-	p, err := h.PasteService.Paste(id)
+	p, err := h.PasteService.Get(id)
 	if err != nil {
 		log.Println(err)
 		c.String(http.StatusNotFound, "paste not found")
@@ -227,21 +229,11 @@ func (h *ApiServer) handlePaste(c *gin.Context) {
 // expected, multiple JSON objects in the body will result in an error. Body
 // size is currently limited to a configurable value of Options.MaxBodySize.
 func (h *ApiServer) handleCreate(c *gin.Context) {
-	data := c.MustGet("payload").(*api.Paste)
+	data := c.MustGet("payload").(*api.PasteForm)
 
-	// Create new paste
-	rand.Seed(time.Now().UnixNano())
-	p := api.Paste{
-		ID:              rand.Uint64(),
-		Title:           data.Title,
-		Body:            data.Body,
-		Expires:         time.Time{},
-		Created:         time.Now(),
-		DeleteAfterRead: data.DeleteAfterRead,
-		Syntax:          data.Syntax,
-	}
-	if err := h.PasteService.Create(&p); err != nil {
-		log.Printf("failed to create paste: %v\n", err)
+	p, err := h.PasteService.Create(*data)
+	if err != nil {
+		log.Printf("handleCreate: failed to create paste: %v\n", err)
 		c.String(http.StatusBadRequest, "failed to create paste")
 		return
 	}
