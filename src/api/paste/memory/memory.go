@@ -106,11 +106,16 @@ func (s *PasteService) Delete(id uint64) error {
 	return nil
 }
 
-// List returns a slice of all the pastes
-func (s *PasteService) List() []api.Paste {
+// List returns a slice of all the pastes by a user ID.
+//
+// TODO: remove the second condition (id == 0), it's a hack for now to list
+// all the pastes.
+func (s *PasteService) List(id uint64) []api.Paste {
 	pastes := make([]api.Paste, 0, len(s.pastes))
 	for _, val := range s.pastes {
-		pastes = append(pastes, *val)
+		if val.UserID == id || id == 0 {
+			pastes = append(pastes, *val)
+		}
 	}
 	return pastes
 }

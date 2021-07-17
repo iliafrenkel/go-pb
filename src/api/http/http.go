@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -64,7 +65,7 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 		paste.GET("/:id", handler.handlePaste)
 		paste.POST("", handler.verifyJsonMiddleware(new(api.PasteForm)), handler.handleCreate)
 		paste.DELETE("/:id", handler.handleDelete)
-		paste.GET("/list", handler.handleListPaste)
+		paste.GET("/list/:id", handler.handleListPaste)
 	}
 
 	user := handler.Router.Group("/user")
@@ -264,7 +265,11 @@ func (h *ApiServer) handleDelete(c *gin.Context) {
 // handleListPaste is an HTTP handlers for GET /paste/list route. Returns
 // an array of all pastes.
 func (h *ApiServer) handleListPaste(c *gin.Context) {
-	pastes := h.PasteService.List()
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "wrong id")
+	}
+	pastes := h.PasteService.List(id)
 
 	c.JSON(http.StatusOK, pastes)
 }
