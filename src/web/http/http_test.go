@@ -1,18 +1,15 @@
 package http
 
 import (
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
 	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
-	"github.com/iliafrenkel/go-pb/src/api/base62"
 	apihttp "github.com/iliafrenkel/go-pb/src/api/http"
 	pasteMem "github.com/iliafrenkel/go-pb/src/api/paste/memory"
 )
@@ -24,14 +21,15 @@ var userSvc api.UserService = userMem.New()
 var mckSrv *httptest.Server
 
 // createTestPaste creates a paste with a random ID and a random body.
-func createTestPaste() *api.Paste {
-	rand.Seed(time.Now().UnixNano())
-	id := rand.Uint64()
-	var p = api.Paste{
-		ID:      id,
-		Title:   "Test paste",
-		Body:    base62.Encode(id),
-		Expires: time.Time{},
+func createTestPaste() *api.PasteForm {
+	var p = api.PasteForm{
+		Title:           "Test paste",
+		Body:            "Test body",
+		Expires:         "never",
+		DeleteAfterRead: false,
+		Password:        "",
+		Syntax:          "none",
+		UserID:          0,
 	}
 
 	return &p
@@ -128,11 +126,12 @@ func Test_PasteNotFoundRoute(t *testing.T) {
 
 func Test_PasteRoute(t *testing.T) {
 	p := createTestPaste()
-	if err := pasteSvc.Create(p); err != nil {
+	paste, err := pasteSvc.Create(*p)
+	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	r, _ := http.NewRequest("GET", "/p/"+p.URL(), nil)
+	r, _ := http.NewRequest("GET", "/p/"+paste.URL(), nil)
 	webSrv.Router.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
@@ -150,6 +149,7 @@ func Test_PasteCreateRoute(t *testing.T) {
 	form := url.Values{}
 	form.Set("title", "Test create paste")
 	form.Set("body", "This is a test create paste")
+	form.Set("expires", "never")
 	form.Set("syntax", "none")
 	form.Set("delete_after_read", "false")
 	w := httptest.NewRecorder()
@@ -171,6 +171,7 @@ func Test_PasteCreateRoute(t *testing.T) {
 func Test_PasteCreateNoBodyRoute(t *testing.T) {
 	form := url.Values{}
 	form.Set("title", "Test create paste")
+	form.Set("expires", "never")
 	form.Set("syntax", "none")
 	form.Set("delete_after_read", "false")
 	w := httptest.NewRecorder()
@@ -192,7 +193,7 @@ func Test_PasteCreateNoBodyRoute(t *testing.T) {
 func Test_PasteCreateNoSyntaxRoute(t *testing.T) {
 	form := url.Values{}
 	form.Set("title", "Test create paste")
-	form.Set("Body", "This is a test create paste")
+	form.Set("body", "This is a test create paste")
 	form.Set("delete_after_read", "false")
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("POST", "/p/", strings.NewReader(form.Encode()))

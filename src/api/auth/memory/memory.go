@@ -1,3 +1,7 @@
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.package main
+
 package memory
 
 import (
@@ -144,7 +148,7 @@ func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		usr := s.findByUsername(claims["username"].(string))
 		if usr != nil {
-			return api.UserInfo{Username: usr.Username, Token: token.Raw}, nil
+			return api.UserInfo{ID: usr.ID, Username: usr.Username, Token: token.Raw}, nil
 		} else {
 			return api.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
 		}

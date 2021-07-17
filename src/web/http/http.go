@@ -1,8 +1,12 @@
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.package main
 package http
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -74,8 +78,8 @@ func New(opts WebServerOptions) *WebServer {
 	handler.Router.GET("/u/logout", handler.handleDoUserLogout)
 	handler.Router.GET("/u/register", handler.handleUserRegister)
 	handler.Router.POST("/u/register", handler.handleDoUserRegister)
-	handler.Router.GET("/p/:id", handler.handlePaste)
-	handler.Router.POST("/p/", handler.handlePasteCreate)
+	handler.Router.GET("/p/:id", handler.handleGetPaste)
+	handler.Router.POST("/p/", handler.handleCreatePaste)
 
 	// Catch all route just shows the 404 error page
 	handler.Router.NoRoute(func(c *gin.Context) {
@@ -169,21 +173,23 @@ func (h *WebServer) handleSession(c *gin.Context) {
 			c.SetCookie("token", "", -1, "/", "localhost", false, true)
 			return
 		}
-		var data api.UserInfo
+		var usr api.UserInfo
 		defer resp.Body.Close()
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Println("handleSession: failed to read API response body: ", err)
 			return
 		}
-		if err := json.Unmarshal(b, &data); err != nil {
+		if err := json.Unmarshal(b, &usr); err != nil {
 			log.Println("handleSession: failed to parse API response", err)
 			return
 		}
 		// If the token is valid we update the session with the username
-		session.Set("username", data.Username)
+		session.Set("user_id", usr.ID)
+		session.Set("username", usr.Username)
 		session.Save()
-		c.Set("username", data.Username)
+		c.Set("user_id", usr.ID)
+		c.Set("username", usr.Username)
 		c.SetSameSite(http.SameSiteStrictMode)
 	}
 }
@@ -385,9 +391,9 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/u/login")
 }
 
-// handlePaste queries the API for a paste and returns a page that displays it.
+// handleGetPaste queries the API for a paste and returns a page that displays it.
 // It uses the "view.html" template.
-func (h *WebServer) handlePaste(c *gin.Context) {
+func (h *WebServer) handleGetPaste(c *gin.Context) {
 	// Query the API for a paste by ID
 	id := c.Param("id")
 	resp, err := http.Get(h.Options.ApiURL + "/paste/" + id)
@@ -445,11 +451,11 @@ func (h *WebServer) handlePaste(c *gin.Context) {
 	)
 }
 
-// handlePasteCreate collects information from the new paste form and calls
+// handleCreatePaste collects information from the new paste form and calls
 // the API to create a new paste. If successful it shows the new paste.
 // It uses the "view.html" template.
-func (h *WebServer) handlePasteCreate(c *gin.Context) {
-	var p api.Paste
+func (h *WebServer) handleCreatePaste(c *gin.Context) {
+	var p api.PasteForm
 	// Try to parse the form
 	if err := c.ShouldBind(&p); err != nil {
 		log.Println("handlePasteCreate: failed to bind to form data: ", err)
@@ -458,9 +464,15 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 		h.showError(c)
 		return
 	}
+	// Get user ID
+	if userID, ok := c.Get("user_id"); !ok {
+		p.UserID = 0
+	} else {
+		p.UserID = userID.(uint64)
+	}
 	// Try to create a new paste by calling the API
-	paste, _ := json.Marshal(p)
-	resp, err := http.Post(h.Options.ApiURL+"/paste", "application/json", bytes.NewBuffer(paste))
+	data, _ := json.Marshal(p)
+	resp, err := http.Post(h.Options.ApiURL+"/paste", "application/json", bytes.NewBuffer(data))
 
 	if err != nil {
 		log.Println("handlePasteCreate: error talking to API: ", err)
@@ -478,8 +490,9 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 		h.showError(c)
 		return
 	}
+	// API should send back the created paste
 	// Get API response body and try to parse it as JSON
-	var data api.Paste
+	var paste api.Paste
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -490,7 +503,7 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 		h.showError(c)
 		return
 	}
-	if err := json.Unmarshal(b, &data); err != nil {
+	if err := json.Unmarshal(b, &paste); err != nil {
 		log.Println("handlePasteCreate: failed to parse API response", err)
 		c.Set("errorCode", http.StatusInternalServerError)
 		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
@@ -500,11 +513,12 @@ func (h *WebServer) handlePasteCreate(c *gin.Context) {
 	}
 	// Send back HTML that display newly created paste
 	username, _ := c.Get("username")
+	fmt.Printf("Paste: %#+v", paste)
 	c.HTML(
 		http.StatusOK,
 		"view.html",
 		gin.H{
-			"Paste":    data,
+			"Paste":    paste,
 			"URL":      resp.Header.Get("Location"),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
