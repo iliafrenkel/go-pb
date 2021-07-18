@@ -22,8 +22,10 @@ In no particular order:
  - Syntax highlighting
  - Ability to create pastes from command line
 
-This is only the beginning, more information is to come.
+There is a [Roadmap](https://github.com/iliafrenkel/go-pb/projects/1) that I will
+start filling up with features, issues and ideas.
 
 As always, if you want to learn together, ask a question, offer help or get in
-touch for any other reason please don't hesitate to contact me
-[frenkel.ilia@gmail.com](mailto:frenkel.ilia@gmail.com).
+touch for any other reason please don't hesitate to participate in
+[Discussions](https://github.com/iliafrenkel/go-pb/discussions) or to contact
+me directly at [frenkel.ilia@gmail.com](mailto:frenkel.ilia@gmail.com).
