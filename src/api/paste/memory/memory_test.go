@@ -1,7 +1,9 @@
 package memory
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
 )
@@ -33,6 +35,91 @@ func Test_Create(t *testing.T) {
 		}
 		if paste.Body != p.Body {
 			t.Errorf("wrong body, want %s got %s", p.Title, paste.Title)
+		}
+	}
+}
+
+func Test_CreateWithExpiration(t *testing.T) {
+	var p = createTestPaste()
+	// Minutes
+	p.Expires = "10m"
+	if paste, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	} else {
+		if paste.Expires.Sub(paste.Created) != time.Duration(10*time.Minute) {
+			t.Errorf("minutes, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
+		}
+	}
+	// Hours
+	p.Expires = "2h"
+	if paste, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	} else {
+		if paste.Expires.Sub(paste.Created) != time.Duration(2*time.Hour) {
+			t.Errorf("hours, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
+		}
+	}
+	// Days
+	p.Expires = "2d"
+	if paste, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	} else {
+		if paste.Expires.Sub(paste.Created) != time.Duration(48*time.Hour) {
+			t.Errorf("days, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
+		}
+	}
+	// Weeks
+	p.Expires = "1w"
+	if paste, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	} else {
+		if paste.Expires.Sub(paste.Created) != time.Duration(7*24*time.Hour) {
+			t.Errorf("weeks, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
+		}
+	}
+	// Months
+	p.Expires = "6M"
+	if paste, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	} else {
+		y1, m1, _ := paste.Expires.Date()
+		y2, m2, _ := paste.Created.Date()
+		yearDiff := (y1 - y2) * 12
+		if int(m1-m2)+yearDiff != 6 {
+			t.Errorf("months, wrong expiration: created %s[%d], expires %s[%d]", paste.Created, m2, paste.Expires, m1)
+		}
+	}
+	// Years
+	p.Expires = "1y"
+	if paste, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+	} else {
+		y1, _, _ := paste.Expires.Date()
+		y2, _, _ := paste.Created.Date()
+		if y1-y2 != 1 {
+			t.Errorf("years, wrong expiration: created %s[%d], expires %s[%d]", paste.Created, y2, paste.Expires, y1)
+		}
+	}
+	// Unknown format
+	p.Expires = "1z"
+	if _, err := service.Create(*p); err == nil {
+		t.Error("paste created successfully but shouldn't")
+	} else {
+		got := err.Error()
+		want := "unknown duration format: 1z"
+		if want != got {
+			t.Errorf("expected %s, got %s", want, got)
+		}
+	}
+	// Wrong format
+	p.Expires = "abc"
+	if _, err := service.Create(*p); err == nil {
+		t.Error("paste created successfully but shouldn't")
+	} else {
+		got := err.Error()
+		want := "wrong duration format: abc"
+		if !strings.HasPrefix(got, want) {
+			t.Errorf("expected %s to start with %s", got, want)
 		}
 	}
 }
@@ -83,5 +170,23 @@ func Test_DeleteNotFound(t *testing.T) {
 		t.Error("No error for non-existing paste")
 	} else {
 		t.Logf("%v", err)
+	}
+}
+
+func Test_List(t *testing.T) {
+	var p = createTestPaste()
+	p.UserID = 1
+	if _, err := service.Create(*p); err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+		return
+	}
+
+	list := service.List(1)
+	if len(list) != 1 {
+		t.Errorf("Expected a list of 1, got %d", len(list))
+		return
+	}
+	if p.Title != list[0].Title {
+		t.Errorf("wrong title, want %s got %s", p.Title, list[0].Title)
 	}
 }

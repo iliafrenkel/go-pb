@@ -1,6 +1,10 @@
-// Copyright 2021 Ilia Frenkel. All rights reserved.
-// Use of this source code is governed by a MIT-style
-// license that can be found in the LICENSE file.package main
+/* Copyright 2021 Ilia Frenkel. All rights reserved.
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE.txt file.
+ *
+ * The api package is an entry point to go-pb API. It defines all the types
+ * and interfaces that needed to implemented.
+ */
 package api
 
 import (
@@ -45,10 +49,14 @@ type PasteForm struct {
 // Implementations should define the underlying storage such as database,
 // plain files or even memory.
 type PasteService interface {
+	// Get returns a paste by ID.
 	Get(id uint64) (*Paste, error)
+	// Create creates new paste, saves it to the storage and returns it.
 	Create(p PasteForm) (*Paste, error)
+	// Delete deletes a paste by ID.
 	Delete(id uint64) error
-	List(id uint64) []Paste
+	// List returns all the pastes with specified user ID.
+	List(uid uint64) []Paste
 }
 
 // User is a type that represents a single user as it is stored in the database

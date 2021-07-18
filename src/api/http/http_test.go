@@ -79,6 +79,52 @@ func Test_GetPaste(t *testing.T) {
 	}
 }
 
+func Test_GetPasteDeleteAfterRead(t *testing.T) {
+	var p = createTestPaste()
+	p.DeleteAfterRead = true
+	paste, err := pasteSvc.Create(*p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.Get(mckSrv.URL + "/paste/" + paste.URL())
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be OK, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want, err := json.Marshal(paste)
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != string(want) {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+
+	// Check that paste was deleted
+	paste, err = pasteSvc.Get(paste.ID)
+	if err == nil {
+		t.Errorf("Expected \"paste not found error\".")
+	}
+	if paste != nil {
+		t.Errorf("Expected paste to be deleted but it wasn't.")
+	}
+}
+
 func Test_GetPasteNotFound(t *testing.T) {
 	resp, err := http.Get(mckSrv.URL + "/paste/qweasd")
 
@@ -144,7 +190,7 @@ func Test_CreatePaste(t *testing.T) {
 
 	// Check status
 	if resp.StatusCode != http.StatusCreated {
-		t.Errorf("Status should be OK, got %d", resp.StatusCode)
+		t.Errorf("Status should be Created, got %d", resp.StatusCode)
 	}
 
 	// Check body
@@ -240,6 +286,95 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 	}
 }
 
+func Test_CreatePasteWrongFieldType(t *testing.T) {
+	body := `{
+		"title": 1,
+		"body": "body",
+		"expires":"never",
+		"syntax":"none"
+	}`
+	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer([]byte(body)))
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want := fmt.Sprintf("request body contains an invalid value for the \"title\" field (at position %d)", 14)
+	if got != want {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
+
+func Test_CreatePasteEmptyBody(t *testing.T) {
+	body := ""
+	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer([]byte(body)))
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want := "request body must not be empty"
+	if got != want {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
+
+func Test_CreatePasteLargeBody(t *testing.T) {
+	var p = createTestPaste()
+	p.Body = string(make([]byte, apiSrv.Options.MaxBodySize+1))
+	body, _ := json.Marshal(p)
+
+	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer([]byte(body)))
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want := fmt.Sprintf("request body must not be larger than %d bytes", apiSrv.Options.MaxBodySize)
+	if got != want {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
+
 func Test_DeletePaste(t *testing.T) {
 	var p = createTestPaste()
 	paste, err := pasteSvc.Create(*p)
@@ -272,8 +407,74 @@ func Test_DeletePaste(t *testing.T) {
 	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
+	// Check that paste was deleted
+	paste, err = pasteSvc.Get(paste.ID)
+	if err == nil {
+		t.Errorf("Expected \"paste not found error\".")
+	}
+	if paste != nil {
+		t.Errorf("Expected paste to be deleted but it wasn't.")
+	}
 }
 
+func Test_ListPastes(t *testing.T) {
+	var p = createTestPaste()
+	p.UserID = 1
+	paste, err := pasteSvc.Create(*p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.Get(mckSrv.URL + "/paste/list/1")
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be OK, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want, _ := json.Marshal([]api.Paste{*paste})
+	if got != string(want) {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
+
+func Test_ListPastesWrongID(t *testing.T) {
+	resp, err := http.Get(mckSrv.URL + "/paste/list/a")
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Status should be BadRequest, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want := "wrong id"
+	if got != want {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
 func Test_DeletePasteNotFound(t *testing.T) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodDelete, mckSrv.URL+"/paste/qweasd", nil)

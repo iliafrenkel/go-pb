@@ -1,6 +1,11 @@
-// Copyright 2021 Ilia Frenkel. All rights reserved.
-// Use of this source code is governed by a MIT-style
-// license that can be found in the LICENSE file.package main
+/* Copyright 2021 Ilia Frenkel. All rights reserved.
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE.txt file.
+ *
+ * The http package provides an ApiServer type - a server that uses
+ * api.PasteService and api.UserService to provide many useful endpoints.
+ * Check the New method documentation for the list of all endpoints.
+ */
 package http
 
 import (
@@ -46,11 +51,13 @@ type ApiServer struct {
 // and all the HTTP routes for manipulating pastes.
 //
 // The routes are:
-//   GET    /paste/{id}    - get paste by ID
-//   POST   /paste         - create new paste
-//   DELETE /paste/{id}    - delete paste by ID
-//   POST   /user/login    - authenticate user
-//   POST   /user/register - register new user
+//   GET    /paste/{id}      - get paste by ID
+//   POST   /paste           - create new paste
+//   DELETE /paste/{id}      - delete paste by ID
+//   GET    /paste/list/{id} - get a list of pastes by UserID
+//   POST   /user/login      - authenticate user
+//   POST   /user/register   - register new user
+//   POST   /user/validate   - validate user token
 func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *ApiServer {
 	var handler ApiServer
 	handler.Options = opts
@@ -62,10 +69,10 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 
 	paste := handler.Router.Group("/paste")
 	{
-		paste.GET("/:id", handler.handlePaste)
-		paste.POST("", handler.verifyJsonMiddleware(new(api.PasteForm)), handler.handleCreate)
-		paste.DELETE("/:id", handler.handleDelete)
-		paste.GET("/list/:id", handler.handleListPaste)
+		paste.GET("/:id", handler.handlePasteGet)
+		paste.POST("", handler.verifyJsonMiddleware(new(api.PasteForm)), handler.handlePasteCreate)
+		paste.DELETE("/:id", handler.handlePasteDelete)
+		paste.GET("/list/:id", handler.handlePasteList)
 	}
 
 	user := handler.Router.Group("/user")
@@ -101,7 +108,6 @@ func (h *ApiServer) ListenAndServe() error {
 // an error. Only one object is expected, multiple JSON objects in the body
 // will result in an error. Body size is limited to the value of
 // Options.MaxBodySize parameter.
-
 func (h *ApiServer) verifyJsonMiddleware(data interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Parse incoming json
@@ -199,9 +205,9 @@ func (h *ApiServer) verifyJsonMiddleware(data interface{}) gin.HandlerFunc {
 	}
 }
 
-// handlePaste is an HTTP handler for the GET /paste/{id} route, it returns
+// handlePasteGet is an HTTP handler for the GET /paste/{id} route, it returns
 // the paste as a JSON string or 404 Not Found.
-func (h *ApiServer) handlePaste(c *gin.Context) {
+func (h *ApiServer) handlePasteGet(c *gin.Context) {
 	// We expect the id parameter as base62 encoded string, we try to decode
 	// it into a uint64 paste id and return 404 if we can't.
 	id, err := base62.Decode(c.Param("id"))
@@ -226,15 +232,17 @@ func (h *ApiServer) handlePaste(c *gin.Context) {
 	}
 }
 
-// handleCreate is an HTTP handler for the POST /paste route. It expects the
-// new paste as a JSON sting in the body of the request. Returns newly created
-// paste as a JSON string and the 'Location' header set to the new paste URL.
+// handlePasteCreate is an HTTP handler for the POST /paste route. It expects
+// the new paste as a JSON sting in the body of the request. Returns newly
+// created paste as a JSON string and the 'Location' header set to the new
+// paste URL.
 //
-// The JSON object must correspond to the api.Paste struct. Absent fields will
-// get default values. Extra fields will generate an error. Only one object is
-// expected, multiple JSON objects in the body will result in an error. Body
-// size is currently limited to a configurable value of Options.MaxBodySize.
-func (h *ApiServer) handleCreate(c *gin.Context) {
+// The JSON object must correspond to the api.PasteForm struct. Absent fields
+// will get default values. Extra fields will generate an error. Only one
+// object is expected, multiple JSON objects in the body will result in an
+// error. Body size is currently limited to a configurable value of
+// Options.MaxBodySize.
+func (h *ApiServer) handlePasteCreate(c *gin.Context) {
 	data := c.MustGet("payload").(*api.PasteForm)
 
 	p, err := h.PasteService.Create(*data)
@@ -247,9 +255,9 @@ func (h *ApiServer) handleCreate(c *gin.Context) {
 	c.JSON(http.StatusCreated, p)
 }
 
-// handleDelete is an HTTP handler for the DELETE /paste/{id} route. Deletes
+// handlePasteDelete is an HTTP handler for the DELETE /paste/:id route. Deletes
 // the paste by id and returns 200 OK or 404 Not Found.
-func (h *ApiServer) handleDelete(c *gin.Context) {
+func (h *ApiServer) handlePasteDelete(c *gin.Context) {
 	id, err := base62.Decode(c.Param("id"))
 	if err != nil {
 		c.String(http.StatusNotFound, "paste not found")
@@ -262,12 +270,13 @@ func (h *ApiServer) handleDelete(c *gin.Context) {
 	}
 }
 
-// handleListPaste is an HTTP handlers for GET /paste/list route. Returns
-// an array of all pastes.
-func (h *ApiServer) handleListPaste(c *gin.Context) {
+// handlePasteList is an HTTP handlers for GET /paste/list/:id route. Returns
+// an array of pastes by user ID.
+func (h *ApiServer) handlePasteList(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.String(http.StatusBadRequest, "wrong id")
+		return
 	}
 	pastes := h.PasteService.List(id)
 

@@ -1,8 +1,8 @@
-// Copyright 2021 Ilia Frenkel. All rights reserved.
-// Use of this source code is governed by a MIT-style
-// license that can be found in the LICENSE file.package main
+/* Copyright 2021 Ilia Frenkel. All rights reserved.
+ * Use of this source code is governed by a MIT-style
+ * license that can be found in the LICENSE.txt file.
 
-/* The memory package provides methods to work with pastes using memory as a
+ * The memory package provides methods to work with pastes using memory as a
  * storage.
  *
  * This package provides a PasteService type that implements api.PasteService
@@ -44,20 +44,21 @@ func (s *PasteService) Get(id uint64) (*api.Paste, error) {
 	return nil, errors.New("paste not found")
 }
 
-// Create adds a new paste to the storage
+// Create initialises a new paste from the provided data and adds it to the
+// storage. It returns the newly created paste.
 func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 	var (
 		expires, created time.Time
 	)
 	created = time.Now()
-	expires = time.Time{}
+	expires = time.Time{} // zero time means no expiration, this is the default
 	// We expect the expiration to be in the form of "nx" where "n" is a number
 	// and "x" is a time unit character: m for minute, h for hour, d for day,
 	// w for week, M for month and y for year.
 	if p.Expires != "never" && len(p.Expires) > 1 {
 		dur, err := strconv.Atoi(p.Expires[:len(p.Expires)-1])
 		if err != nil {
-			return nil, fmt.Errorf("wrong duration format: %s", p.Expires)
+			return nil, fmt.Errorf("wrong duration format: %s, error: %w", p.Expires, err)
 		}
 		switch p.Expires[len(p.Expires)-1] {
 		case 'm': //minutes
@@ -110,10 +111,10 @@ func (s *PasteService) Delete(id uint64) error {
 //
 // TODO: remove the second condition (id == 0), it's a hack for now to list
 // all the pastes.
-func (s *PasteService) List(id uint64) []api.Paste {
+func (s *PasteService) List(uid uint64) []api.Paste {
 	pastes := make([]api.Paste, 0, len(s.pastes))
 	for _, val := range s.pastes {
-		if val.UserID == id || id == 0 {
+		if val.UserID == uid || uid == 0 {
 			pastes = append(pastes, *val)
 		}
 	}
