@@ -1,4 +1,4 @@
-# Go pb - Pastebin alternative written in Golang
+# go-pb - Pastebin alternative written in Go
 
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE.txt)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) 
