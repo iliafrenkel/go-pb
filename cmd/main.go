@@ -26,8 +26,9 @@ var (
 func main() {
 	// Set API and Web servers options
 	var apiOpts = hapi.ApiServerOptions{
-		Addr:        "127.0.0.1:8000",
-		MaxBodySize: 10240,
+		Addr:         "127.0.0.1:8000",
+		MaxBodySize:  10240,
+		DBConnection: "test.db",
 	}
 	var webOpts = hweb.WebServerOptions{
 		Addr:    "127.0.0.1:8080",

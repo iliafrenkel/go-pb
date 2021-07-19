@@ -18,12 +18,13 @@ import (
 var apiServer *http.ApiServer
 
 func StartApiServer(opts http.ApiServerOptions) error {
-	userSvc, err := sqlite.New(sqlite.DBOptions{Connection: "test.db"})
+	userSvc, err := sqlite.New(sqlite.DBOptions{Connection: opts.DBConnection})
+	pasteSvc := pasteMem.New()
 	if err != nil {
 		return fmt.Errorf("StartApiServer: failed to create UserService: %w", err)
 	}
 
-	apiServer = http.New(pasteMem.New(), userSvc, opts)
+	apiServer = http.New(pasteSvc, userSvc, opts)
 
 	log.Println("API server listening on ", opts.Addr)
 

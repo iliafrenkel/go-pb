@@ -468,7 +468,7 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 	if userID, ok := c.Get("user_id"); !ok {
 		p.UserID = 0
 	} else {
-		p.UserID = userID.(uint64)
+		p.UserID = userID.(int64)
 	}
 	// Try to create a new paste by calling the API
 	data, _ := json.Marshal(p)

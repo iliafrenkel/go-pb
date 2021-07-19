@@ -24,7 +24,7 @@ type Paste struct {
 	Password        string    `json:"password"`
 	Created         time.Time `json:"created"`
 	Syntax          string    `json:"syntax" form:"syntax" binding:"required"`
-	UserID          uint64    `json:"user_id"`
+	UserID          int64     `json:"user_id"`
 }
 
 // URL generates a base62 encoded string from the ID.
@@ -41,7 +41,7 @@ type PasteForm struct {
 	DeleteAfterRead bool   `json:"delete_after_read" form:"delete_after_read" binding:"-"`
 	Password        string `json:"password" form:"password"`
 	Syntax          string `json:"syntax" form:"syntax" binding:"required"`
-	UserID          uint64 `json:"user_id"`
+	UserID          int64  `json:"user_id"`
 }
 
 // PasteService is the interface that defines methods for working with Pastes.
@@ -56,7 +56,7 @@ type PasteService interface {
 	// Delete deletes a paste by ID.
 	Delete(id uint64) error
 	// List returns all the pastes with specified user ID.
-	List(uid uint64) []Paste
+	List(uid int64) []Paste
 }
 
 // User is a type that represents a single user as it is stored in the database
