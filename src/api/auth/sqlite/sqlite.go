@@ -3,7 +3,7 @@
  * license that can be found in the LICENSE.txt file.
  */
 
-package memory
+package sqlite
 
 import (
 	"errors"
@@ -15,46 +15,67 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/iliafrenkel/go-pb/src/api"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var (
 	tokenSecret = []byte("hardcodeddefault") // TODO:(os.Getenv("GOPB_TOKEN_SECRET"))
 )
 
-// UserService stores all the users in memory and implements auth.UserService
-// interface.
+// UserService stores all the users in sqlite database and implements
+// auth.UserService interface.
 type UserService struct {
-	Users map[int64]*api.User
+	db *gorm.DB
 }
 
-// New returns a new UserService.
-// It initialises the underlying storage which in this case is map.
-func New() *UserService {
+func New() (*UserService, error) {
 	var s UserService
-	s.Users = make(map[int64]*api.User)
-	return &s
+	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("New: failed to establish database connection: %w", err)
+	}
+	db.AutoMigrate(&api.User{})
+	s.db = db
+
+	return &s, nil
 }
 
 // findByUsername finds a user by username.
-func (s *UserService) findByUsername(uname string) *api.User {
-	for _, u := range s.Users {
-		if u.Username == uname {
-			return u
-		}
+// It returns nil, nil if the user was no found.
+func (s *UserService) findByUsername(uname string) (*api.User, error) {
+	if s.db == nil {
+		return nil, errors.New("findUserByName: no database connection")
+	}
+	var usr api.User
+	// err := s.db.Limit(1).Find(&usr, "username = ?", uname).Error
+	err := s.db.Where("username = ?", uname).First(&usr).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("findUserByName: database error: %w", err)
 	}
 
-	return nil
+	return &usr, nil
 }
 
 // findByEmail finds a user by email.
-func (s *UserService) findByEmail(email string) *api.User {
-	for _, u := range s.Users {
-		if u.Email == email {
-			return u
-		}
+func (s *UserService) findByEmail(email string) (*api.User, error) {
+	if s.db == nil {
+		return nil, errors.New("findUserByName: no database connection")
+	}
+	var usr api.User
+	// err := s.db.Limit(1).Find(&usr, "email = ?", email).Error
+	err := s.db.Where("username = ?", email).First(&usr).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("findUserByName: database error: %w", err)
 	}
 
-	return nil
+	return &usr, nil
 }
 
 // authToken returns an JWT token for provided user.
@@ -73,10 +94,18 @@ func (s *UserService) authToken(u api.User) (string, error) {
 // Returns an error if user with the same username or the same email
 // already exist or if passwords do not match.
 func (s *UserService) Create(u api.UserRegister) error {
-	if s.findByUsername(u.Username) != nil {
+	usr, err := s.findByUsername(u.Username)
+	if err != nil {
+		return fmt.Errorf("Create: findByUsername failed: %w", err)
+	}
+	if usr != nil {
 		return errors.New("user with such username already exists")
 	}
-	if s.findByEmail(u.Email) != nil {
+	usr, err = s.findByEmail(u.Email)
+	if err != nil {
+		return fmt.Errorf("Create: findByEmail failed: %w", err)
+	}
+	if usr != nil {
 		return errors.New("user with such email already exists")
 	}
 	if u.Password != u.RePassword {
@@ -89,18 +118,18 @@ func (s *UserService) Create(u api.UserRegister) error {
 		return errors.New("username cannot be empty")
 	}
 
-	var usr api.User
+	var newUsr api.User
 	rand.Seed(time.Now().UnixNano())
-	usr.ID = rand.Int63()
-	usr.Username = u.Username
-	usr.Email = strings.ToLower(u.Email)
+	newUsr.ID = rand.Int63()
+	newUsr.Username = u.Username
+	newUsr.Email = strings.ToLower(u.Email)
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	usr.PasswordHash = string(hash)
+	newUsr.PasswordHash = string(hash)
 
-	s.Users[usr.ID] = &usr
+	s.db.Create(&newUsr)
 	return nil
 }
 
@@ -109,13 +138,20 @@ func (s *UserService) Create(u api.UserRegister) error {
 // While this method returns different errors for different failures the
 // end user should only see a generic "invalid credentials" message.
 func (s *UserService) Authenticate(u api.UserLogin) (api.UserInfo, error) {
-	inf := api.UserInfo{Username: "", Token: ""}
-	usr := s.findByUsername(u.Username)
+	inf := api.UserInfo{
+		ID:       0,
+		Username: "",
+		Token:    "",
+	}
+	usr, err := s.findByUsername(u.Username)
+	if err != nil {
+		return inf, fmt.Errorf("Authenticate: findByUsername failed: %w", err)
+	}
 	if usr == nil {
 		return inf, errors.New("user doesn't exist")
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(u.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(u.Password))
 	if err != nil {
 		return inf, errors.New("invalid password")
 	}
@@ -147,7 +183,10 @@ func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		usr := s.findByUsername(claims["username"].(string))
+		usr, err := s.findByUsername(claims["username"].(string))
+		if err != nil {
+			return api.UserInfo{}, fmt.Errorf("Validate: findByUsername failed: %w", err)
+		}
 		if usr != nil {
 			return api.UserInfo{ID: usr.ID, Username: usr.Username, Token: token.Raw}, nil
 		} else {

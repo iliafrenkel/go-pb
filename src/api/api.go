@@ -61,10 +61,11 @@ type PasteService interface {
 
 // User is a type that represents a single user as it is stored in the database
 type User struct {
-	ID           uint64 `json:"id"`
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"_"`
+	ID           int64     `json:"id" gorm:"primaryKey"`
+	Username     string    `json:"username" gorm:"index"`
+	Email        string    `json:"email" gorm:"index"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"-"`
 }
 
 // UserRegister represents the data that we expect to recieve from the
@@ -86,7 +87,7 @@ type UserLogin struct {
 // UserInfo represents the data that we send back in response to various
 // operation such as Authenticate or Validate.
 type UserInfo struct {
-	ID       uint64 `json:"user_id"`
+	ID       int64  `json:"user_id"`
 	Username string `json:"username"`
 	Token    string `json:"token"`
 }
