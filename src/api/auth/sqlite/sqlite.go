@@ -23,15 +23,24 @@ var (
 	tokenSecret = []byte("hardcodeddefault") // TODO:(os.Getenv("GOPB_TOKEN_SECRET"))
 )
 
+type DBOptions struct {
+	// Database connection string.
+	// For sqlite it should be either a file name or `file::memory:?cache=shared`
+	// to use temporary database in memory (ex. for testing).
+	Connection string
+}
+
 // UserService stores all the users in sqlite database and implements
 // auth.UserService interface.
 type UserService struct {
-	db *gorm.DB
+	db      *gorm.DB
+	Options DBOptions
 }
 
-func New() (*UserService, error) {
+func New(opts DBOptions) (*UserService, error) {
 	var s UserService
-	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	s.Options = opts
+	db, err := gorm.Open(sqlite.Open(s.Options.Connection), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("New: failed to establish database connection: %w", err)
 	}
@@ -67,7 +76,7 @@ func (s *UserService) findByEmail(email string) (*api.User, error) {
 	}
 	var usr api.User
 	// err := s.db.Limit(1).Find(&usr, "email = ?", email).Error
-	err := s.db.Where("username = ?", email).First(&usr).Error
+	err := s.db.Where("email = ?", email).First(&usr).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
