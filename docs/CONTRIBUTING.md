@@ -53,6 +53,10 @@ Before you submit any code for review, please consider the following:
   pass and that existing tests don't fail either.
 - Comment your code extensively!
 
+Just a side note on licensing. If you bring an external dependency, consider
+the license. This project is MIT licensed. For example GPL licensed code cannot
+be included in this project without violating the GPL.
+
 ### Commit messages
 We highly value commit messages that follow established forms within the
 project. Generally speaking, we follow the practices
