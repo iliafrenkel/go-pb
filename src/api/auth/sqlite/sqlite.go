@@ -44,6 +44,8 @@ func New(opts DBOptions) (*UserService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("New: failed to establish database connection: %w", err)
 	}
+	// TODO: Put automatic migration behind a switch so that we can disable it
+	// in the future if need be.
 	db.AutoMigrate(&api.User{})
 	s.db = db
 
@@ -51,13 +53,15 @@ func New(opts DBOptions) (*UserService, error) {
 }
 
 // findByUsername finds a user by username.
-// It returns nil, nil if the user was no found.
+// The return values are as follows:
+// - if there is a problem talking to the database user == nil, err != nil
+// - if user is not found user == nil, err == nil
+// - if user is found user != nil, err == nil
 func (s *UserService) findByUsername(uname string) (*api.User, error) {
 	if s.db == nil {
 		return nil, errors.New("findUserByName: no database connection")
 	}
 	var usr api.User
-	// err := s.db.Limit(1).Find(&usr, "username = ?", uname).Error
 	err := s.db.Where("username = ?", uname).First(&usr).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -75,7 +79,6 @@ func (s *UserService) findByEmail(email string) (*api.User, error) {
 		return nil, errors.New("findUserByName: no database connection")
 	}
 	var usr api.User
-	// err := s.db.Limit(1).Find(&usr, "email = ?", email).Error
 	err := s.db.Where("email = ?", email).First(&usr).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
