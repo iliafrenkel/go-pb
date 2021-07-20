@@ -42,11 +42,14 @@ func main() {
 		Version: version,
 	}
 
+	// Create two channels, quit for OS signals and errc for errors comming
+	// from the servers.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	errc := make(chan error, 1)
 
+	// Start the API and the Web servers in parallel using Go routines
 	log.Println("Starting servers...")
-	// We start the Web server after the API one so that no web requests
-	// come before API is ready. The shutdown is done in reverse order.
 	go func() {
 		errc <- StartApiServer(apiOpts)
 	}()
@@ -54,27 +57,24 @@ func main() {
 		errc <- StartWebServer(webOpts)
 	}()
 
-	// Graceful shutdown - we create a channel for system signals and
-	// "subscribe" to SIGINT or SIGTERM. We then wait indefinitely for
-	// one of the signals.
-	// Once we receive a signal we create a context with timeout to give
-	// the servers some time to close all the connections. Please note
-	// that the context is shared between the severs. This means that the
-	// timeout is for BOTH severs - if the timeout is 10 seconds and web
-	// server takes 9 seconds to shutdown it will leave the API server
-	// only one second.
-	//
-	// TODO: Shutdown timeout must be configurable.
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
+	// Wait indefinitely for either one of the OS signals (SIGTERM or SIGINT)
+	// or for one of the servers to return an error.
 	select {
 	case <-quit:
 		log.Println("Shutting down servers:")
 	case err := <-errc:
-		log.Printf("Startup failed: %v\n", err)
+		log.Printf("Startup failed, exiting: %v\n", err)
 	}
 
+	// If we are here we either received one of the signals or one of the
+	// servers encountered an error. Either way, we create a context with
+	// timeout to give the servers some time to close all the connections.
+	// Please note that the context is shared between the severs. This
+	// means that the timeout is for BOTH severs - if the timeout is 10
+	// seconds and Web server takes 9 seconds to shutdown it will leave
+	// the API server only one second.
+	//
+	// TODO: #17 Shutdown timeout must be configurable.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
