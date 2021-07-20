@@ -6,17 +6,25 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
-	userMem "github.com/iliafrenkel/go-pb/src/api/auth/memory"
+	"github.com/iliafrenkel/go-pb/src/api/auth/sqlite"
 	"github.com/iliafrenkel/go-pb/src/api/http"
-	pasteMem "github.com/iliafrenkel/go-pb/src/api/paste/memory"
+	"github.com/iliafrenkel/go-pb/src/api/paste/memory"
 )
 
 var apiServer *http.ApiServer
 
 func StartApiServer(opts http.ApiServerOptions) error {
-	apiServer = http.New(pasteMem.New(), userMem.New(), opts)
+	userSvc, err := sqlite.New(sqlite.DBOptions{Connection: opts.DBConnection})
+	if err != nil {
+		return fmt.Errorf("StartApiServer: failed to create UserService: %w", err)
+	}
+
+	pasteSvc := memory.New()
+
+	apiServer = http.New(pasteSvc, userSvc, opts)
 
 	log.Println("API server listening on ", opts.Addr)
 

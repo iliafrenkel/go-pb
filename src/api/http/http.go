@@ -32,6 +32,9 @@ type ApiServerOptions struct {
 	// Maximum size of the POST request body, anything larger than this will
 	// be rejected with an error.
 	MaxBodySize int64
+	// When using a database as a storage this connection string will be passed
+	// on to the corresponding service.
+	DBConnection string
 }
 
 // ApiServer type provides an HTTP server that calls PasteService methods in
@@ -273,7 +276,7 @@ func (h *ApiServer) handlePasteDelete(c *gin.Context) {
 // handlePasteList is an HTTP handlers for GET /paste/list/:id route. Returns
 // an array of pastes by user ID.
 func (h *ApiServer) handlePasteList(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.String(http.StatusBadRequest, "wrong id")
 		return

@@ -111,7 +111,7 @@ func (s *PasteService) Delete(id uint64) error {
 //
 // TODO: remove the second condition (id == 0), it's a hack for now to list
 // all the pastes.
-func (s *PasteService) List(uid uint64) []api.Paste {
+func (s *PasteService) List(uid int64) []api.Paste {
 	pastes := make([]api.Paste, 0, len(s.pastes))
 	for _, val := range s.pastes {
 		if val.UserID == uid || uid == 0 {

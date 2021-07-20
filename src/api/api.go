@@ -24,7 +24,7 @@ type Paste struct {
 	Password        string    `json:"password"`
 	Created         time.Time `json:"created"`
 	Syntax          string    `json:"syntax" form:"syntax" binding:"required"`
-	UserID          uint64    `json:"user_id"`
+	UserID          int64     `json:"user_id"`
 }
 
 // URL generates a base62 encoded string from the ID.
@@ -41,7 +41,7 @@ type PasteForm struct {
 	DeleteAfterRead bool   `json:"delete_after_read" form:"delete_after_read" binding:"-"`
 	Password        string `json:"password" form:"password"`
 	Syntax          string `json:"syntax" form:"syntax" binding:"required"`
-	UserID          uint64 `json:"user_id"`
+	UserID          int64  `json:"user_id"`
 }
 
 // PasteService is the interface that defines methods for working with Pastes.
@@ -56,15 +56,16 @@ type PasteService interface {
 	// Delete deletes a paste by ID.
 	Delete(id uint64) error
 	// List returns all the pastes with specified user ID.
-	List(uid uint64) []Paste
+	List(uid int64) []Paste
 }
 
 // User is a type that represents a single user as it is stored in the database
 type User struct {
-	ID           uint64 `json:"id"`
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"_"`
+	ID           int64     `json:"id" gorm:"primaryKey"`
+	Username     string    `json:"username" gorm:"index"`
+	Email        string    `json:"email" gorm:"index"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"-"`
 }
 
 // UserRegister represents the data that we expect to recieve from the
@@ -86,7 +87,7 @@ type UserLogin struct {
 // UserInfo represents the data that we send back in response to various
 // operation such as Authenticate or Validate.
 type UserInfo struct {
-	ID       uint64 `json:"user_id"`
+	ID       int64  `json:"user_id"`
 	Username string `json:"username"`
 	Token    string `json:"token"`
 }
