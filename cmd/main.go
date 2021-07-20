@@ -26,8 +26,14 @@ var (
 func main() {
 	// Set API and Web servers options
 	var apiOpts = hapi.ApiServerOptions{
-		Addr:         "127.0.0.1:8000",
-		MaxBodySize:  10240,
+		// API server will bind to this address. It follows the same convention
+		// as `net.http.Server.Addr`.
+		Addr: "127.0.0.1:8000",
+		// Maximum body size for any request that accepts body (such as POST).
+		MaxBodySize: 10240,
+		// Database connection string.
+		// It will be a file name for the sqlite database you cab also
+		// pass `file::memory:?cache=shared` for in-memory temporary database.
 		DBConnection: "test.db",
 	}
 	var webOpts = hweb.WebServerOptions{
@@ -36,11 +42,17 @@ func main() {
 		Version: version,
 	}
 
+	errc := make(chan error, 1)
+
 	log.Println("Starting servers...")
 	// We start the Web server after the API one so that no web requests
 	// come before API is ready. The shutdown is done in reverse order.
-	go StartApiServer(apiOpts)
-	go StartWebServer(webOpts)
+	go func() {
+		errc <- StartApiServer(apiOpts)
+	}()
+	go func() {
+		errc <- StartWebServer(webOpts)
+	}()
 
 	// Graceful shutdown - we create a channel for system signals and
 	// "subscribe" to SIGINT or SIGTERM. We then wait indefinitely for
@@ -55,9 +67,13 @@ func main() {
 	// TODO: Shutdown timeout must be configurable.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 
-	log.Println("Shutting down servers:")
+	select {
+	case <-quit:
+		log.Println("Shutting down servers:")
+	case err := <-errc:
+		log.Printf("Startup failed: %v\n", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
