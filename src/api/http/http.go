@@ -220,7 +220,7 @@ func (h *ApiServer) handlePasteGet(c *gin.Context) {
 		return
 	}
 
-	p, err := h.PasteService.Get(id)
+	p, err := h.PasteService.Get(int64(id))
 	if err != nil {
 		log.Println(err)
 		c.String(http.StatusNotFound, "paste not found")
@@ -267,7 +267,7 @@ func (h *ApiServer) handlePasteDelete(c *gin.Context) {
 		return
 	}
 
-	if err := h.PasteService.Delete(id); err != nil {
+	if err := h.PasteService.Delete(int64(id)); err != nil {
 		c.String(http.StatusNotFound, "paste not found")
 		return
 	}

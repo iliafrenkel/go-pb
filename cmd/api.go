@@ -9,20 +9,23 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/iliafrenkel/go-pb/src/api/auth/sqlite"
+	u "github.com/iliafrenkel/go-pb/src/api/auth/sqlite"
 	"github.com/iliafrenkel/go-pb/src/api/http"
-	"github.com/iliafrenkel/go-pb/src/api/paste/memory"
+	p "github.com/iliafrenkel/go-pb/src/api/paste/sqlite"
 )
 
 var apiServer *http.ApiServer
 
 func StartApiServer(opts http.ApiServerOptions) error {
-	userSvc, err := sqlite.New(sqlite.DBOptions{Connection: opts.DBConnection})
+	userSvc, err := u.New(u.DBOptions{Connection: opts.DBConnection})
 	if err != nil {
 		return fmt.Errorf("StartApiServer: failed to create UserService: %w", err)
 	}
 
-	pasteSvc := memory.New()
+	pasteSvc, err := p.New(p.DBOptions{Connection: opts.DBConnection})
+	if err != nil {
+		return fmt.Errorf("StartApiServer: failed to create PasteService: %w", err)
+	}
 
 	apiServer = http.New(pasteSvc, userSvc, opts)
 

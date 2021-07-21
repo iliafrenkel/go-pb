@@ -16,20 +16,21 @@ import (
 // Paste is a the type that represents a single paste as it is stored in the
 // database.
 type Paste struct {
-	ID              uint64    `json:"id"`
-	Title           string    `json:"title" form:"title"`
-	Body            string    `json:"body" form:"body" binding:"required"`
-	Expires         time.Time `json:"expires"`
-	DeleteAfterRead bool      `json:"delete_after_read" form:"delete_after_read" binding:"-"`
+	ID              int64     `json:"id" gorm:"primaryKey"`
+	Title           string    `json:"title"`
+	Body            string    `json:"body"`
+	Expires         time.Time `json:"expires" gorm:"index"`
+	DeleteAfterRead bool      `json:"delete_after_read"`
 	Password        string    `json:"password"`
 	Created         time.Time `json:"created"`
-	Syntax          string    `json:"syntax" form:"syntax" binding:"required"`
-	UserID          int64     `json:"user_id"`
+	Syntax          string    `json:"syntax"`
+	UserID          int64     `json:"user_id" gorm:"index"`
+	User            User      `json:"-"`
 }
 
 // URL generates a base62 encoded string from the ID.
 func (p *Paste) URL() string {
-	return base62.Encode(p.ID)
+	return base62.Encode(uint64(p.ID))
 }
 
 // PasteForm represents the data that we expect to recieve when the user
@@ -50,11 +51,11 @@ type PasteForm struct {
 // plain files or even memory.
 type PasteService interface {
 	// Get returns a paste by ID.
-	Get(id uint64) (*Paste, error)
+	Get(id int64) (*Paste, error)
 	// Create creates new paste, saves it to the storage and returns it.
 	Create(p PasteForm) (*Paste, error)
 	// Delete deletes a paste by ID.
-	Delete(id uint64) error
+	Delete(id int64) error
 	// List returns all the pastes with specified user ID.
 	List(uid int64) []Paste
 }
