@@ -16,6 +16,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_CreateUser(t *testing.T) {
+	t.Parallel()
 	var usr = api.UserRegister{
 		Username:   "test",
 		Email:      "test@example.com",
@@ -56,6 +57,7 @@ func Test_CreateUser(t *testing.T) {
 }
 
 func Test_CreateUserEmptyUsername(t *testing.T) {
+	t.Parallel()
 	var usr = api.UserRegister{
 		Username:   "",
 		Email:      "emptyusername@example.com",
@@ -68,6 +70,7 @@ func Test_CreateUserEmptyUsername(t *testing.T) {
 	}
 }
 func Test_CreateUserEmptyEmail(t *testing.T) {
+	t.Parallel()
 	var usr = api.UserRegister{
 		Username:   "emptyemail",
 		Email:      "",
@@ -81,6 +84,7 @@ func Test_CreateUserEmptyEmail(t *testing.T) {
 }
 
 func Test_CreateUserPasswordsDontMatch(t *testing.T) {
+	t.Parallel()
 	var usr = api.UserRegister{
 		Username:   "nonmatchingpasswords",
 		Email:      "nonmatchingpasswords@example.com",
@@ -94,6 +98,7 @@ func Test_CreateUserPasswordsDontMatch(t *testing.T) {
 }
 
 func Test_AuthenticateUser(t *testing.T) {
+	t.Parallel()
 	var usr = api.UserRegister{
 		Username:   "auth",
 		Email:      "auth@example.com",
@@ -145,6 +150,7 @@ func Test_AuthenticateUser(t *testing.T) {
 }
 
 func Test_ValidateToken(t *testing.T) {
+	t.Parallel()
 	var usr = api.UserRegister{
 		Username:   "validate",
 		Email:      "validate@example.com",

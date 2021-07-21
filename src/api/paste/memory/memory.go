@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
@@ -26,18 +27,22 @@ import (
 // PasteService stores all the pastes in memory and implements the
 // api.PasteService interface.
 type PasteService struct {
-	pastes map[uint64]*api.Paste
+	pastes     map[uint64]*api.Paste
+	pastesLock *sync.RWMutex // controls access to pastes map
 }
 
 // New returns new PasteService with an empty map of pastes.
 func New() *PasteService {
 	var s PasteService
 	s.pastes = make(map[uint64]*api.Paste)
+	s.pastesLock = &sync.RWMutex{}
 	return &s
 }
 
 // Get returns a paste by it's ID.
 func (s *PasteService) Get(id uint64) (*api.Paste, error) {
+	s.pastesLock.RLock()
+	defer s.pastesLock.RUnlock()
 	if p, ok := s.pastes[id]; ok {
 		return p, nil
 	}
@@ -91,6 +96,8 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 		UserID:          p.UserID,
 	}
 
+	s.pastesLock.Lock()
+	defer s.pastesLock.Unlock()
 	s.pastes[newPaste.ID] = &newPaste
 
 	return &newPaste, nil
@@ -98,10 +105,15 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 
 // Delete removes the paste from the storage
 func (s *PasteService) Delete(id uint64) error {
+	s.pastesLock.RLock()
 	if _, ok := s.pastes[id]; !ok {
+		s.pastesLock.RUnlock()
 		return errors.New("paste not found")
 	}
+	s.pastesLock.RUnlock()
 
+	s.pastesLock.Lock()
+	defer s.pastesLock.Unlock()
 	delete(s.pastes, id)
 
 	return nil
@@ -113,6 +125,8 @@ func (s *PasteService) Delete(id uint64) error {
 // all the pastes.
 func (s *PasteService) List(uid int64) []api.Paste {
 	pastes := make([]api.Paste, 0, len(s.pastes))
+	s.pastesLock.RLock()
+	defer s.pastesLock.RUnlock()
 	for _, val := range s.pastes {
 		if val.UserID == uid || uid == 0 {
 			pastes = append(pastes, *val)

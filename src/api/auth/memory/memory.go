@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -24,20 +25,24 @@ var (
 // UserService stores all the users in memory and implements auth.UserService
 // interface.
 type UserService struct {
-	Users map[int64]*api.User
+	users     map[int64]*api.User
+	usersLock *sync.RWMutex // controls access to users map
 }
 
 // New returns a new UserService.
 // It initialises the underlying storage which in this case is map.
 func New() *UserService {
 	var s UserService
-	s.Users = make(map[int64]*api.User)
+	s.users = make(map[int64]*api.User)
+	s.usersLock = &sync.RWMutex{}
 	return &s
 }
 
 // findByUsername finds a user by username.
 func (s *UserService) findByUsername(uname string) *api.User {
-	for _, u := range s.Users {
+	s.usersLock.RLock()
+	defer s.usersLock.RUnlock()
+	for _, u := range s.users {
 		if u.Username == uname {
 			return u
 		}
@@ -48,7 +53,9 @@ func (s *UserService) findByUsername(uname string) *api.User {
 
 // findByEmail finds a user by email.
 func (s *UserService) findByEmail(email string) *api.User {
-	for _, u := range s.Users {
+	s.usersLock.RLock()
+	defer s.usersLock.RUnlock()
+	for _, u := range s.users {
 		if u.Email == email {
 			return u
 		}
@@ -100,7 +107,10 @@ func (s *UserService) Create(u api.UserRegister) error {
 	}
 	usr.PasswordHash = string(hash)
 
-	s.Users[usr.ID] = &usr
+	s.usersLock.Lock()
+	defer s.usersLock.Unlock()
+	s.users[usr.ID] = &usr
+
 	return nil
 }
 

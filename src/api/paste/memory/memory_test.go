@@ -26,6 +26,7 @@ func createTestPaste() *api.PasteForm {
 }
 
 func Test_Create(t *testing.T) {
+	t.Parallel()
 	var p = createTestPaste()
 	if paste, err := service.Create(*p); err != nil {
 		t.Errorf("failed to create a paste: %v", err)
@@ -40,6 +41,7 @@ func Test_Create(t *testing.T) {
 }
 
 func Test_CreateWithExpiration(t *testing.T) {
+	t.Parallel()
 	var p = createTestPaste()
 	// Minutes
 	p.Expires = "10m"
@@ -125,6 +127,7 @@ func Test_CreateWithExpiration(t *testing.T) {
 }
 
 func Test_GetPaste(t *testing.T) {
+	t.Parallel()
 	var p = createTestPaste()
 	paste, err := service.Create(*p)
 	if err != nil {
@@ -138,6 +141,7 @@ func Test_GetPaste(t *testing.T) {
 }
 
 func Test_PasteNotFound(t *testing.T) {
+	t.Parallel()
 	_, err := service.Get(0)
 	if err == nil {
 		t.Error("No error for non-existing paste")
@@ -147,6 +151,7 @@ func Test_PasteNotFound(t *testing.T) {
 }
 
 func Test_Delete(t *testing.T) {
+	t.Parallel()
 	var p = createTestPaste()
 	paste, err := service.Create(*p)
 	if err != nil {
@@ -165,6 +170,7 @@ func Test_Delete(t *testing.T) {
 }
 
 func Test_DeleteNotFound(t *testing.T) {
+	t.Parallel()
 	err := service.Delete(0)
 	if err == nil {
 		t.Error("No error for non-existing paste")
@@ -174,6 +180,7 @@ func Test_DeleteNotFound(t *testing.T) {
 }
 
 func Test_List(t *testing.T) {
+	t.Parallel()
 	var p = createTestPaste()
 	p.UserID = 1
 	if _, err := service.Create(*p); err != nil {
