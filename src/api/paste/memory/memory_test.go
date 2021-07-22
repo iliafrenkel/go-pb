@@ -142,11 +142,13 @@ func Test_GetPaste(t *testing.T) {
 
 func Test_PasteNotFound(t *testing.T) {
 	t.Parallel()
-	_, err := service.Get(0)
-	if err == nil {
-		t.Error("No error for non-existing paste")
-	} else {
-		t.Logf("%v", err)
+	p, err := service.Get(0)
+	if err != nil {
+		t.Errorf("Unexpected error, got %v", err)
+		return
+	}
+	if p != nil {
+		t.Errorf("Expected paste to be nil, got %#v", p)
 	}
 }
 
@@ -163,8 +165,8 @@ func Test_Delete(t *testing.T) {
 		t.Errorf("Failed to delete a paste: %v", err)
 	}
 
-	paste, err = service.Get(paste.ID)
-	if err == nil {
+	paste, _ = service.Get(paste.ID)
+	if paste != nil {
 		t.Errorf("Found a paste after delete: %v", paste)
 	}
 }
@@ -172,10 +174,8 @@ func Test_Delete(t *testing.T) {
 func Test_DeleteNotFound(t *testing.T) {
 	t.Parallel()
 	err := service.Delete(0)
-	if err == nil {
-		t.Error("No error for non-existing paste")
-	} else {
-		t.Logf("%v", err)
+	if err != nil {
+		t.Errorf("Should delete non-existing paste without error, got %v", err)
 	}
 }
 

@@ -51,10 +51,16 @@ type PasteForm struct {
 // plain files or even memory.
 type PasteService interface {
 	// Get returns a paste by ID.
+	// Please note that error should be not nil only if there is an actual
+	// error. Paste not found is not an error. It should be expected that if
+	// there is no paste with the ID that you provided the return value for
+	// the paste will be nil.
 	Get(id int64) (*Paste, error)
 	// Create creates new paste, saves it to the storage and returns it.
 	Create(p PasteForm) (*Paste, error)
 	// Delete deletes a paste by ID.
+	// If paste with the provided ID doesn't exist this method does nothing,
+	// it will not return an error in such case.
 	Delete(id int64) error
 	// List returns all the pastes with specified user ID.
 	List(uid int64) []Paste

@@ -14,7 +14,6 @@
 package memory
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -108,7 +107,7 @@ func (s *PasteService) Delete(id int64) error {
 	s.pastesLock.RLock()
 	if _, ok := s.pastes[id]; !ok {
 		s.pastesLock.RUnlock()
-		return errors.New("paste not found")
+		return nil
 	}
 	s.pastesLock.RUnlock()
 
