@@ -7,11 +7,13 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"time"
 	"unicode"
 
@@ -199,6 +201,29 @@ func (h *WebServer) handleSession(c *gin.Context) {
 // was already loaded.
 func (h *WebServer) handleRoot(c *gin.Context) {
 	username, _ := c.Get("username")
+	userid, _ := c.Get("user_id")
+	var pastes []api.Paste
+
+	// Get user pastes
+	if userid != nil && userid.(int64) != 0 {
+		data, code, err := h.makeAPICall(
+			"/paste/list/"+fmt.Sprintf("%d", userid),
+			"GET",
+			nil,
+			map[int]struct{}{
+				http.StatusOK: {},
+			})
+		if err != nil {
+			log.Println("handleRoot: error talking to API: ", err)
+		} else if code != http.StatusOK {
+			log.Println("handleRoot: API returned: ", code)
+		} else {
+			if err := json.Unmarshal(data, &pastes); err != nil {
+				log.Println("handleRoot: failed to parse API response", err)
+			}
+		}
+		sort.Slice(pastes, func(i, j int) bool { return pastes[i].Created.After(pastes[j].Created) })
+	}
 
 	c.HTML(
 		http.StatusOK,
@@ -206,6 +231,7 @@ func (h *WebServer) handleRoot(c *gin.Context) {
 		gin.H{
 			"title":    "Go PB - Home",
 			"username": username,
+			"pastes":   pastes,
 			"version":  h.Options.Version,
 		},
 	)
@@ -436,6 +462,31 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 		h.showError(c)
 		return
 	}
+
+	// Get user pastes
+	userid, _ := c.Get("user_id")
+	var pastes []api.Paste
+
+	if userid != nil && userid.(int64) != 0 {
+		data, code, err := h.makeAPICall(
+			"/paste/list/"+fmt.Sprintf("%d", userid),
+			"GET",
+			nil,
+			map[int]struct{}{
+				http.StatusOK: {},
+			})
+		if err != nil {
+			log.Println("handlePaste: error talking to API: ", err)
+		} else if code != http.StatusOK {
+			log.Println("handlePaste: API returned: ", code)
+		} else {
+			if err := json.Unmarshal(data, &pastes); err != nil {
+				log.Println("handlePaste: failed to parse API response", err)
+			}
+		}
+		sort.Slice(pastes, func(i, j int) bool { return pastes[i].Created.After(pastes[j].Created) })
+	}
+
 	// Send HTML
 	username, _ := c.Get("username")
 	c.HTML(
@@ -446,6 +497,7 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 			"URL":      p.URL(),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
+			"pastes":   pastes,
 			"version":  h.Options.Version,
 		},
 	)

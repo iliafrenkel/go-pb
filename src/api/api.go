@@ -8,6 +8,7 @@
 package api
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api/base62"
@@ -31,6 +32,70 @@ type Paste struct {
 // URL generates a base62 encoded string from the ID.
 func (p *Paste) URL() string {
 	return base62.Encode(uint64(p.ID))
+}
+
+// Returns a "humanized" duration
+func (p *Paste) Expiration() string {
+	if p.Expires.IsZero() {
+		return "Never"
+	}
+	// Seconds-based time units
+	const (
+		Minute   = 60
+		Hour     = 60 * Minute
+		Day      = 24 * Hour
+		Week     = 7 * Day
+		Month    = 30 * Day
+		Year     = 12 * Month
+		LongTime = 37 * Year
+	)
+
+	diff := time.Until(p.Expires) / time.Second
+
+	lbl := "in"
+
+	switch {
+	case diff <= 0:
+		return "now"
+	case diff <= 2:
+		return fmt.Sprintf("%s 1 second", lbl)
+	case diff < 1*Minute:
+		return fmt.Sprintf("%s %d seconds", lbl, diff)
+
+	case diff < 2*Minute:
+		return fmt.Sprintf("%s 1 minute", lbl)
+	case diff < 1*Hour:
+		return fmt.Sprintf("%s %d minutes", lbl, diff/Minute)
+
+	case diff < 2*Hour:
+		return fmt.Sprintf("%s 1 hour", lbl)
+	case diff < 1*Day:
+		return fmt.Sprintf("%s %d hours", lbl, diff/Hour)
+
+	case diff < 2*Day:
+		return fmt.Sprintf("%s 1 day", lbl)
+	case diff < 1*Week:
+		return fmt.Sprintf("%s %d days", lbl, diff/Day)
+
+	case diff < 2*Week:
+		return fmt.Sprintf("%s 1 week", lbl)
+	case diff < 1*Month:
+		return fmt.Sprintf("%s %d weeks", lbl, diff/Week)
+
+	case diff < 2*Month:
+		return fmt.Sprintf("%s 1 month", lbl)
+	case diff < 1*Year:
+		return fmt.Sprintf("%s %d months", lbl, diff/Month)
+
+	case diff < 18*Month:
+		return fmt.Sprintf("%s ~1 year", lbl)
+	case diff < 2*Year:
+		return fmt.Sprintf("%s ~2 years", lbl)
+	case diff < LongTime:
+		return fmt.Sprintf("%s %d years", lbl, diff/Year)
+	}
+
+	return p.Expires.Sub(p.Created).String()
 }
 
 // PasteForm represents the data that we expect to recieve when the user

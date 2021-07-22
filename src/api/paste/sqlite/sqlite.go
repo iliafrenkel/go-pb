@@ -61,7 +61,6 @@ func (s *PasteService) Get(id int64) (*api.Paste, error) {
 		return nil, fmt.Errorf("Get: database error: %w", err)
 	}
 
-	fmt.Printf("GetPaste: %#+v", paste)
 	return &paste, nil
 }
 
