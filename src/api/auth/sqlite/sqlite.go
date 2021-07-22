@@ -15,7 +15,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/iliafrenkel/go-pb/src/api"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -23,27 +22,24 @@ var (
 	tokenSecret = []byte("hardcodeddefault") // TODO:(os.Getenv("GOPB_TOKEN_SECRET"))
 )
 
-type DBOptions struct {
+type SvcOptions struct {
 	// Database connection string.
 	// For sqlite it should be either a file name or `file::memory:?cache=shared`
 	// to use temporary database in memory (ex. for testing).
-	Connection string
+	DBConnection *gorm.DB
 }
 
 // UserService stores all the users in sqlite database and implements
 // auth.UserService interface.
 type UserService struct {
 	db      *gorm.DB
-	Options DBOptions
+	Options SvcOptions
 }
 
-func New(opts DBOptions) (*UserService, error) {
+func New(opts SvcOptions) (*UserService, error) {
 	var s UserService
 	s.Options = opts
-	db, err := gorm.Open(sqlite.Open(s.Options.Connection), &gorm.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("New: failed to establish database connection: %w", err)
-	}
+	db := opts.DBConnection
 	// TODO: Put automatic migration behind a switch so that we can disable it
 	// in the future if need be.
 	db.AutoMigrate(&api.User{})

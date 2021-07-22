@@ -13,32 +13,28 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type DBOptions struct {
+type SvcOptions struct {
 	// Database connection string.
 	// For sqlite it should be either a file name or `file::memory:?cache=shared`
 	// to use temporary database in memory (ex. for testing).
-	Connection string
+	DBConnection *gorm.DB
 }
 
 // PasteService stores all the pastes in sqlite database and implements the
 // api.PasteService interface.
 type PasteService struct {
 	db      *gorm.DB
-	Options DBOptions
+	Options SvcOptions
 }
 
 // New returns new PasteService with an empty map of pastes.
-func New(opts DBOptions) (*PasteService, error) {
+func New(opts SvcOptions) (*PasteService, error) {
 	var s PasteService
 	s.Options = opts
-	db, err := gorm.Open(sqlite.Open(s.Options.Connection), &gorm.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("New: failed to establish database connection: %w", err)
-	}
+	db := opts.DBConnection
 	// TODO: Put automatic migration behind a switch so that we can disable it
 	// in the future if need be.
 	db.AutoMigrate(&api.Paste{})

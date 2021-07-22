@@ -34,7 +34,7 @@ type ApiServerOptions struct {
 	MaxBodySize int64
 	// When using a database as a storage this connection string will be passed
 	// on to the corresponding service.
-	DBConnection string
+	DBConnectionString string
 }
 
 // ApiServer type provides an HTTP server that calls PasteService methods in
@@ -223,6 +223,10 @@ func (h *ApiServer) handlePasteGet(c *gin.Context) {
 	p, err := h.PasteService.Get(int64(id))
 	if err != nil {
 		log.Println(err)
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	if p == nil {
 		c.String(http.StatusNotFound, "paste not found")
 		return
 	}

@@ -117,8 +117,8 @@ func Test_GetPasteDeleteAfterRead(t *testing.T) {
 
 	// Check that paste was deleted
 	paste, err = pasteSvc.Get(paste.ID)
-	if err == nil {
-		t.Errorf("Expected \"paste not found error\".")
+	if err != nil {
+		t.Fatal(err)
 	}
 	if paste != nil {
 		t.Errorf("Expected paste to be deleted but it wasn't.")
@@ -409,8 +409,8 @@ func Test_DeletePaste(t *testing.T) {
 	}
 	// Check that paste was deleted
 	paste, err = pasteSvc.Get(paste.ID)
-	if err == nil {
-		t.Errorf("Expected \"paste not found error\".")
+	if err != nil {
+		t.Fatal(err)
 	}
 	if paste != nil {
 		t.Errorf("Expected paste to be deleted but it wasn't.")
@@ -487,20 +487,8 @@ func Test_DeletePasteNotFound(t *testing.T) {
 	}
 
 	// Check status
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusNotFound), resp.StatusCode)
-	}
-
-	// Check body
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(b)
-	want := "paste not found"
-	if got != string(want) {
-		t.Errorf("Response should be [%s], got [%s]", want, got)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusOK), resp.StatusCode)
 	}
 }
 

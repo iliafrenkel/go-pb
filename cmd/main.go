@@ -34,7 +34,7 @@ func main() {
 		// Database connection string.
 		// It will be a file name for the sqlite database you cab also
 		// pass `file::memory:?cache=shared` for in-memory temporary database.
-		DBConnection: "test.db",
+		DBConnectionString: "test.db",
 	}
 	var webOpts = hweb.WebServerOptions{
 		Addr:    "127.0.0.1:8080",
