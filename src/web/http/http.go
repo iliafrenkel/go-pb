@@ -120,6 +120,7 @@ func (h *WebServer) makeAPICall(endpoint string, method string, body io.Reader, 
 		return nil, http.StatusInternalServerError, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err

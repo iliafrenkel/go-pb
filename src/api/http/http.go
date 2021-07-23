@@ -91,9 +91,9 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts APIServerOptions) *AP
 //
 // TODO: Timeouts should be configurable.
 func (h *APIServer) ListenAndServe() error {
+	// Good practice to set timeouts to avoid Slowloris attacks.
 	h.Server = &http.Server{
-		Addr: h.Options.Addr,
-		// Good practice to set timeouts to avoid Slowloris attacks.
+		Addr:         h.Options.Addr,
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
@@ -119,7 +119,10 @@ func (h *APIServer) verifyJSONMiddleware(data interface{}) gin.HandlerFunc {
 		// application/json.
 		if hdr := c.GetHeader("Content-Type"); hdr != "" {
 			if hdr != "application/json" {
-				c.String(http.StatusUnsupportedMediaType, "wrong Content-Type header, expect application/json")
+				c.JSON(http.StatusUnsupportedMediaType, api.APIError{
+					Code:    http.StatusUnsupportedMediaType,
+					Message: fmt.Sprintf("Incorrect Content-Type header [%s], expect [application/json]", hdr),
+				})
 				c.Abort()
 				return
 			}
@@ -146,21 +149,32 @@ func (h *APIServer) verifyJSONMiddleware(data interface{}) gin.HandlerFunc {
 			// which interpolates the location of the problem to make it
 			// easier for the client to fix.
 			case errors.As(err, &syntaxError):
-				c.String(http.StatusBadRequest, fmt.Sprintf("request body contains malformed JSON (at position %d)", syntaxError.Offset))
+				c.JSON(http.StatusBadRequest, api.APIError{
+					Code:    http.StatusBadRequest,
+					Message: fmt.Sprintf("Request body contains malformed JSON (at position %d)", syntaxError.Offset),
+				})
 
 			// In some circumstances Decode() may also return an
 			// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
 			// is an open issue regarding this at
 			// https://github.com/golang/go/issues/25956.
 			case errors.Is(err, io.ErrUnexpectedEOF):
-				c.String(http.StatusBadRequest, "request body contains malformed JSON")
+				c.JSON(http.StatusBadRequest, api.APIError{
+					Code:    http.StatusBadRequest,
+					Message: "Request body contains malformed JSON",
+				})
 
 			// Catch any type errors, like trying to assign a string in the
 			// JSON request body to a int field in our Paste struct. We can
 			// interpolate the relevant field name and position into the error
 			// message to make it easier for the client to fix.
 			case errors.As(err, &unmarshalTypeError):
-				c.String(http.StatusBadRequest, fmt.Sprintf("request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset))
+				c.JSON(http.StatusBadRequest, api.APIError{
+					Code: http.StatusBadRequest,
+					Message: fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)",
+						unmarshalTypeError.Field,
+						unmarshalTypeError.Offset),
+				})
 
 			// Catch the error caused by extra unexpected fields in the request
 			// body. We extract the field name from the error message and
@@ -169,24 +183,36 @@ func (h *APIServer) verifyJSONMiddleware(data interface{}) gin.HandlerFunc {
 			// turning this into a sentinel error.
 			case strings.HasPrefix(err.Error(), "json: unknown field "):
 				fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-				c.String(http.StatusBadRequest, fmt.Sprintf("request body contains unknown field %s", fieldName))
+				c.JSON(http.StatusBadRequest, api.APIError{
+					Code:    http.StatusBadRequest,
+					Message: fmt.Sprintf("Request body contains unknown field %s", fieldName),
+				})
 
 			// An io.EOF error is returned by Decode() if the request body is
 			// empty.
 			case errors.Is(err, io.EOF):
-				c.String(http.StatusBadRequest, "request body must not be empty")
+				c.JSON(http.StatusBadRequest, api.APIError{
+					Code:    http.StatusBadRequest,
+					Message: "Request body must not be empty",
+				})
 
 			// Catch the error caused by the request body being too large. Again
 			// there is an open issue regarding turning this into a sentinel
 			// error at https://github.com/golang/go/issues/30715.
 			case err.Error() == "http: request body too large":
-				c.String(http.StatusBadRequest, fmt.Sprintf("request body must not be larger than %d bytes", h.Options.MaxBodySize))
+				c.JSON(http.StatusBadRequest, api.APIError{
+					Code:    http.StatusBadRequest,
+					Message: fmt.Sprintf("Request body must not be larger than %d bytes", h.Options.MaxBodySize),
+				})
 
 			// Otherwise default to logging the error and sending a 500 Internal
 			// Server Error response.
 			default:
-				log.Println("verifyJsonMiddleware: ", err.Error())
-				c.String(http.StatusInternalServerError, err.Error())
+				log.Println("verifyJsonMiddleware: unexpected error: ", err.Error())
+				c.JSON(http.StatusInternalServerError, api.APIError{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+				})
 			}
 			c.Abort()
 			return
@@ -197,7 +223,10 @@ func (h *APIServer) verifyJSONMiddleware(data interface{}) gin.HandlerFunc {
 		// object this will return an io.EOF error. So if we get anything else,
 		// we know that there is additional data in the request body.
 		if err := dec.Decode(&struct{}{}); err != io.EOF {
-			c.String(http.StatusInternalServerError, "request body must only contain a single JSON object")
+			c.JSON(http.StatusBadRequest, api.APIError{
+				Code:    http.StatusBadRequest,
+				Message: "Request body must only contain a single JSON object",
+			})
 			c.Abort()
 			return
 		}
@@ -214,19 +243,27 @@ func (h *APIServer) handlePasteGet(c *gin.Context) {
 	// it into a uint64 paste id and return 404 if we can't.
 	id, err := base62.Decode(c.Param("id"))
 	if err != nil {
-		log.Println(err)
-		c.String(http.StatusNotFound, "paste not found")
+		c.JSON(http.StatusNotFound, api.APIError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
 		return
 	}
 
 	p, err := h.PasteService.Get(int64(id))
 	if err != nil {
-		log.Println(err)
-		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		log.Println("handlePasteGet: unexpected error: ", err.Error())
+		c.JSON(http.StatusInternalServerError, api.APIError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+		})
 		return
 	}
 	if p == nil {
-		c.String(http.StatusNotFound, "paste not found")
+		c.JSON(http.StatusNotFound, api.APIError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
 		return
 	}
 
@@ -254,7 +291,10 @@ func (h *APIServer) handlePasteCreate(c *gin.Context) {
 	p, err := h.PasteService.Create(*data)
 	if err != nil {
 		log.Printf("handleCreate: failed to create paste: %v\n", err)
-		c.String(http.StatusBadRequest, "failed to create paste")
+		c.JSON(http.StatusBadRequest, api.APIError{
+			Code:    http.StatusBadRequest,
+			Message: "Failed to create paste",
+		})
 		return
 	}
 	c.Header("Location", p.URL())
@@ -266,14 +306,21 @@ func (h *APIServer) handlePasteCreate(c *gin.Context) {
 func (h *APIServer) handlePasteDelete(c *gin.Context) {
 	id, err := base62.Decode(c.Param("id"))
 	if err != nil {
-		c.String(http.StatusNotFound, "paste not found")
+		c.JSON(http.StatusNotFound, api.APIError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
 		return
 	}
 
 	if err := h.PasteService.Delete(int64(id)); err != nil {
-		c.String(http.StatusNotFound, "paste not found")
+		c.JSON(http.StatusNotFound, api.APIError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
 		return
 	}
+	c.Header("Content-Type", "application/json")
 }
 
 // handlePasteList is an HTTP handlers for GET /paste/list/:id route. Returns
@@ -281,7 +328,10 @@ func (h *APIServer) handlePasteDelete(c *gin.Context) {
 func (h *APIServer) handlePasteList(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.String(http.StatusBadRequest, "wrong id")
+		c.JSON(http.StatusBadRequest, api.APIError{
+			Code:    http.StatusBadRequest,
+			Message: "ID is incorrect",
+		})
 		return
 	}
 	pastes := h.PasteService.List(id)
@@ -299,7 +349,10 @@ func (h *APIServer) handleUserLogin(c *gin.Context) {
 	usr, err := h.UserService.Authenticate(*data)
 	if err != nil {
 		log.Printf("failed to login: %v\n", err)
-		c.String(http.StatusUnauthorized, "Invalid credentials")
+		c.JSON(http.StatusUnauthorized, api.APIError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid credentials",
+		})
 		return
 	}
 
@@ -315,11 +368,14 @@ func (h *APIServer) handleUserRegister(c *gin.Context) {
 	err := h.UserService.Create(*data)
 	if err != nil {
 		log.Printf("failed to create new user: %v\n", err)
-		var msg = struct{ Message string }{Message: err.Error()}
-		c.JSON(http.StatusConflict, msg)
+		c.JSON(http.StatusConflict, api.APIError{
+			Code:    http.StatusConflict,
+			Message: err.Error(),
+		})
 		return
 	}
 
+	c.Header("Content-Type", "application/json")
 	c.Status(http.StatusOK)
 }
 
@@ -329,8 +385,11 @@ func (h *APIServer) handleUserValidate(c *gin.Context) {
 
 	usr, err := h.UserService.Validate(api.User{}, data.Token)
 	if err != nil {
-		log.Printf("handleUserValidate: validation failed: %v", err.Error())
-		c.Status(http.StatusUnauthorized)
+		log.Printf("handleUserValidate: validation failed: %v\n", err.Error())
+		c.JSON(http.StatusUnauthorized, api.APIError{
+			Code:    http.StatusUnauthorized,
+			Message: err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, usr)

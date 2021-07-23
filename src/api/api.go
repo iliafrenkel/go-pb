@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE.txt file.
 
 // Package api is an entry point to go-pb API. It defines all the types
-// and interfaces that needed to implemented.
+// and interfaces that needed to be implemented.
 package api
 
 import (
@@ -175,4 +175,10 @@ type UserService interface {
 	Authenticate(u UserLogin) (UserInfo, error)
 	// Validates given token for a given user.
 	Validate(u User, t string) (UserInfo, error)
+}
+
+// APIError represents an error that endpoints send to the consumers.
+type APIError struct {
+	Code    int    `json:"code"`    // HTTP status code
+	Message string `json:"message"` // Error message
 }

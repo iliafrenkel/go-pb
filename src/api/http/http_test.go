@@ -57,6 +57,11 @@ func Test_GetPaste(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Status should be OK, got %d", resp.StatusCode)
@@ -92,6 +97,11 @@ func Test_GetPasteDeleteAfterRead(t *testing.T) {
 	// Handle any unexpected error
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 
 	// Check status
@@ -133,6 +143,11 @@ func Test_GetPasteNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("Status should be 404 Not Found, got %d", resp.StatusCode)
@@ -145,8 +160,11 @@ func Test_GetPasteNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := "paste not found"
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusNotFound,
+		Message: "Paste not found",
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -159,6 +177,11 @@ func Test_GetPasteWrongID(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("Status should be 404 Not Found, got %d", resp.StatusCode)
@@ -171,8 +194,11 @@ func Test_GetPasteWrongID(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := "paste not found"
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusNotFound,
+		Message: "Paste not found",
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -186,6 +212,11 @@ func Test_CreatePaste(t *testing.T) {
 	// Handle any unexpected error
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 
 	// Check status
@@ -217,6 +248,11 @@ func Test_CreatePasteWrongContentType(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusUnsupportedMediaType {
 		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusUnsupportedMediaType), resp.StatusCode)
@@ -241,6 +277,11 @@ func Test_CreatePasteExtraField(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
@@ -253,8 +294,11 @@ func Test_CreatePasteExtraField(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("request body contains unknown field \"%s\"", "extraField")
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusBadRequest,
+		Message: fmt.Sprintf("Request body contains unknown field \"%s\"", "extraField"),
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -268,6 +312,11 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
@@ -280,8 +329,11 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("request body contains malformed JSON (at position %d)", 2)
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusBadRequest,
+		Message: fmt.Sprintf("Request body contains malformed JSON (at position %d)", 2),
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -300,6 +352,11 @@ func Test_CreatePasteWrongFieldType(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
@@ -312,8 +369,11 @@ func Test_CreatePasteWrongFieldType(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("request body contains an invalid value for the \"title\" field (at position %d)", 14)
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusBadRequest,
+		Message: fmt.Sprintf("Request body contains an invalid value for the \"title\" field (at position %d)", 14),
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -327,6 +387,11 @@ func Test_CreatePasteEmptyBody(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
@@ -339,8 +404,11 @@ func Test_CreatePasteEmptyBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := "request body must not be empty"
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusBadRequest,
+		Message: "Request body must not be empty",
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -357,6 +425,11 @@ func Test_CreatePasteLargeBody(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Status should be %s, got %d", http.StatusText(http.StatusBadRequest), resp.StatusCode)
@@ -369,8 +442,11 @@ func Test_CreatePasteLargeBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := fmt.Sprintf("request body must not be larger than %d bytes", apiSrv.Options.MaxBodySize)
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusBadRequest,
+		Message: fmt.Sprintf("Request body must not be larger than %d bytes", apiSrv.Options.MaxBodySize),
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -389,6 +465,11 @@ func Test_DeletePaste(t *testing.T) {
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 
 	// Check status
@@ -432,6 +513,11 @@ func Test_ListPastes(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Status should be OK, got %d", resp.StatusCode)
@@ -458,6 +544,11 @@ func Test_ListPastesWrongID(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
 	// Check status
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Status should be BadRequest, got %d", resp.StatusCode)
@@ -470,8 +561,11 @@ func Test_ListPastesWrongID(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := "wrong id"
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusBadRequest,
+		Message: "ID is incorrect",
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -484,6 +578,11 @@ func Test_DeletePasteNotFound(t *testing.T) {
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 
 	// Check status
@@ -512,6 +611,10 @@ func Test_UserLogin(t *testing.T) {
 	resp, err := http.Post(mckSrv.URL+"/user/login", "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 	// Check status
 	if resp.StatusCode != http.StatusOK {
@@ -555,8 +658,11 @@ func Test_UserLogin(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want := "Invalid credentials"
-	if got != want {
+	want, _ := json.Marshal(api.APIError{
+		Code:    http.StatusUnauthorized,
+		Message: "Invalid credentials",
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 
@@ -582,8 +688,11 @@ func Test_UserLogin(t *testing.T) {
 		t.Fatal(err)
 	}
 	got = string(b)
-	want = "Invalid credentials"
-	if got != want {
+	want, _ = json.Marshal(api.APIError{
+		Code:    http.StatusUnauthorized,
+		Message: "Invalid credentials",
+	})
+	if got != string(want) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
@@ -599,6 +708,10 @@ func Test_UserRegister(t *testing.T) {
 	resp, err := http.Post(mckSrv.URL+"/user/register", "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 	// Check status
 	if resp.StatusCode != http.StatusOK {
@@ -617,6 +730,10 @@ func Test_UserRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
 	// Check status
 	if resp.StatusCode != http.StatusConflict {
 		t.Errorf("Status should be Conflict, got %d", resp.StatusCode)
@@ -633,6 +750,10 @@ func Test_UserRegister(t *testing.T) {
 	resp, err = http.Post(mckSrv.URL+"/user/register", "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 	// Check status
 	if resp.StatusCode != http.StatusConflict {
@@ -663,6 +784,10 @@ func Test_UserValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
 	// Check status
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Status should be OK, got %d", resp.StatusCode)
@@ -674,6 +799,10 @@ func Test_UserValidate(t *testing.T) {
 	resp, err = http.Post(mckSrv.URL+"/user/validate", "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
 	}
 	// Check status
 	if resp.StatusCode != http.StatusUnauthorized {
