@@ -6,17 +6,21 @@ import (
 	"testing"
 
 	"github.com/iliafrenkel/go-pb/src/api"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var usrSvc *UserService
 
 func TestMain(m *testing.M) {
 	var err error
-	usrSvc, err = New(DBOptions{Connection: "file::memory:?cache=shared"})
+	var db *gorm.DB
+	db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
+	usrSvc, _ = New(SvcOptions{DBConnection: db})
 
 	os.Exit(m.Run())
 }

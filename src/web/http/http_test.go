@@ -15,7 +15,7 @@ import (
 )
 
 var webSrv *WebServer
-var apiSrv *apihttp.ApiServer
+var apiSrv *apihttp.APIServer
 var pasteSvc api.PasteService = pasteMem.New()
 var userSvc api.UserService = userMem.New()
 var mckSrv *httptest.Server
@@ -37,9 +37,9 @@ func createTestPaste() *api.PasteForm {
 
 func TestMain(m *testing.M) {
 	os.Chdir("../../") // Needed for proper template loading
-	apiSrv = apihttp.New(pasteSvc, userSvc, apihttp.ApiServerOptions{MaxBodySize: 10240})
+	apiSrv = apihttp.New(pasteSvc, userSvc, apihttp.APIServerOptions{MaxBodySize: 10240})
 	mckSrv = httptest.NewServer(apiSrv.Router)
-	webSrv = New(WebServerOptions{ApiURL: mckSrv.URL})
+	webSrv = New(WebServerOptions{APIURL: mckSrv.URL})
 
 	os.Exit(m.Run())
 }

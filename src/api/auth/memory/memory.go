@@ -1,8 +1,9 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 
+// Package memory provides an implementation of api.UserService that uses
+// memory as a storage.
 package memory
 
 import (
@@ -114,8 +115,8 @@ func (s *UserService) Create(u api.UserRegister) error {
 	return nil
 }
 
-// Authenticates a user by validating that it exists and hash of the
-// provided password matches. On success returns a JWT token.
+// Authenticate authenticates a user by validating that it exists and hash of
+// the provided password matches. On success returns a JWT token.
 // While this method returns different errors for different failures the
 // end user should only see a generic "invalid credentials" message.
 func (s *UserService) Authenticate(u api.UserLogin) (api.UserInfo, error) {
@@ -156,14 +157,13 @@ func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 		return api.UserInfo{}, err
 	}
 
+	var claims map[string]interface{}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		usr := s.findByUsername(claims["username"].(string))
 		if usr != nil {
 			return api.UserInfo{ID: usr.ID, Username: usr.Username, Token: token.Raw}, nil
-		} else {
-			return api.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
 		}
-	} else {
-		return api.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
+		return api.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
 	}
+	return api.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
 }

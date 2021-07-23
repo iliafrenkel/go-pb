@@ -1,8 +1,9 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 
+// Package sqlite provides an implementation of api.UserService that uses
+// sqlite database as a storage.
 package sqlite
 
 import (
@@ -15,7 +16,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/iliafrenkel/go-pb/src/api"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -23,27 +23,27 @@ var (
 	tokenSecret = []byte("hardcodeddefault") // TODO:(os.Getenv("GOPB_TOKEN_SECRET"))
 )
 
-type DBOptions struct {
+// SvcOptions contains all the options needed to create an instance
+// of UserService
+type SvcOptions struct {
 	// Database connection string.
 	// For sqlite it should be either a file name or `file::memory:?cache=shared`
 	// to use temporary database in memory (ex. for testing).
-	Connection string
+	DBConnection *gorm.DB
 }
 
 // UserService stores all the users in sqlite database and implements
 // auth.UserService interface.
 type UserService struct {
 	db      *gorm.DB
-	Options DBOptions
+	Options SvcOptions
 }
 
-func New(opts DBOptions) (*UserService, error) {
+// New initialises and returns an instance of UserService.
+func New(opts SvcOptions) (*UserService, error) {
 	var s UserService
 	s.Options = opts
-	db, err := gorm.Open(sqlite.Open(s.Options.Connection), &gorm.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("New: failed to establish database connection: %w", err)
-	}
+	db := opts.DBConnection
 	// TODO: Put automatic migration behind a switch so that we can disable it
 	// in the future if need be.
 	db.AutoMigrate(&api.User{})
@@ -145,7 +145,7 @@ func (s *UserService) Create(u api.UserRegister) error {
 	return nil
 }
 
-// Authenticates a user by validating that it exists and hash of the
+// Authenticate authenticates a user by validating that it exists and hash of the
 // provided password matches. On success returns a JWT token.
 // While this method returns different errors for different failures the
 // end user should only see a generic "invalid credentials" message.
@@ -194,6 +194,7 @@ func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 		return api.UserInfo{}, err
 	}
 
+	var claims map[string]interface{}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		usr, err := s.findByUsername(claims["username"].(string))
 		if err != nil {
@@ -201,10 +202,8 @@ func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 		}
 		if usr != nil {
 			return api.UserInfo{ID: usr.ID, Username: usr.Username, Token: token.Raw}, nil
-		} else {
-			return api.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
 		}
-	} else {
-		return api.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
+		return api.UserInfo{}, fmt.Errorf("token is valid but the user [%s] doesn't exist", claims["username"].(string))
 	}
+	return api.UserInfo{}, fmt.Errorf("alg header %v, error: %v", claims["alg"], err)
 }

@@ -1,7 +1,6 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 package main
 
 import (
@@ -9,20 +8,37 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/iliafrenkel/go-pb/src/api/auth/sqlite"
+	u "github.com/iliafrenkel/go-pb/src/api/auth/sqlite"
 	"github.com/iliafrenkel/go-pb/src/api/http"
-	"github.com/iliafrenkel/go-pb/src/api/paste/memory"
+	p "github.com/iliafrenkel/go-pb/src/api/paste/sqlite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var apiServer *http.ApiServer
+var apiServer *http.APIServer
+var db *gorm.DB
 
-func StartApiServer(opts http.ApiServerOptions) error {
-	userSvc, err := sqlite.New(sqlite.DBOptions{Connection: opts.DBConnection})
+// startAPIServer connects to the database, initialises User and Paste
+// services and starts the API server  on the provided address.
+func startAPIServer(opts http.APIServerOptions) error {
+	// Connect to the database
+	var err error
+	db, err = gorm.Open(sqlite.Open(opts.DBConnectionString), &gorm.Config{})
+	if err != nil {
+		return fmt.Errorf("StartApiServer: failed to establish database connection: %w", err)
+	}
+
+	// Create UserService
+	userSvc, err := u.New(u.SvcOptions{DBConnection: db})
 	if err != nil {
 		return fmt.Errorf("StartApiServer: failed to create UserService: %w", err)
 	}
 
-	pasteSvc := memory.New()
+	// Create PasteService
+	pasteSvc, err := p.New(p.SvcOptions{DBConnection: db})
+	if err != nil {
+		return fmt.Errorf("StartApiServer: failed to create PasteService: %w", err)
+	}
 
 	apiServer = http.New(pasteSvc, userSvc, opts)
 
@@ -31,7 +47,8 @@ func StartApiServer(opts http.ApiServerOptions) error {
 	return apiServer.ListenAndServe()
 }
 
-func StopApiServer(ctx context.Context) error {
+// stopAPIServer gracefully shutdowns the API server.
+func stopAPIServer(ctx context.Context) error {
 	if apiServer != nil {
 		return apiServer.Server.Shutdown(ctx)
 	}
