@@ -30,7 +30,7 @@ type Paste struct {
 
 // URL generates a base62 encoded string from the ID.
 func (p *Paste) URL() string {
-	return base62.Encode(uint64(p.ID))
+	return base62.Encode(p.ID)
 }
 
 // Expiration returns a "humanized" duration between now and the expiry date
