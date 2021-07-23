@@ -1,10 +1,9 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- *
- * The api package is an entry point to go-pb API. It defines all the types
- * and interfaces that needed to implemented.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
+
+// Package api is an entry point to go-pb API. It defines all the types
+// and interfaces that needed to implemented.
 package api
 
 import (
@@ -34,7 +33,8 @@ func (p *Paste) URL() string {
 	return base62.Encode(uint64(p.ID))
 }
 
-// Returns a "humanized" duration
+// Expiration returns a "humanized" duration between now and the expiry date
+// stored in `Expires`. For example: "in 25 minutes" or "in 2 months".
 func (p *Paste) Expiration() string {
 	if p.Expires.IsZero() {
 		return "Never"

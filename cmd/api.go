@@ -1,7 +1,6 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 package main
 
 import (
@@ -16,10 +15,12 @@ import (
 	"gorm.io/gorm"
 )
 
-var apiServer *http.ApiServer
+var apiServer *http.APIServer
 var db *gorm.DB
 
-func StartApiServer(opts http.ApiServerOptions) error {
+// startAPIServer connects to the database, initialises User and Paste
+// services and starts the API server  on the provided address.
+func startAPIServer(opts http.APIServerOptions) error {
 	// Connect to the database
 	var err error
 	db, err = gorm.Open(sqlite.Open(opts.DBConnectionString), &gorm.Config{})
@@ -46,7 +47,8 @@ func StartApiServer(opts http.ApiServerOptions) error {
 	return apiServer.ListenAndServe()
 }
 
-func StopApiServer(ctx context.Context) error {
+// stopAPIServer gracefully shutdowns the API server.
+func stopAPIServer(ctx context.Context) error {
 	if apiServer != nil {
 		return apiServer.Server.Shutdown(ctx)
 	}

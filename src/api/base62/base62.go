@@ -14,6 +14,7 @@ const (
 	length   = uint64(len(alphabet))
 )
 
+// Encode returns a base62 encoded number.
 func Encode(number uint64) string {
 	var encodedBuilder strings.Builder
 	encodedBuilder.Grow(11)
@@ -25,6 +26,7 @@ func Encode(number uint64) string {
 	return encodedBuilder.String()
 }
 
+// Decode tries to decode a base62 encoded number.
 func Decode(encoded string) (uint64, error) {
 	var number uint64
 

@@ -1,16 +1,15 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 
- * The memory package provides methods to work with pastes using memory as a
- * storage.
- *
- * This package provides a PasteService type that implements api.PasteService
- * interface and use a map of Pastes as a storage.
- *
- * Note: according to the documentation (https://blog.golang.org/maps#TOC_6.),
- * maps are not safe for concurrent use.
- */
+// Package memory provides methods to work with pastes using memory as a
+// storage.
+//
+// This package provides a PasteService type that implements api.PasteService
+// interface and use a map of Pastes as a storage.
+//
+// Note: according to the documentation (https://blog.golang.org/maps#TOC_6.),
+// maps are not safe for concurrent use.
 package memory
 
 import (

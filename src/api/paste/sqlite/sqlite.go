@@ -1,8 +1,9 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 
+// Package sqlite provides implementation of api.PasteService that uses
+// sqlite database as a storage.
 package sqlite
 
 import (
@@ -16,6 +17,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// SvcOptions contains all the options needed to create an instance
+// of PasteService
 type SvcOptions struct {
 	// Database connection string.
 	// For sqlite it should be either a file name or `file::memory:?cache=shared`

@@ -1,7 +1,9 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
+
+// Package http provides a WebServer that serves a front-end for the go-pb
+// application. It consumes the APIs provided by UserService and PasteService.
 package http
 
 import (
@@ -28,9 +30,9 @@ type WebServerOptions struct {
 	// Addr will be passed to http.Server to listen on, see http.Server
 	// documentation for more information.
 	Addr string
-	// ApiURL specifies the full URL of the ApiServer withouth the trailing
+	// APIURL specifies the full URL of the ApiServer withouth the trailing
 	// backslash such as "http://localhost:8000".
-	ApiURL string
+	APIURL string
 	// Version that will be displayed in the footer
 	Version string
 }
@@ -113,7 +115,7 @@ func (h *WebServer) ListenAndServe() error {
 // makeAPICall makes a call to our API and returns the response body.
 func (h *WebServer) makeAPICall(endpoint string, method string, body io.Reader, expectedCodes map[int]struct{}) ([]byte, int, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(method, h.Options.ApiURL+endpoint, body)
+	req, err := http.NewRequest(method, h.Options.APIURL+endpoint, body)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -160,7 +162,7 @@ func (h *WebServer) handleSession(c *gin.Context) {
 	if token != "" {
 		payload, _ := json.Marshal(api.UserInfo{Token: token})
 		// Validate the token by calling the API /user/validate endpoint
-		resp, err := http.Post(h.Options.ApiURL+"/user/validate", "application/json", bytes.NewBuffer(payload))
+		resp, err := http.Post(h.Options.APIURL+"/user/validate", "application/json", bytes.NewBuffer(payload))
 		// In case of any errors we don't change anything and just call the
 		// next handler
 		if err != nil {
@@ -422,7 +424,7 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 func (h *WebServer) handleGetPaste(c *gin.Context) {
 	// Query the API for a paste by ID
 	id := c.Param("id")
-	resp, err := http.Get(h.Options.ApiURL + "/paste/" + id)
+	resp, err := http.Get(h.Options.APIURL + "/paste/" + id)
 	// API server maybe down or some other network error
 	if err != nil {
 		log.Println("handlePaste: error querying API: ", err)
@@ -524,7 +526,7 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 	}
 	// Try to create a new paste by calling the API
 	data, _ := json.Marshal(p)
-	resp, err := http.Post(h.Options.ApiURL+"/paste", "application/json", bytes.NewBuffer(data))
+	resp, err := http.Post(h.Options.APIURL+"/paste", "application/json", bytes.NewBuffer(data))
 
 	if err != nil {
 		log.Println("handlePasteCreate: error talking to API: ", err)

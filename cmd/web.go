@@ -1,7 +1,6 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 package main
 
 import (
@@ -13,7 +12,8 @@ import (
 
 var webServer *http.WebServer
 
-func StartWebServer(opts http.WebServerOptions) error {
+// startWebServer initialises and starts the WebServer.
+func startWebServer(opts http.WebServerOptions) error {
 	webServer := http.New(opts)
 
 	log.Println("Web server listening on ", opts.Addr)
@@ -21,7 +21,8 @@ func StartWebServer(opts http.WebServerOptions) error {
 	return webServer.ListenAndServe()
 }
 
-func StopWebServer(ctx context.Context) error {
+// stopWebServer gracefully shuts down the WebServer.
+func stopWebServer(ctx context.Context) error {
 	if webServer != nil {
 		return webServer.Server.Shutdown(ctx)
 	}

@@ -1,7 +1,6 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
 package main
 
 import (
@@ -25,7 +24,7 @@ var (
 
 func main() {
 	// Set API and Web servers options
-	var apiOpts = hapi.ApiServerOptions{
+	var apiOpts = hapi.APIServerOptions{
 		// API server will bind to this address. It follows the same convention
 		// as `net.http.Server.Addr`.
 		Addr: "127.0.0.1:8000",
@@ -38,7 +37,7 @@ func main() {
 	}
 	var webOpts = hweb.WebServerOptions{
 		Addr:    "127.0.0.1:8080",
-		ApiURL:  "http://127.0.0.1:8000",
+		APIURL:  "http://127.0.0.1:8000",
 		Version: version,
 	}
 
@@ -51,10 +50,10 @@ func main() {
 	// Start the API and the Web servers in parallel using Go routines
 	log.Println("Starting servers...")
 	go func() {
-		errc <- StartApiServer(apiOpts)
+		errc <- startAPIServer(apiOpts)
 	}()
 	go func() {
-		errc <- StartWebServer(webOpts)
+		errc <- startWebServer(webOpts)
 	}()
 
 	// Wait indefinitely for either one of the OS signals (SIGTERM or SIGINT)
@@ -78,13 +77,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := StopWebServer(ctx); err != nil {
+	if err := stopWebServer(ctx); err != nil {
 		log.Println("\tWeb server forced to shutdown: ", err)
 	} else {
 		log.Println("\tWeb server is down")
 	}
 
-	if err := StopApiServer(ctx); err != nil {
+	if err := stopAPIServer(ctx); err != nil {
 		log.Println("\tAPI server forced to shutdown: ", err)
 	} else {
 		log.Println("\tAPI server is down")

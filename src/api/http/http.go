@@ -1,11 +1,10 @@
-/* Copyright 2021 Ilia Frenkel. All rights reserved.
- * Use of this source code is governed by a MIT-style
- * license that can be found in the LICENSE.txt file.
- *
- * The http package provides an ApiServer type - a server that uses
- * api.PasteService and api.UserService to provide many useful endpoints.
- * Check the New method documentation for the list of all endpoints.
- */
+// Copyright 2021 Ilia Frenkel. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE.txt file.
+
+// Package http provides an ApiServer type - a server that uses
+// api.PasteService and api.UserService to provide many useful endpoints.
+// Check the New method documentation for the list of all endpoints.
 package http
 
 import (
@@ -24,8 +23,8 @@ import (
 	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
-// ApiServerOptions defines various parameters needed to run the ApiServer
-type ApiServerOptions struct {
+// APIServerOptions defines various parameters needed to run the ApiServer
+type APIServerOptions struct {
 	// Addr will be passed to http.Server to listen on, see http.Server
 	// documentation for more information.
 	Addr string
@@ -37,17 +36,17 @@ type ApiServerOptions struct {
 	DBConnectionString string
 }
 
-// ApiServer type provides an HTTP server that calls PasteService methods in
+// APIServer type provides an HTTP server that calls PasteService methods in
 // response to HTTP requests to certain routes.
 //
 // Use the `New` function to create an instance of ApiServer with the default
 // routes.
-type ApiServer struct {
+type APIServer struct {
 	PasteService api.PasteService
 	UserService  api.UserService
 	Router       *gin.Engine
 	Server       *http.Server
-	Options      ApiServerOptions
+	Options      APIServerOptions
 }
 
 // New function returns an instance of ApiServer using provided PasteService
@@ -61,8 +60,8 @@ type ApiServer struct {
 //   POST   /user/login      - authenticate user
 //   POST   /user/register   - register new user
 //   POST   /user/validate   - validate user token
-func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *ApiServer {
-	var handler ApiServer
+func New(pSvc api.PasteService, uSvc api.UserService, opts APIServerOptions) *APIServer {
+	var handler APIServer
 	handler.Options = opts
 
 	handler.PasteService = pSvc
@@ -73,16 +72,16 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 	paste := handler.Router.Group("/paste")
 	{
 		paste.GET("/:id", handler.handlePasteGet)
-		paste.POST("", handler.verifyJsonMiddleware(new(api.PasteForm)), handler.handlePasteCreate)
+		paste.POST("", handler.verifyJSONMiddleware(new(api.PasteForm)), handler.handlePasteCreate)
 		paste.DELETE("/:id", handler.handlePasteDelete)
 		paste.GET("/list/:id", handler.handlePasteList)
 	}
 
 	user := handler.Router.Group("/user")
 	{
-		user.POST("/login", handler.verifyJsonMiddleware(new(api.UserLogin)), handler.handleUserLogin)
-		user.POST("/register", handler.verifyJsonMiddleware(new(api.UserRegister)), handler.handleUserRegister)
-		user.POST("/validate", handler.verifyJsonMiddleware(new(api.UserInfo)), handler.handleUserValidate)
+		user.POST("/login", handler.verifyJSONMiddleware(new(api.UserLogin)), handler.handleUserLogin)
+		user.POST("/register", handler.verifyJSONMiddleware(new(api.UserRegister)), handler.handleUserRegister)
+		user.POST("/validate", handler.verifyJSONMiddleware(new(api.UserInfo)), handler.handleUserValidate)
 	}
 
 	return &handler
@@ -91,7 +90,7 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts ApiServerOptions) *Ap
 // ListenAndServe starts an HTTP server and binds it to the provided address.
 //
 // TODO: Timeouts should be configurable.
-func (h *ApiServer) ListenAndServe() error {
+func (h *APIServer) ListenAndServe() error {
 	h.Server = &http.Server{
 		Addr: h.Options.Addr,
 		// Good practice to set timeouts to avoid Slowloris attacks.
@@ -111,7 +110,7 @@ func (h *ApiServer) ListenAndServe() error {
 // an error. Only one object is expected, multiple JSON objects in the body
 // will result in an error. Body size is limited to the value of
 // Options.MaxBodySize parameter.
-func (h *ApiServer) verifyJsonMiddleware(data interface{}) gin.HandlerFunc {
+func (h *APIServer) verifyJSONMiddleware(data interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Parse incoming json
 		// https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body
@@ -210,7 +209,7 @@ func (h *ApiServer) verifyJsonMiddleware(data interface{}) gin.HandlerFunc {
 
 // handlePasteGet is an HTTP handler for the GET /paste/{id} route, it returns
 // the paste as a JSON string or 404 Not Found.
-func (h *ApiServer) handlePasteGet(c *gin.Context) {
+func (h *APIServer) handlePasteGet(c *gin.Context) {
 	// We expect the id parameter as base62 encoded string, we try to decode
 	// it into a uint64 paste id and return 404 if we can't.
 	id, err := base62.Decode(c.Param("id"))
@@ -249,7 +248,7 @@ func (h *ApiServer) handlePasteGet(c *gin.Context) {
 // object is expected, multiple JSON objects in the body will result in an
 // error. Body size is currently limited to a configurable value of
 // Options.MaxBodySize.
-func (h *ApiServer) handlePasteCreate(c *gin.Context) {
+func (h *APIServer) handlePasteCreate(c *gin.Context) {
 	data := c.MustGet("payload").(*api.PasteForm)
 
 	p, err := h.PasteService.Create(*data)
@@ -264,7 +263,7 @@ func (h *ApiServer) handlePasteCreate(c *gin.Context) {
 
 // handlePasteDelete is an HTTP handler for the DELETE /paste/:id route. Deletes
 // the paste by id and returns 200 OK or 404 Not Found.
-func (h *ApiServer) handlePasteDelete(c *gin.Context) {
+func (h *APIServer) handlePasteDelete(c *gin.Context) {
 	id, err := base62.Decode(c.Param("id"))
 	if err != nil {
 		c.String(http.StatusNotFound, "paste not found")
@@ -279,7 +278,7 @@ func (h *ApiServer) handlePasteDelete(c *gin.Context) {
 
 // handlePasteList is an HTTP handlers for GET /paste/list/:id route. Returns
 // an array of pastes by user ID.
-func (h *ApiServer) handlePasteList(c *gin.Context) {
+func (h *APIServer) handlePasteList(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.String(http.StatusBadRequest, "wrong id")
@@ -292,7 +291,7 @@ func (h *ApiServer) handlePasteList(c *gin.Context) {
 
 // handleUserLogin is an HTTP handler for POST /user/login route. It returns
 // auth.UserInfo with the username and JWT token on success.
-func (h *ApiServer) handleUserLogin(c *gin.Context) {
+func (h *APIServer) handleUserLogin(c *gin.Context) {
 	data := c.MustGet("payload").(*api.UserLogin)
 
 	// Login returns Username and JWT token
@@ -309,7 +308,7 @@ func (h *ApiServer) handleUserLogin(c *gin.Context) {
 
 // handleUserRegister is an HTTP handler for POST /user/register route. It
 // tries to create a new user and returns 200 OK on success.
-func (h *ApiServer) handleUserRegister(c *gin.Context) {
+func (h *APIServer) handleUserRegister(c *gin.Context) {
 	data := c.MustGet("payload").(*api.UserRegister)
 
 	// Register doesn't return anything
@@ -325,7 +324,7 @@ func (h *ApiServer) handleUserRegister(c *gin.Context) {
 }
 
 // handleUserValidate verifyes that the JWT token is correct
-func (h *ApiServer) handleUserValidate(c *gin.Context) {
+func (h *APIServer) handleUserValidate(c *gin.Context) {
 	data := c.MustGet("payload").(*api.UserInfo)
 
 	usr, err := h.UserService.Validate(api.User{}, data.Token)

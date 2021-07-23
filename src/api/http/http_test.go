@@ -18,7 +18,7 @@ import (
 
 var pasteSvc api.PasteService = pasteMem.New()
 var userSvc api.UserService = userMem.New()
-var apiSrv *ApiServer
+var apiSrv *APIServer
 var mckSrv *httptest.Server
 
 // createTestPaste creates a paste with a random ID and a random body.
@@ -37,7 +37,7 @@ func createTestPaste() *api.PasteForm {
 }
 
 func TestMain(m *testing.M) {
-	apiSrv = New(pasteSvc, userSvc, ApiServerOptions{MaxBodySize: 10240})
+	apiSrv = New(pasteSvc, userSvc, APIServerOptions{MaxBodySize: 10240})
 	mckSrv = httptest.NewServer(apiSrv.Router)
 
 	os.Exit(m.Run())
