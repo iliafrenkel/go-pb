@@ -55,7 +55,18 @@ func New(opts WebServerOptions) *WebServer {
 	handler.Options = opts
 
 	// Initialise the router and load the templates from /src/web/templates folder.
-	handler.Router = gin.Default()
+	handler.Router = gin.New()
+	handler.Router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		return fmt.Sprintf("\033[97;44m[WEB]\033[0m %v |%s %3d %s| %13v | %15s |%s %-7s %s %#v\n%s",
+			param.TimeStamp.Format("2006/01/02 - 15:04:05"),
+			param.StatusCodeColor(), param.StatusCode, param.ResetColor(),
+			param.Latency,
+			param.ClientIP,
+			param.MethodColor(), param.Method, param.ResetColor(),
+			param.Path,
+			param.ErrorMessage,
+		)
+	}), gin.Recovery())
 
 	// Sessions management - setup sessions with the cookie store.
 	store := cookie.NewStore([]byte("hardcodedsecret")) //TODO: move the secret to env

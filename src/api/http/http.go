@@ -67,7 +67,18 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts APIServerOptions) *AP
 	handler.PasteService = pSvc
 	handler.UserService = uSvc
 
-	handler.Router = gin.Default()
+	handler.Router = gin.New()
+	handler.Router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		return fmt.Sprintf("\033[97;41m[API]\033[0m %v |%s %3d %s| %13v | %15s |%s %-7s %s %#v\n%s",
+			param.TimeStamp.Format("2006/01/02 - 15:04:05"),
+			param.StatusCodeColor(), param.StatusCode, param.ResetColor(),
+			param.Latency,
+			param.ClientIP,
+			param.MethodColor(), param.Method, param.ResetColor(),
+			param.Path,
+			param.ErrorMessage,
+		)
+	}), gin.Recovery())
 
 	paste := handler.Router.Group("/paste")
 	{
