@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-{{template "head.html" .title}}
+<head>
+    {{template "head.html" .title}}
+    <link rel="stylesheet" type="text/css" href="/assets/prism.css">
+    <script src="/assets/prism.js" type="text/javascript"></script>
+</head>
 <body class="container">
         
     {{template "header.html" .username}}
@@ -106,7 +110,5 @@
 
     {{template "footer.html" .version}}
 
-    <link rel="preload" type="text/css" href="/assets/prism.css" as="style">
-    <script src="/assets/prism.js" type="text/javascript" defer></script>
 </body>
 </html>
