@@ -94,6 +94,7 @@ func New(opts WebServerOptions) *WebServer {
 	handler.Router.GET("/u/register", handler.handleUserRegister)
 	handler.Router.POST("/u/register", handler.handleDoUserRegister)
 	handler.Router.GET("/p/:id", handler.handleGetPaste)
+	handler.Router.GET("/p/list", handler.handleGetPastesList)
 	handler.Router.POST("/p/", handler.handleCreatePaste)
 
 	// Catch all route just shows the 404 error page
@@ -509,6 +510,48 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 		gin.H{
 			"Paste":    &p,
 			"URL":      p.URL(),
+			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
+			"username": username,
+			"pastes":   pastes,
+			"version":  h.Options.Version,
+		},
+	)
+}
+
+// handleGetPastesList returns a page with the list of pastes for the current
+// user.
+func (h *WebServer) handleGetPastesList(c *gin.Context) {
+	// Get user pastes
+	userid, _ := c.Get("user_id")
+	var pastes []api.Paste
+
+	if userid != nil && userid.(int64) != 0 {
+		data, code, err := h.makeAPICall(
+			"/paste/list/"+fmt.Sprintf("%d", userid),
+			"GET",
+			nil,
+			map[int]struct{}{
+				http.StatusOK: {},
+			})
+		if err != nil {
+			log.Println("handleGetPastesList: error talking to API: ", err)
+		} else if code != http.StatusOK {
+			log.Println("handleGetPastesList: API returned: ", code)
+		} else {
+			if err := json.Unmarshal(data, &pastes); err != nil {
+				log.Println("handleGetPastesList: failed to parse API response", err)
+			}
+		}
+		sort.Slice(pastes, func(i, j int) bool { return pastes[i].Created.After(pastes[j].Created) })
+	}
+
+	// Send HTML
+	username, _ := c.Get("username")
+	c.HTML(
+		http.StatusOK,
+		"list.html",
+		gin.H{
+			"title":    "Go PB - My Pastes",
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
 			"pastes":   pastes,
