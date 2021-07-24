@@ -507,7 +507,7 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 		http.StatusOK,
 		"view.html",
 		gin.H{
-			"Paste":    p,
+			"Paste":    &p,
 			"URL":      p.URL(),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
@@ -577,6 +577,31 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 		h.showError(c)
 		return
 	}
+
+	// Get user pastes
+	userid, _ := c.Get("user_id")
+	var pastes []api.Paste
+
+	if userid != nil && userid.(int64) != 0 {
+		data, code, err := h.makeAPICall(
+			"/paste/list/"+fmt.Sprintf("%d", userid),
+			"GET",
+			nil,
+			map[int]struct{}{
+				http.StatusOK: {},
+			})
+		if err != nil {
+			log.Println("handlePaste: error talking to API: ", err)
+		} else if code != http.StatusOK {
+			log.Println("handlePaste: API returned: ", code)
+		} else {
+			if err := json.Unmarshal(data, &pastes); err != nil {
+				log.Println("handlePaste: failed to parse API response", err)
+			}
+		}
+		sort.Slice(pastes, func(i, j int) bool { return pastes[i].Created.After(pastes[j].Created) })
+	}
+
 	// Send back HTML that display newly created paste
 	username, _ := c.Get("username")
 	c.HTML(
@@ -587,6 +612,7 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 			"URL":      resp.Header.Get("Location"),
 			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
+			"pastes":   pastes,
 			"version":  h.Options.Version,
 		},
 	)
