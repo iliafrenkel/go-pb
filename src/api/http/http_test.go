@@ -160,7 +160,7 @@ func Test_GetPasteNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusNotFound,
 		Message: "Paste not found",
 	})
@@ -194,7 +194,7 @@ func Test_GetPasteWrongID(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusNotFound,
 		Message: "Paste not found",
 	})
@@ -294,7 +294,7 @@ func Test_CreatePasteExtraField(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusBadRequest,
 		Message: fmt.Sprintf("Request body contains unknown field \"%s\"", "extraField"),
 	})
@@ -329,7 +329,7 @@ func Test_CreatePasteWrongJson(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusBadRequest,
 		Message: fmt.Sprintf("Request body contains malformed JSON (at position %d)", 2),
 	})
@@ -369,7 +369,7 @@ func Test_CreatePasteWrongFieldType(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusBadRequest,
 		Message: fmt.Sprintf("Request body contains an invalid value for the \"title\" field (at position %d)", 14),
 	})
@@ -404,7 +404,7 @@ func Test_CreatePasteEmptyBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusBadRequest,
 		Message: "Request body must not be empty",
 	})
@@ -442,7 +442,7 @@ func Test_CreatePasteLargeBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusBadRequest,
 		Message: fmt.Sprintf("Request body must not be larger than %d bytes", apiSrv.Options.MaxBodySize),
 	})
@@ -561,7 +561,7 @@ func Test_ListPastesWrongID(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusBadRequest,
 		Message: "ID is incorrect",
 	})
@@ -658,7 +658,7 @@ func Test_UserLogin(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	want, _ := json.Marshal(api.APIError{
+	want, _ := json.Marshal(api.HTTPError{
 		Code:    http.StatusUnauthorized,
 		Message: "Invalid credentials",
 	})
@@ -688,7 +688,7 @@ func Test_UserLogin(t *testing.T) {
 		t.Fatal(err)
 	}
 	got = string(b)
-	want, _ = json.Marshal(api.APIError{
+	want, _ = json.Marshal(api.HTTPError{
 		Code:    http.StatusUnauthorized,
 		Message: "Invalid credentials",
 	})

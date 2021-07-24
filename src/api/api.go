@@ -177,8 +177,8 @@ type UserService interface {
 	Validate(u User, t string) (UserInfo, error)
 }
 
-// APIError represents an error that endpoints send to the consumers.
-type APIError struct {
+// HTTPError represents an error that endpoints send to the consumers.
+type HTTPError struct {
 	Code    int    `json:"code"`    // HTTP status code
 	Message string `json:"message"` // Error message
 }
