@@ -3,8 +3,9 @@
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE.txt)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](./docs/CODE_OF_CONDUCT.md) 
-[![Latest release](https://img.shields.io/github/v/release/iliafrenkel/go-pb?logoColor=blue)](https://github.com/iliafrenkel/go-pb/releases)
-[![Codecov](https://codecov.io/gh/iliafrenkel/go-pb/branch/main/graph/badge.svg?token=TAW8VOW39N)](https://codecov.io/gh/iliafrenkel/go-pb)
+![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/iliafrenkel/go-pb?include_prereleases&sort=semver)
+[![codecov](https://codecov.io/gh/iliafrenkel/go-pb/branch/main/graph/badge.svg?token=WR1DWNVE58)](https://codecov.io/gh/iliafrenkel/go-pb)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/iliafrenkel/go-pb/Test/main?label=test)
 
 Yet another exercise in Go (the first one was [go-du](https://github.com/iliafrenkel/go-du)).
 This time it is a web app and an API that provides [Pastebin](https://pastebin.com)
