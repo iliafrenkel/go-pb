@@ -24,6 +24,8 @@ type SvcOptions struct {
 	// For sqlite it should be either a file name or `file::memory:?cache=shared`
 	// to use temporary database in memory (ex. for testing).
 	DBConnection *gorm.DB
+	//
+	DBAutoMigrate bool
 }
 
 // PasteService stores all the pastes in sqlite database and implements the
@@ -38,9 +40,9 @@ func New(opts SvcOptions) (*PasteService, error) {
 	var s PasteService
 	s.Options = opts
 	db := opts.DBConnection
-	// TODO: Put automatic migration behind a switch so that we can disable it
-	// in the future if need be.
-	db.AutoMigrate(&api.Paste{})
+	if s.Options.DBAutoMigrate {
+		db.AutoMigrate(&api.Paste{})
+	}
 	s.db = db
 
 	return &s, nil

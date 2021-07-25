@@ -39,7 +39,23 @@ func TestMain(m *testing.M) {
 	os.Chdir("../../") // Needed for proper template loading
 	apiSrv = apihttp.New(pasteSvc, userSvc, apihttp.APIServerOptions{MaxBodySize: 10240})
 	mckSrv = httptest.NewServer(apiSrv.Router)
-	webSrv = New(WebServerOptions{APIURL: mckSrv.URL})
+	webSrv = New(WebServerOptions{
+		Addr:          "localhost:8080",
+		Proto:         "http",
+		APIURL:        mckSrv.URL,
+		ReadTimeout:   15,
+		WriteTimeout:  15,
+		IdleTimeout:   60,
+		LogFile:       "",
+		LogMode:       "debug",
+		CookieAuthKey: "test",
+		BrandName:     "Go PB",
+		BrandTagline:  "A nice and simple pastebin alternative that you can host yourself.",
+		Assets:        "./web/assets",
+		Templates:     "./web/templates",
+		Logo:          "bighead.svg",
+		Version:       "v0.0.0-test",
+	})
 
 	os.Exit(m.Run())
 }

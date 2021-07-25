@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,20 @@ type APIServerOptions struct {
 	// When using a database as a storage this connection string will be passed
 	// on to the corresponding service.
 	DBConnectionString string
+	//Read timeout: maximum duration for reading the entire request.
+	ReadTimeout time.Duration
+	// Write timeout: maximum duration before timing out writes of the response
+	WriteTimeout time.Duration
+	// Idle timeout: maximum amount of time to wait for the next request
+	IdleTimeout time.Duration
+	// Log file location
+	LogFile string
+	// Log mode 'debug' or 'production'
+	LogMode string
+	//
+	DBAutoMigrate bool
+	//
+	TokenSecret string
 }
 
 // APIServer type provides an HTTP server that calls PasteService methods in
@@ -66,6 +81,20 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts APIServerOptions) *AP
 
 	handler.PasteService = pSvc
 	handler.UserService = uSvc
+
+	if handler.Options.LogMode == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	if handler.Options.LogFile != "" {
+		gin.DisableConsoleColor()
+		f, err := os.OpenFile(handler.Options.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+	}
 
 	handler.Router = gin.New()
 	handler.Router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
@@ -105,9 +134,9 @@ func (h *APIServer) ListenAndServe() error {
 	// Good practice to set timeouts to avoid Slowloris attacks.
 	h.Server = &http.Server{
 		Addr:         h.Options.Addr,
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
-		IdleTimeout:  time.Second * 60,
+		WriteTimeout: h.Options.WriteTimeout,
+		ReadTimeout:  h.Options.ReadTimeout,
+		IdleTimeout:  h.Options.IdleTimeout,
 		Handler:      h.Router,
 	}
 

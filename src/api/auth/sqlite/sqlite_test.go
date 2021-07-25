@@ -20,7 +20,11 @@ func TestMain(m *testing.M) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	usrSvc, _ = New(SvcOptions{DBConnection: db})
+	usrSvc, _ = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+		TokenSecret:   "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
+	})
 
 	os.Exit(m.Run())
 }

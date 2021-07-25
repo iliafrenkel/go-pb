@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"time"
@@ -30,9 +31,33 @@ type WebServerOptions struct {
 	// Addr will be passed to http.Server to listen on, see http.Server
 	// documentation for more information.
 	Addr string
+	//
+	Proto string
 	// APIURL specifies the full URL of the ApiServer withouth the trailing
 	// backslash such as "http://localhost:8000".
 	APIURL string
+	//Read timeout: maximum duration for reading the entire request.
+	ReadTimeout time.Duration
+	// Write timeout: maximum duration before timing out writes of the response
+	WriteTimeout time.Duration
+	// Idle timeout: maximum amount of time to wait for the next request
+	IdleTimeout time.Duration
+	//
+	LogFile string
+	//
+	LogMode string
+	//
+	CookieAuthKey string
+	//
+	BrandName string
+	//
+	BrandTagline string
+	//
+	Assets string
+	//
+	Templates string
+	//
+	Logo string
 	// Version that will be displayed in the footer
 	Version string
 }
@@ -53,6 +78,21 @@ type WebServer struct {
 func New(opts WebServerOptions) *WebServer {
 	var handler WebServer
 	handler.Options = opts
+	fmt.Printf("Opts: %+v\n", opts)
+
+	if handler.Options.LogMode == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	if handler.Options.LogFile != "" {
+		gin.DisableConsoleColor()
+		f, err := os.OpenFile(handler.Options.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+	}
 
 	// Initialise the router and load the templates from /src/web/templates folder.
 	handler.Router = gin.New()
@@ -69,7 +109,7 @@ func New(opts WebServerOptions) *WebServer {
 	}), gin.Recovery())
 
 	// Sessions management - setup sessions with the cookie store.
-	store := cookie.NewStore([]byte("hardcodedsecret")) //TODO: move the secret to env
+	store := cookie.NewStore([]byte(handler.Options.CookieAuthKey))
 	store.Options(sessions.Options{
 		Path:     "/",
 		Domain:   "",
@@ -82,8 +122,8 @@ func New(opts WebServerOptions) *WebServer {
 	handler.Router.Use(handler.handleSession)
 
 	// Templates and static files
-	handler.Router.LoadHTMLGlob(filepath.Join("..", "src", "web", "templates", "*.html"))
-	handler.Router.Static("/assets", "../src/web/assets")
+	handler.Router.LoadHTMLGlob(filepath.Join(handler.Options.Templates, "*.html"))
+	handler.Router.Static("/assets", handler.Options.Assets)
 
 	// Define all the routes
 	handler.Router.GET("/", handler.handleRoot)
@@ -115,9 +155,9 @@ func New(opts WebServerOptions) *WebServer {
 func (h *WebServer) ListenAndServe() error {
 	h.Server = &http.Server{
 		Addr:         h.Options.Addr,
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
-		IdleTimeout:  time.Second * 60,
+		WriteTimeout: h.Options.WriteTimeout,
+		ReadTimeout:  h.Options.ReadTimeout,
+		IdleTimeout:  h.Options.IdleTimeout,
 		Handler:      h.Router,
 	}
 
@@ -187,6 +227,7 @@ func (h *WebServer) handleSession(c *gin.Context) {
 		if resp.StatusCode != http.StatusOK {
 			session.Clear()
 			session.Save()
+			c.SetSameSite(http.SameSiteStrictMode)
 			c.SetCookie("token", "", -1, "/", "localhost", false, true)
 			return
 		}
@@ -244,7 +285,10 @@ func (h *WebServer) handleRoot(c *gin.Context) {
 		http.StatusOK,
 		"index.html",
 		gin.H{
-			"title":    "Go PB - Home",
+			"title":    h.Options.BrandName + " - Home",
+			"brand":    h.Options.BrandName,
+			"tagline":  h.Options.BrandTagline,
+			"logo":     h.Options.Logo,
 			"username": username,
 			"pastes":   pastes,
 			"version":  h.Options.Version,
@@ -268,7 +312,10 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 		http.StatusOK,
 		"login.html",
 		gin.H{
-			"title":    "Go PB - Login",
+			"title":    h.Options.BrandName + " - Login",
+			"brand":    h.Options.BrandName,
+			"tagline":  h.Options.BrandTagline,
+			"logo":     h.Options.Logo,
 			"errorMsg": "",
 			"username": username,
 			"version":  h.Options.Version,
@@ -365,7 +412,10 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 		http.StatusOK,
 		"register.html",
 		gin.H{
-			"title":    "Go PB - Register",
+			"title":    h.Options.BrandName + " - Register",
+			"brand":    h.Options.BrandName,
+			"tagline":  h.Options.BrandTagline,
+			"logo":     h.Options.Logo,
 			"errorMsg": "",
 			"username": username,
 			"version":  h.Options.Version,
@@ -508,9 +558,13 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 		http.StatusOK,
 		"view.html",
 		gin.H{
+			"title":    h.Options.BrandName + " - Paste",
+			"brand":    h.Options.BrandName,
+			"tagline":  h.Options.BrandTagline,
+			"logo":     h.Options.Logo,
 			"Paste":    &p,
 			"URL":      p.URL(),
-			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
+			"Server":   h.Options.Proto + "://" + h.Options.Addr,
 			"username": username,
 			"pastes":   pastes,
 			"version":  h.Options.Version,
@@ -551,8 +605,11 @@ func (h *WebServer) handleGetPastesList(c *gin.Context) {
 		http.StatusOK,
 		"list.html",
 		gin.H{
-			"title":    "Go PB - My Pastes",
-			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
+			"title":    h.Options.BrandName + " - Pastes",
+			"brand":    h.Options.BrandName,
+			"tagline":  h.Options.BrandTagline,
+			"logo":     h.Options.Logo,
+			"Server":   h.Options.Proto + "://" + h.Options.Addr,
 			"username": username,
 			"pastes":   pastes,
 			"version":  h.Options.Version,
@@ -651,9 +708,13 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 		http.StatusOK,
 		"view.html",
 		gin.H{
+			"title":    h.Options.BrandName + " - Paste",
+			"brand":    h.Options.BrandName,
+			"tagline":  h.Options.BrandTagline,
+			"logo":     h.Options.Logo,
+			"Server":   h.Options.Proto + "://" + h.Options.Addr,
 			"Paste":    paste,
 			"URL":      resp.Header.Get("Location"),
-			"Server":   "http://localhost:8080", //TODO: this has to come from somewhere
 			"username": username,
 			"pastes":   pastes,
 			"version":  h.Options.Version,
@@ -690,7 +751,10 @@ func (h *WebServer) showError(c *gin.Context) {
 		errorCode,
 		"error.html",
 		gin.H{
-			"title":        "Error",
+			"title":        h.Options.BrandName + " - Error",
+			"brand":        h.Options.BrandName,
+			"tagline":      h.Options.BrandTagline,
+			"logo":         h.Options.Logo,
 			"errorCode":    errorCode,
 			"errorText":    errorText,
 			"errorMessage": errorMsg,

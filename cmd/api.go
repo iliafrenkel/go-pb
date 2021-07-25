@@ -29,7 +29,11 @@ func startAPIServer(opts http.APIServerOptions) error {
 	}
 
 	// Create UserService
-	userSvc, err := u.New(u.SvcOptions{DBConnection: db})
+	userSvc, err := u.New(u.SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: opts.DBAutoMigrate,
+		TokenSecret:   opts.TokenSecret,
+	})
 	if err != nil {
 		return fmt.Errorf("StartApiServer: failed to create UserService: %w", err)
 	}

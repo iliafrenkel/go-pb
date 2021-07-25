@@ -38,7 +38,10 @@ func Test_Create(t *testing.T) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{DBConnection: db})
+	pasteSvc, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create a PasteService: %v\n", err)
 	}
@@ -67,7 +70,10 @@ func Test_CreateWithExpiration(t *testing.T) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{DBConnection: db})
+	pasteSvc, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create a PasteService: %v\n", err)
 	}
@@ -167,7 +173,10 @@ func Test_GetPaste(t *testing.T) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{DBConnection: db})
+	pasteSvc, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create a PasteService: %v\n", err)
 	}
@@ -195,7 +204,10 @@ func Test_PasteNotFound(t *testing.T) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{DBConnection: db})
+	pasteSvc, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create a PasteService: %v\n", err)
 	}
@@ -221,7 +233,10 @@ func Test_Delete(t *testing.T) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{DBConnection: db})
+	pasteSvc, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create a PasteService: %v\n", err)
 	}
@@ -257,7 +272,10 @@ func Test_DeleteNotFound(t *testing.T) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{DBConnection: db})
+	pasteSvc, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create a PasteService: %v\n", err)
 	}
@@ -279,7 +297,10 @@ func Test_List(t *testing.T) {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{DBConnection: db})
+	pasteSvc, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: true,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create a PasteService: %v\n", err)
 	}

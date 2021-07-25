@@ -19,10 +19,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	tokenSecret = []byte("hardcodeddefault") // TODO:(os.Getenv("GOPB_TOKEN_SECRET"))
-)
-
 // SvcOptions contains all the options needed to create an instance
 // of UserService
 type SvcOptions struct {
@@ -30,6 +26,10 @@ type SvcOptions struct {
 	// For sqlite it should be either a file name or `file::memory:?cache=shared`
 	// to use temporary database in memory (ex. for testing).
 	DBConnection *gorm.DB
+	//
+	DBAutoMigrate bool
+	//
+	TokenSecret string
 }
 
 // UserService stores all the users in sqlite database and implements
@@ -44,9 +44,10 @@ func New(opts SvcOptions) (*UserService, error) {
 	var s UserService
 	s.Options = opts
 	db := opts.DBConnection
-	// TODO: Put automatic migration behind a switch so that we can disable it
-	// in the future if need be.
-	db.AutoMigrate(&api.User{})
+
+	if s.Options.DBAutoMigrate {
+		db.AutoMigrate(&api.User{})
+	}
 	s.db = db
 
 	return &s, nil
@@ -98,7 +99,7 @@ func (s *UserService) authToken(u api.User) (string, error) {
 	claims["username"] = u.Username
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims)
-	authToken, err := token.SignedString(tokenSecret)
+	authToken, err := token.SignedString([]byte(s.Options.TokenSecret))
 	return authToken, err
 }
 
@@ -187,7 +188,7 @@ func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("token signing method is not valid: %v", token.Header["alg"])
 		}
-		return tokenSecret, nil
+		return []byte(s.Options.TokenSecret), nil
 	})
 
 	if err != nil {
