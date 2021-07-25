@@ -116,7 +116,10 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 		UserID:          p.UserID,
 	}
 
-	s.db.Create(&newPaste)
+	err := s.db.Create(&newPaste).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return &newPaste, nil
 }

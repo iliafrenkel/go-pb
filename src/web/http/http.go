@@ -712,7 +712,7 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
 			"Server":   h.Options.Proto + "://" + h.Options.Addr,
-			"Paste":    paste,
+			"Paste":    &paste,
 			"URL":      resp.Header.Get("Location"),
 			"username": username,
 			"pastes":   pastes,
