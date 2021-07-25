@@ -1,4 +1,8 @@
-# `go-pb` - Pastebin alternative, written in Go
+
+<div align="center">
+ <img src="https://github.com/iliafrenkel/go-pb/blob/e75e6b12af39d83c527676debcd5b4de9d9a01e1/src/web/assets/bighead.svg" width="128px" height="128px" alt="Go PB, pastebin alternative"/>
+ <h1>Go PB - Pastebin alternative, written in Go</h1>
+</div>
 
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE.txt)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) 
