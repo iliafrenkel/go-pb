@@ -78,7 +78,6 @@ type WebServer struct {
 func New(opts WebServerOptions) *WebServer {
 	var handler WebServer
 	handler.Options = opts
-	fmt.Printf("Opts: %+v\n", opts)
 
 	if handler.Options.LogMode == "debug" {
 		gin.SetMode(gin.DebugMode)
