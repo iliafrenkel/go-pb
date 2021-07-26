@@ -142,7 +142,11 @@ func (s *UserService) Create(u api.UserRegister) error {
 	}
 	newUsr.PasswordHash = string(hash)
 
-	s.db.Create(&newUsr)
+	err = s.db.Create(&newUsr).Error
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

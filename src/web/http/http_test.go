@@ -69,7 +69,23 @@ func Test_RootRoute(t *testing.T) {
 		t.Errorf("Status should be OK, got %d", w.Code)
 	}
 
-	want := "Go PB - Home"
+	want := webSrv.Options.BrandName + " - Home"
+	got := w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have body [%s], got [%s]", want, got)
+	}
+}
+
+func Test_NoRoute(t *testing.T) {
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/noroute", nil)
+	webSrv.Router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("Status should be %d, got %d", http.StatusNotFound, w.Code)
+	}
+
+	want := webSrv.Options.BrandName + " - Error"
 	got := w.Body.String()
 	if !strings.Contains(got, want) {
 		t.Errorf("Response should have body [%s], got [%s]", want, got)
@@ -101,7 +117,7 @@ func Test_UserLoginRoute(t *testing.T) {
 		t.Errorf("Status should be OK, got %d", w.Code)
 	}
 
-	want := "Go PB - Login"
+	want := webSrv.Options.BrandName + " - Login"
 	got := w.Body.String()
 	if !strings.Contains(got, want) {
 		t.Errorf("Response should have body [%s], got [%s]", want, got)
@@ -117,7 +133,7 @@ func Test_UserRegisterRoute(t *testing.T) {
 		t.Errorf("Status should be OK, got %d", w.Code)
 	}
 
-	want := "Go PB - Register"
+	want := webSrv.Options.BrandName + " - Register"
 	got := w.Body.String()
 	if !strings.Contains(got, want) {
 		t.Errorf("Response should have body [%s], got [%s]", want, got)
@@ -227,6 +243,27 @@ func Test_PasteCreateNoSyntaxRoute(t *testing.T) {
 	}
 }
 
+func Test_PasteList(t *testing.T) {
+	p := createTestPaste()
+	_, err := pasteSvc.Create(*p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/p/list", nil)
+	webSrv.Router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status should be %d, got %d", http.StatusOK, w.Code)
+	}
+
+	want := "You will see all your pastes here once you login" //paste.Title
+	got := w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have body [%s], got [%s]", want, got)
+	}
+}
+
 func Test_DoUserLoginRoute(t *testing.T) {
 	// Create a test user
 	var ur = api.UserRegister{
@@ -247,6 +284,7 @@ func Test_DoUserLoginRoute(t *testing.T) {
 	r, _ := http.NewRequest("POST", "/u/login", strings.NewReader(form.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 	webSrv.Router.ServeHTTP(w, r)
+	cookie := w.Result().Header.Get("Set-Cookie")
 	// Check the response status code
 	if w.Code != http.StatusFound {
 		t.Errorf("Status should be %d, got %d", http.StatusFound, w.Code)
@@ -256,6 +294,16 @@ func Test_DoUserLoginRoute(t *testing.T) {
 	got := w.Result().Header.Get("Location")
 	if !strings.Contains(got, want) {
 		t.Errorf("The Location header should be [%s], got [%s]", want, got)
+	}
+	// Check if we are logged in
+	w = httptest.NewRecorder()
+	r, _ = http.NewRequest("GET", "/", nil)
+	r.Header.Set("Cookie", "token="+cookie)
+	webSrv.Router.ServeHTTP(w, r)
+	want = "test"
+	got = w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should contain the username [%s], got [%s]", want, got)
 	}
 
 	// Try to login with a wrong password
