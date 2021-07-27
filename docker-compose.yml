@@ -10,7 +10,7 @@ volumes:
 services:
 ###############################################################################
 # Postgres database server.
-# The ./services/db-server/db-healthcheck.sh script is used by Docker to
+# The ./scripts/db-healthcheck.sh script is used by Docker to
 # determine the health status of the running container. This is important
 # because in the depended services you can specify "service_healthy" condition
 # which will make sure that the database is up and running.
@@ -39,7 +39,7 @@ services:
       start_period: 10s
 
   app:
-    image: iliafrenkel/go-pb:latest
+    image: ghcr.io/iliafrenkel/go-pb:latest
     container_name: app
     depends_on:
       db-server:
