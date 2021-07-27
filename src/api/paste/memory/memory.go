@@ -34,6 +34,7 @@ func New() *PasteService {
 	var s PasteService
 	s.pastes = make(map[int64]*api.Paste)
 	s.pastesLock = &sync.RWMutex{}
+	rand.Seed(time.Now().UnixNano())
 	return &s
 }
 
@@ -81,7 +82,6 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 		}
 	}
 	// Create new paste with a randomly generated ID
-	rand.Seed(time.Now().UnixNano())
 	newPaste := api.Paste{
 		ID:              rand.Int63(),
 		Title:           p.Title,

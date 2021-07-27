@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/iliafrenkel/go-pb/src/api"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -15,11 +15,12 @@ var usrSvc *UserService
 func TestMain(m *testing.M) {
 	var err error
 	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open("host=localhost user=test password=test dbname=test port=5432 sslmode=disable"), &gorm.Config{})
 	if err != nil {
 		fmt.Printf("Failed to create a UserService: %v\n", err)
 		os.Exit(1)
 	}
+	db.Migrator().DropTable(&api.User{})
 	usrSvc, _ = New(SvcOptions{
 		DBConnection:  db,
 		DBAutoMigrate: true,
@@ -30,6 +31,8 @@ func TestMain(m *testing.M) {
 }
 
 func Test_CreateUser(t *testing.T) {
+	t.Parallel()
+
 	var usr = api.UserRegister{
 		Username:   "test",
 		Email:      "test@example.com",
@@ -78,6 +81,8 @@ func Test_CreateUser(t *testing.T) {
 }
 
 func Test_CreateUserEmptyUsername(t *testing.T) {
+	t.Parallel()
+
 	var usr = api.UserRegister{
 		Username:   "",
 		Email:      "emptyusername@example.com",
@@ -90,6 +95,8 @@ func Test_CreateUserEmptyUsername(t *testing.T) {
 	}
 }
 func Test_CreateUserEmptyEmail(t *testing.T) {
+	t.Parallel()
+
 	var usr = api.UserRegister{
 		Username:   "emptyemail",
 		Email:      "",
@@ -103,6 +110,8 @@ func Test_CreateUserEmptyEmail(t *testing.T) {
 }
 
 func Test_CreateUserPasswordsDontMatch(t *testing.T) {
+	t.Parallel()
+
 	var usr = api.UserRegister{
 		Username:   "nonmatchingpasswords",
 		Email:      "nonmatchingpasswords@example.com",
@@ -116,6 +125,8 @@ func Test_CreateUserPasswordsDontMatch(t *testing.T) {
 }
 
 func Test_AuthenticateUser(t *testing.T) {
+	t.Parallel()
+
 	var usr = api.UserRegister{
 		Username:   "auth",
 		Email:      "auth@example.com",
@@ -167,6 +178,8 @@ func Test_AuthenticateUser(t *testing.T) {
 }
 
 func Test_ValidateToken(t *testing.T) {
+	t.Parallel()
+
 	var usr = api.UserRegister{
 		Username:   "validate",
 		Email:      "validate@example.com",

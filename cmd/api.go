@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"log"
 
-	u "github.com/iliafrenkel/go-pb/src/api/auth/sqlite"
+	u "github.com/iliafrenkel/go-pb/src/api/auth/sqldb"
 	"github.com/iliafrenkel/go-pb/src/api/http"
-	p "github.com/iliafrenkel/go-pb/src/api/paste/sqlite"
-	"gorm.io/driver/sqlite"
+	p "github.com/iliafrenkel/go-pb/src/api/paste/sqldb"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +23,7 @@ var db *gorm.DB
 func startAPIServer(opts http.APIServerOptions) error {
 	// Connect to the database
 	var err error
-	db, err = gorm.Open(sqlite.Open(opts.DBConnectionString), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(opts.DBConnectionString), &gorm.Config{})
 	if err != nil {
 		return fmt.Errorf("StartApiServer: failed to establish database connection: %w", err)
 	}
@@ -39,7 +39,10 @@ func startAPIServer(opts http.APIServerOptions) error {
 	}
 
 	// Create PasteService
-	pasteSvc, err := p.New(p.SvcOptions{DBConnection: db})
+	pasteSvc, err := p.New(p.SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: opts.DBAutoMigrate,
+	})
 	if err != nil {
 		return fmt.Errorf("StartApiServer: failed to create PasteService: %w", err)
 	}

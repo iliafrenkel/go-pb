@@ -361,8 +361,12 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 			code,
 			"login.html",
 			gin.H{
-				"title":    "Go PB - Login",
+				"title":    h.Options.BrandName + " - Login",
+				"brand":    h.Options.BrandName,
+				"tagline":  h.Options.BrandTagline,
+				"logo":     h.Options.Logo,
 				"errorMsg": "Either username or password is incorrect",
+				"username": "",
 				"version":  h.Options.Version,
 			},
 		)
@@ -465,7 +469,10 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 				http.StatusConflict,
 				"register.html",
 				gin.H{
-					"title":    "Go PB - Register",
+					"title":    h.Options.BrandName + " - Register",
+					"brand":    h.Options.BrandName,
+					"tagline":  h.Options.BrandTagline,
+					"logo":     h.Options.Logo,
 					"errorMsg": msg.Message,
 					"version":  h.Options.Version,
 				},

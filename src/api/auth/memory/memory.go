@@ -36,6 +36,7 @@ func New() *UserService {
 	var s UserService
 	s.users = make(map[int64]*api.User)
 	s.usersLock = &sync.RWMutex{}
+	rand.Seed(time.Now().UnixNano())
 	return &s
 }
 
@@ -98,7 +99,6 @@ func (s *UserService) Create(u api.UserRegister) error {
 	}
 
 	var usr api.User
-	rand.Seed(time.Now().UnixNano())
 	usr.ID = rand.Int63()
 	usr.Username = u.Username
 	usr.Email = strings.ToLower(u.Email)

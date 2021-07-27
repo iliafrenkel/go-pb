@@ -24,7 +24,7 @@ type Paste struct {
 	Password        string    `json:"password"`
 	Created         time.Time `json:"created"`
 	Syntax          string    `json:"syntax"`
-	UserID          int64     `json:"user_id" gorm:"index"`
+	UserID          int64     `json:"user_id" gorm:"index default:null"`
 	User            User      `json:"-"`
 }
 

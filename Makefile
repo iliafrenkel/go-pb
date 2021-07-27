@@ -35,7 +35,7 @@ test-coverage: ## Run all the unit tests with coverage report
 	@cat cover.out >> coverage.txt
 
 build: info dep ## Build the binary
-	- cd cmd && GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build $(LDFLAGS) -o ../build/$(PROJECT_NAME)
+	- cd cmd && GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(LDFLAGS) -o ../build/$(PROJECT_NAME)
 
 clean: ## Remove previous build
 	@rm -f build/$(PROJECT_NAME)*

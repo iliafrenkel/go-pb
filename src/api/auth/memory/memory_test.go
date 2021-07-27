@@ -174,6 +174,11 @@ func Test_ValidateToken(t *testing.T) {
 	}
 
 	u := usrSvc.findByUsername(usr.Username)
+	if u == nil {
+		t.Errorf("Failed to find user by name: %v", u)
+		return
+	}
+
 	v, err := usrSvc.Validate(*u, inf.Token)
 	if err != nil {
 		t.Errorf("Failed to validate token: %v", err)

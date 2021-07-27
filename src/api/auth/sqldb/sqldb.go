@@ -44,6 +44,7 @@ func New(opts SvcOptions) (*UserService, error) {
 	var s UserService
 	s.Options = opts
 	db := opts.DBConnection
+	rand.Seed(time.Now().UnixNano())
 
 	if s.Options.DBAutoMigrate {
 		db.AutoMigrate(&api.User{})
@@ -132,7 +133,6 @@ func (s *UserService) Create(u api.UserRegister) error {
 	}
 
 	var newUsr api.User
-	rand.Seed(time.Now().UnixNano())
 	newUsr.ID = rand.Int63()
 	newUsr.Username = u.Username
 	newUsr.Email = strings.ToLower(u.Email)

@@ -40,6 +40,8 @@ func New(opts SvcOptions) (*PasteService, error) {
 	var s PasteService
 	s.Options = opts
 	db := opts.DBConnection
+	rand.Seed(time.Now().UnixNano())
+
 	if s.Options.DBAutoMigrate {
 		db.AutoMigrate(&api.Paste{})
 	}
@@ -103,7 +105,6 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 		}
 	}
 	// Create new paste with a randomly generated ID
-	rand.Seed(time.Now().UnixNano())
 	newPaste := api.Paste{
 		ID:              rand.Int63(),
 		Title:           p.Title,
@@ -115,8 +116,12 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 		Syntax:          p.Syntax,
 		UserID:          p.UserID,
 	}
-
-	err := s.db.Create(&newPaste).Error
+	var err error
+	if p.UserID == 0 {
+		err = s.db.Omit("user_id").Create(&newPaste).Error
+	} else {
+		err = s.db.Create(&newPaste).Error
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +138,11 @@ func (s *PasteService) Delete(id int64) error {
 func (s *PasteService) List(uid int64) []api.Paste {
 	var pastes []api.Paste
 
-	s.db.Find(&pastes, "user_id=?", uid)
+	if uid == 0 {
+		s.db.Find(&pastes, "user_id IS NULL")
+	} else {
+		s.db.Find(&pastes, "user_id=?", uid)
+	}
 
 	return pastes
 }

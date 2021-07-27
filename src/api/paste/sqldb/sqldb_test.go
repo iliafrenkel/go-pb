@@ -8,14 +8,19 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+var pasteSvc *PasteService
+var pCount uint = 0
+var testUser api.User
+
 // createTestPaste create a paste with random ID and Body
 func createTestPaste() *api.PasteForm {
+	pCount += 1
 	var p = api.PasteForm{
-		Title:           "Test paste",
+		Title:           "Test paste" + fmt.Sprintf("%d", pCount),
 		Body:            "Test body",
 		Expires:         "never",
 		DeleteAfterRead: false,
@@ -27,24 +32,34 @@ func createTestPaste() *api.PasteForm {
 	return &p
 }
 
-func Test_Create(t *testing.T) {
-	t.Parallel()
-
+func TestMain(m *testing.M) {
 	var err error
-	var pasteSvc *PasteService
 	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open("host=localhost user=test password=test dbname=test port=5432 sslmode=disable"), &gorm.Config{})
 	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
+		fmt.Printf("Failed to create a PasteService: %v\n", err)
 		os.Exit(1)
 	}
-	pasteSvc, err = New(SvcOptions{
+	db.Migrator().DropTable(&api.Paste{})
+	pasteSvc, _ = New(SvcOptions{
 		DBConnection:  db,
 		DBAutoMigrate: true,
 	})
-	if err != nil {
-		t.Fatalf("Failed to create a PasteService: %v\n", err)
+
+	testUser = api.User{
+		ID:           1,
+		Username:     "test",
+		Email:        "test@example.com",
+		PasswordHash: "test",
+		CreatedAt:    time.Time{},
 	}
+	db.Model(&testUser).Create(&testUser)
+
+	os.Exit(m.Run())
+}
+
+func Test_Create(t *testing.T) {
+	t.Parallel()
 
 	var p = createTestPaste()
 	if paste, err := pasteSvc.Create(*p); err != nil {
@@ -61,22 +76,6 @@ func Test_Create(t *testing.T) {
 
 func Test_CreateWithExpiration(t *testing.T) {
 	t.Parallel()
-
-	var err error
-	var pasteSvc *PasteService
-	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
-		os.Exit(1)
-	}
-	pasteSvc, err = New(SvcOptions{
-		DBConnection:  db,
-		DBAutoMigrate: true,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create a PasteService: %v\n", err)
-	}
 
 	var p = createTestPaste()
 	// Minutes
@@ -165,22 +164,6 @@ func Test_CreateWithExpiration(t *testing.T) {
 func Test_GetPaste(t *testing.T) {
 	t.Parallel()
 
-	var err error
-	var pasteSvc *PasteService
-	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
-		os.Exit(1)
-	}
-	pasteSvc, err = New(SvcOptions{
-		DBConnection:  db,
-		DBAutoMigrate: true,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create a PasteService: %v\n", err)
-	}
-
 	var p = createTestPaste()
 	paste, err := pasteSvc.Create(*p)
 	if err != nil {
@@ -196,22 +179,6 @@ func Test_GetPaste(t *testing.T) {
 func Test_PasteNotFound(t *testing.T) {
 	t.Parallel()
 
-	var err error
-	var pasteSvc *PasteService
-	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
-		os.Exit(1)
-	}
-	pasteSvc, err = New(SvcOptions{
-		DBConnection:  db,
-		DBAutoMigrate: true,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create a PasteService: %v\n", err)
-	}
-
 	p, err := pasteSvc.Get(0)
 	if err != nil {
 		t.Errorf("failed to get a paste: %v", err)
@@ -224,22 +191,6 @@ func Test_PasteNotFound(t *testing.T) {
 
 func Test_Delete(t *testing.T) {
 	t.Parallel()
-
-	var err error
-	var pasteSvc *PasteService
-	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
-		os.Exit(1)
-	}
-	pasteSvc, err = New(SvcOptions{
-		DBConnection:  db,
-		DBAutoMigrate: true,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create a PasteService: %v\n", err)
-	}
 
 	var p = createTestPaste()
 	paste, err := pasteSvc.Create(*p)
@@ -264,23 +215,7 @@ func Test_Delete(t *testing.T) {
 func Test_DeleteNotFound(t *testing.T) {
 	t.Parallel()
 
-	var err error
-	var pasteSvc *PasteService
-	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
-		os.Exit(1)
-	}
-	pasteSvc, err = New(SvcOptions{
-		DBConnection:  db,
-		DBAutoMigrate: true,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create a PasteService: %v\n", err)
-	}
-
-	err = pasteSvc.Delete(0)
+	err := pasteSvc.Delete(0)
 	if err != nil {
 		t.Errorf("failed to delete a non-existsing paste: %v", err)
 	}
@@ -289,32 +224,16 @@ func Test_DeleteNotFound(t *testing.T) {
 func Test_List(t *testing.T) {
 	t.Parallel()
 
-	var err error
-	var pasteSvc *PasteService
-	var db *gorm.DB
-	db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
-		os.Exit(1)
-	}
-	pasteSvc, err = New(SvcOptions{
-		DBConnection:  db,
-		DBAutoMigrate: true,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create a PasteService: %v\n", err)
-	}
-
 	var p = createTestPaste()
-	p.UserID = 1
+	p.UserID = testUser.ID
 	if _, err := pasteSvc.Create(*p); err != nil {
 		t.Errorf("failed to create a paste: %v", err)
 		return
 	}
 
-	list := pasteSvc.List(1)
+	list := pasteSvc.List(testUser.ID)
 	if len(list) != 1 {
-		t.Errorf("Expected a list of 1, got %d/n%v", len(list), list)
+		t.Errorf("Expected a list of 1, got %d\n%v\n", len(list), list)
 		return
 	}
 	if p.Title != list[0].Title {
