@@ -1,0 +1,59 @@
+version: "2.4"
+
+networks:
+  go-pb:
+    external: false
+
+volumes:
+  postgres-data:
+
+services:
+###############################################################################
+# Postgres database server.
+# The ./services/db-server/db-healthcheck.sh script is used by Docker to
+# determine the health status of the running container. This is important
+# because in the depended services you can specify "service_healthy" condition
+# which will make sure that the database is up and running.
+  db-server:
+    image: postgres:13-alpine
+    container_name: db-server
+    restart: unless-stopped
+    networks:
+      - go-pb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/db-healthcheck.sh:/db-healthcheck.sh
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PORT=${DB_PORT}
+    ports:
+      - 5432:5432  
+    healthcheck:
+      test: ["CMD", "/db-healthcheck.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  app:
+    image: iliafrenkel/go-pb:latest
+    container_name: app
+    depends_on:
+      db-server:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - go-pb
+    environment:
+      - GOPB_API_DB_CONN_STRING=$(GOPB_API_DB_CONN_STRING)
+      - GOPB_WEB_LOGO=$(GOPB_WEB_LOGO)
+      - GOPB_WEB_HOST=$(GOPB_WEB_HOST)
+      - GOPB_API_TOKEN_SECRET=$(GOPB_API_TOKEN_SECRET)
+      - GOPB_WEB_COOKIE_AUTH_KEY=$(GOPB_WEB_COOKIE_AUTH_KEY)
+    ports:
+      - 8080:8080
+##
+###############################################################################

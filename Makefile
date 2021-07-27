@@ -1,11 +1,9 @@
 PROJECT_NAME := "go-pb"
 USER_NAME := "iliafrenkel"
+
 PKG := "github.com/$(USER_NAME)/$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
-
-GOOS=linux
-GOARCH=amd64
 
 B=$(shell git rev-parse --abbrev-ref HEAD)
 BRANCH=$(subst /,-,$(B))
@@ -35,7 +33,7 @@ test-coverage: ## Run all the unit tests with coverage report
 	@cat cover.out >> coverage.txt
 
 build: info dep ## Build the binary
-	- cd cmd && GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(LDFLAGS) -o ../build/$(PROJECT_NAME)
+	- cd cmd && CGO_ENABLED=0 go build $(LDFLAGS) -o ../build/$(PROJECT_NAME)
 
 clean: ## Remove previous build
 	@rm -f build/$(PROJECT_NAME)*

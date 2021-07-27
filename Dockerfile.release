@@ -1,0 +1,8 @@
+FROM scratch
+
+ADD ./go-pb /go-pb
+ADD ./src/web/assets /assets
+ADD ./src/web/templates /templates
+
+WORKDIR /
+ENTRYPOINT ["/go-pb"]

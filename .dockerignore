@@ -1,0 +1,10 @@
+# VSCode folders
+.vscode
+.devcontainer
+
+# Build folder
+build
+dist/
+
+# goland folder
+.idea/

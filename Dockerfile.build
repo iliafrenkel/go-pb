@@ -1,0 +1,17 @@
+FROM golang:latest as build
+
+ENV CGO_ENABLED=0
+
+ADD . /build
+WORKDIR /build
+
+RUN make clean && make build
+
+FROM scratch
+
+COPY --from=build /build/build/go-pb /go-pb
+COPY --from=build /build/src/web/assets /assets
+COPY --from=build /build/src/web/templates /templates
+
+WORKDIR /
+ENTRYPOINT ["/go-pb"]

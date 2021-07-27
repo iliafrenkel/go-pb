@@ -1,0 +1,76 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - freebsd
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: freebsd
+        goarch: arm
+      - goos: freebsd
+        goarch: arm64
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    dir: ./cmd
+    ldflags: "-s -w -X main.revision={{.Tag}}-{{.ShortCommit}}-{{.CommitDate}} -X main.version={{.Tag}} -X main.branch={{.Branch}}"
+dockers:
+  - goos: linux
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/iliafrenkel/go-pb:latest"
+      - "ghcr.io/iliafrenkel/go-pb:{{ .Tag }}"
+    skip_push: false
+    dockerfile: Dockerfile.release
+    use: docker
+    extra_files:
+      - src
+    build_flag_templates:
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--platform=linux/amd64"
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE.txt
+      - README.md
+      - src: ./src/web/assets
+        dst: assets
+        strip_parent: true
+      - src: ./src/web/templates
+        dst: templates
+        strip_parent: true
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  algorithm: sha256
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+release:
+  github:
+    owner: iliafrenkel
+    name: go-pb
+  draft: false
+  prerelease: auto
