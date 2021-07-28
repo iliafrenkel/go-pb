@@ -35,6 +35,8 @@ dockers:
     image_templates:
       - "ghcr.io/iliafrenkel/go-pb:latest"
       - "ghcr.io/iliafrenkel/go-pb:{{ .Tag }}"
+      - "iliaf/go-pb:latest"
+      - "iliaf/go-pb:{{ .Tag }}"
     skip_push: false
     dockerfile: Dockerfile.release
     use: docker
