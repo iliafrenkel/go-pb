@@ -24,10 +24,10 @@ jobs:
           go-version: 1.16
 
       - name: Login to registry
-        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }}
+        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Login to docker
-        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u iliaf
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u iliaf --password-stdin
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
