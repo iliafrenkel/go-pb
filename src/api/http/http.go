@@ -22,6 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/iliafrenkel/go-pb/src/api"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // APIServerOptions defines various parameters needed to run the ApiServer
@@ -69,6 +70,7 @@ type APIServer struct {
 //
 // The routes are:
 //   GET    /paste/{id}      - get paste by ID
+//   POST   /paste/{id}      - get password protected paste by ID
 //   POST   /paste           - create new paste
 //   DELETE /paste/{id}      - delete paste by ID
 //   GET    /paste/list/{id} - get a list of pastes by UserID
@@ -112,6 +114,7 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts APIServerOptions) *AP
 	paste := handler.Router.Group("/paste")
 	{
 		paste.GET("/:id", handler.handlePasteGet)
+		paste.POST("/:id", handler.verifyJSONMiddleware(new(api.PastePassword)), handler.handlePasteGetWithPassword)
 		paste.POST("", handler.verifyJSONMiddleware(new(api.PasteForm)), handler.handlePasteCreate)
 		paste.DELETE("/:id", handler.handlePasteDelete)
 		paste.GET("/list/:id", handler.handlePasteList)
@@ -277,10 +280,12 @@ func (h *APIServer) verifyJSONMiddleware(data interface{}) gin.HandlerFunc {
 }
 
 // handlePasteGet is an HTTP handler for the GET /paste/{id} route, it returns
-// the paste as a JSON string or 404 Not Found.
+// the paste as a JSON string or 404 Not Found. If paste is password protected
+// we return 401 Unauthorised and the caller has to POST to /paste/{id} to with
+// the password to get the paste.
 func (h *APIServer) handlePasteGet(c *gin.Context) {
 	// We expect the id parameter as base62 encoded string, we try to decode
-	// it into a uint64 paste id and return 404 if we can't.
+	// it into a int64 paste id and return 404 if we can't.
 	id, err := base62.Decode(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, api.HTTPError{
@@ -290,7 +295,9 @@ func (h *APIServer) handlePasteGet(c *gin.Context) {
 		return
 	}
 
-	p, err := h.PasteService.Get(int64(id))
+	p, err := h.PasteService.Get(id)
+	// Service returned an error and we don't know what to do here. We log the
+	// error and send 500 InternalServerError back to the caller.
 	if err != nil {
 		log.Println("handlePasteGet: unexpected error: ", err.Error())
 		c.JSON(http.StatusInternalServerError, api.HTTPError{
@@ -299,6 +306,7 @@ func (h *APIServer) handlePasteGet(c *gin.Context) {
 		})
 		return
 	}
+	// Service call was successful but returned nil. Respond with 404 NoFound.
 	if p == nil {
 		c.JSON(http.StatusNotFound, api.HTTPError{
 			Code:    http.StatusNotFound,
@@ -306,13 +314,86 @@ func (h *APIServer) handlePasteGet(c *gin.Context) {
 		})
 		return
 	}
+	// Check if the paste is password protected. If yes, we return 401
+	// Unauthorized and the caller must POST back with the password.
+	if p.Password != "" {
+		c.JSON(http.StatusUnauthorized, api.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Paste is password protected",
+		})
+		return
+	}
 
+	// All is good, send the paste back to the caller.
 	c.JSON(http.StatusOK, p)
 
 	// We "burn" the paste if DeleteAfterRead flag is set.
 	if p.DeleteAfterRead {
 		h.PasteService.Delete(p.ID)
 	}
+}
+
+func (h *APIServer) handlePasteGetWithPassword(c *gin.Context) {
+	// We expect the id parameter as base62 encoded string, we try to decode
+	// it into a int64 paste id and return 404 if we can't.
+	id, err := base62.Decode(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, api.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
+		return
+	}
+	// Get the password from the context, the verifyJSONMiddlerware should've
+	// prepared it for us.
+	var pwd string
+	if data, ok := c.Get("payload"); !ok {
+		log.Println("handlePasteGetWithPassword: unexpected error: ", err.Error())
+		c.JSON(http.StatusInternalServerError, api.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+		})
+		return
+	} else {
+		pwd = data.(*api.PastePassword).Password
+	}
+	// Get the paste
+	p, err := h.PasteService.Get(id)
+	// Service returned an error and we don't know what to do here. We log the
+	// error and send 500 InternalServerError back to the caller.
+	if err != nil {
+		log.Println("handlePasteGet: unexpected error: ", err.Error())
+		c.JSON(http.StatusInternalServerError, api.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+		})
+		return
+	}
+	// Service call was successful but returned nil. Respond with 404 NoFound.
+	if p == nil {
+		c.JSON(http.StatusNotFound, api.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
+		return
+	}
+	// Verify the password
+	if err := bcrypt.CompareHashAndPassword([]byte(p.Password), []byte(pwd)); err != nil {
+		c.JSON(http.StatusUnauthorized, api.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Paste password is incorrect",
+		})
+		return
+	}
+
+	// All is good, send the paste back to the caller.
+	c.JSON(http.StatusOK, p)
+
+	// We "burn" the paste if DeleteAfterRead flag is set.
+	if p.DeleteAfterRead {
+		h.PasteService.Delete(p.ID)
+	}
+
 }
 
 // handlePasteCreate is an HTTP handler for the POST /paste route. It expects

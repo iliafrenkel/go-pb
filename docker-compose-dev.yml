@@ -21,7 +21,7 @@ services:
     networks:
       - go-pb_dev
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data-dev:/var/lib/postgresql/data
       - ./scripts/db-healthcheck.sh:/db-healthcheck.sh
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
@@ -50,22 +50,22 @@ services:
     ports:
       - 8888:8080
 
-  app:
-    image: iliafrenkel/go-pb:latest
-    container_name: app
-    depends_on:
-      db-server:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - go-pb_dev
-    environment:
-      - GOPB_API_DB_CONN_STRING=host=db-server user=iliaf password=iliaf dbname=iliaf port=5432 sslmode=disable
-      - GOPB_WEB_LOGO=bighead.svg
-      - GOPB_WEB_HOST=0.0.0.0
-      - GOPB_API_TOKEN_SECRET=very#secret#api#token#donotshare
-      - GOPB_WEB_COOKIE_AUTH_KEY=verysecretcookieauthkeydontshare
-    ports:
-      - 8080:8080
+  # app:
+  #   image: iliafrenkel/go-pb:latest
+  #   container_name: app
+  #   depends_on:
+  #     db-server:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - go-pb_dev
+  #   environment:
+  #     - GOPB_API_DB_CONN_STRING=host=db-server user=iliaf password=iliaf dbname=iliaf port=5432 sslmode=disable
+  #     - GOPB_WEB_LOGO=bighead.svg
+  #     - GOPB_WEB_HOST=0.0.0.0
+  #     - GOPB_API_TOKEN_SECRET=very#secret#api#token#donotshare
+  #     - GOPB_WEB_COOKIE_AUTH_KEY=verysecretcookieauthkeydontshare
+  #   ports:
+  #     - 8080:8080
 ##
 ###############################################################################

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/iliafrenkel/go-pb/src/api"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -104,7 +105,14 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 			return nil, fmt.Errorf("unknown duration format: %s", p.Expires)
 		}
 	}
-	// Create new paste with a randomly generated ID
+	// Create new paste with a randomly generated ID and a hashed password.
+	if p.Password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(p.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+		p.Password = string(hash)
+	}
 	newPaste := api.Paste{
 		ID:              rand.Int63(),
 		Title:           p.Title,
