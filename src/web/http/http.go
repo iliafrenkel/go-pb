@@ -133,6 +133,7 @@ func New(opts WebServerOptions) *WebServer {
 	handler.Router.GET("/u/register", handler.handleUserRegister)
 	handler.Router.POST("/u/register", handler.handleDoUserRegister)
 	handler.Router.GET("/p/:id", handler.handleGetPaste)
+	handler.Router.POST("/p/:id", handler.handleGetPasteWithPassword)
 	handler.Router.GET("/p/list", handler.handleGetPastesList)
 	handler.Router.POST("/p/", handler.handleCreatePaste)
 
@@ -502,6 +503,25 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 		h.showError(c)
 		return
 	}
+	// Check if paste is password protected
+	if resp.StatusCode == http.StatusUnauthorized {
+		username, _ := c.Get("username")
+		c.HTML(
+			http.StatusOK,
+			"paste-password.html",
+			gin.H{
+				"title":    h.Options.BrandName + " - Paste",
+				"brand":    h.Options.BrandName,
+				"tagline":  h.Options.BrandTagline,
+				"logo":     h.Options.Logo,
+				"id":       id,
+				"message":  "This paste is protected by a password",
+				"username": username,
+				"version":  h.Options.Version,
+			},
+		)
+		return
+	}
 	// If API response code is not 200 return it and log an error
 	if resp.StatusCode != http.StatusOK {
 		log.Println("handlePaste: API returned: ", resp.StatusCode)
@@ -556,6 +576,117 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 			}
 		}
 		sort.Slice(pastes, func(i, j int) bool { return pastes[i].Created.After(pastes[j].Created) })
+	}
+
+	// Send HTML
+	username, _ := c.Get("username")
+	c.HTML(
+		http.StatusOK,
+		"view.html",
+		gin.H{
+			"title":    h.Options.BrandName + " - Paste",
+			"brand":    h.Options.BrandName,
+			"tagline":  h.Options.BrandTagline,
+			"logo":     h.Options.Logo,
+			"Paste":    &p,
+			"URL":      p.URL(),
+			"Server":   h.Options.Proto + "://" + h.Options.Addr,
+			"username": username,
+			"pastes":   pastes,
+			"version":  h.Options.Version,
+		},
+	)
+}
+
+// handleGetPasteWithPassword queries the API for a paste and returns a page
+// that displays it. It uses the "view.html" template.
+func (h *WebServer) handleGetPasteWithPassword(c *gin.Context) {
+	// Query the API for a paste by ID
+	id := c.Param("id")
+	var form api.PastePassword
+	if err := c.ShouldBind(&form); err != nil {
+		log.Println("handleGetPasteWithPassword: failed to bind to form data: ", err)
+		c.Set("errorCode", http.StatusBadRequest)
+		c.Set("errorText", http.StatusText(http.StatusBadRequest))
+		h.showError(c)
+		return
+	}
+	psw, _ := json.Marshal(form)
+	data, code, err := h.makeAPICall(
+		"/paste/"+id,
+		"POST",
+		bytes.NewBuffer(psw),
+		map[int]struct{}{
+			http.StatusOK:           {},
+			http.StatusUnauthorized: {},
+		})
+	if err != nil {
+		log.Println("handleGetPasteWithPassword: error talking to API: ", err)
+		c.Set("errorCode", code)
+		c.Set("errorText", http.StatusText(code))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
+		return
+	}
+	// Check if API responded with NotAuthorized
+	if code == http.StatusUnauthorized {
+		username, _ := c.Get("username")
+		c.HTML(
+			http.StatusOK,
+			"paste-password.html",
+			gin.H{
+				"title":    h.Options.BrandName + " - Paste",
+				"brand":    h.Options.BrandName,
+				"tagline":  h.Options.BrandTagline,
+				"logo":     h.Options.Logo,
+				"id":       id,
+				"message":  "This paste is protected by a password",
+				"username": username,
+				"version":  h.Options.Version,
+			},
+		)
+		return
+	}
+	// Check if API responded with some other error
+	if code != http.StatusOK {
+		log.Println("handleGetPasteWithPassword: API returned an error: ", err)
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
+		return
+	}
+	// Get user pastes
+	userid, _ := c.Get("user_id")
+	var pastes []api.Paste
+
+	if userid != nil && userid.(int64) != 0 {
+		data, code, err := h.makeAPICall(
+			"/paste/list/"+fmt.Sprintf("%d", userid),
+			"GET",
+			nil,
+			map[int]struct{}{
+				http.StatusOK: {},
+			})
+		if err != nil {
+			log.Println("handleGetPasteWithPassword: error talking to API: ", err)
+		} else if code != http.StatusOK {
+			log.Println("handleGetPasteWithPassword: API returned: ", code)
+		} else {
+			if err := json.Unmarshal(data, &pastes); err != nil {
+				log.Println("handleGetPasteWithPassword: failed to parse API response", err)
+			}
+		}
+		sort.Slice(pastes, func(i, j int) bool { return pastes[i].Created.After(pastes[j].Created) })
+	}
+	var p api.Paste
+	if err := json.Unmarshal(data, &p); err != nil {
+		log.Println("handleGetPasteWithPassword: failed to parse API response", err)
+		c.Set("errorCode", http.StatusInternalServerError)
+		c.Set("errorText", http.StatusText(http.StatusInternalServerError))
+		c.Set("errorMessage", "Oops! It looks like something went wrong. Don't worry, we have notified the authorities.")
+		h.showError(c)
+		return
 	}
 
 	// Send HTML

@@ -110,6 +110,10 @@ type PasteForm struct {
 	UserID          int64  `json:"user_id"`
 }
 
+type PastePassword struct {
+	Password string `json:"password" form:"password" binding:"required"`
+}
+
 // PasteService is the interface that defines methods for working with Pastes.
 //
 // Implementations should define the underlying storage such as database,
