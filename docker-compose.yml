@@ -28,7 +28,6 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_PORT=${DB_PORT}
     ports:
       - 5432:5432  
     healthcheck:
@@ -48,11 +47,11 @@ services:
     networks:
       - go-pb
     environment:
-      - GOPB_API_DB_CONN_STRING=$(GOPB_API_DB_CONN_STRING)
-      - GOPB_WEB_LOGO=$(GOPB_WEB_LOGO)
-      - GOPB_WEB_HOST=$(GOPB_WEB_HOST)
-      - GOPB_API_TOKEN_SECRET=$(GOPB_API_TOKEN_SECRET)
-      - GOPB_WEB_COOKIE_AUTH_KEY=$(GOPB_WEB_COOKIE_AUTH_KEY)
+      - GOPB_API_DB_CONN_STRING=${GOPB_API_DB_CONN_STRING}
+      - GOPB_WEB_LOGO=${GOPB_WEB_LOGO}
+      - GOPB_WEB_HOST=${GOPB_WEB_HOST}
+      - GOPB_API_TOKEN_SECRET=${GOPB_API_TOKEN_SECRET}
+      - GOPB_WEB_COOKIE_AUTH_KEY=${GOPB_WEB_COOKIE_AUTH_KEY}
     ports:
       - 8080:8080
 ##
