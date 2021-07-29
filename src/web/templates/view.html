@@ -102,13 +102,19 @@
                                 <div class="accordion-body">
                                     {{if .URL }}
                                     <div class="input-group mb-3">
-                                        <span class="input-group-text" id="basic-addon1">
+                                        <span class="input-group-text border-primary bg-white text-primary" id="basic-addon1">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link align-text-bottom" viewBox="0 0 16 16">
                                                 <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9c-.086 0-.17.01-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/>
                                                 <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z"/>
                                             </svg>
                                         </span>
-                                        <input type="text" class="form-control" id="url" onClick="this.select();" readonly value="{{ .Server }}/p/{{ .URL }}" placeholder="URL" aria-label="URL" aria-describedby="basic-addon1">
+                                        <input type="text" class="form-control border-primary bg-white text-primary" id="url" onClick="this.select();" readonly value="{{ .Server }}/p/{{ .URL }}" placeholder="URL" aria-label="URL" aria-describedby="basic-addon1">
+                                        <button class="btn btn-primary" type="button" id="buttonClippboard">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+                                                <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                                                <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                                            </svg>
+                                        </button>
                                     </div>
                                     {{end}}
                                 </div>
