@@ -554,8 +554,18 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 		return
 	}
 
-	// Get user pastes
 	userid, _ := c.Get("user_id")
+
+	// Check if paste is private
+	if p.Privacy == "private" && p.UserID != userid {
+		c.Set("errorCode", http.StatusNotFound)
+		c.Set("errorText", http.StatusText(http.StatusNotFound))
+		c.Set("errorMessage", "The paste cannot be found.")
+		h.showError(c)
+		return
+	}
+
+	// Get user pastes
 	var pastes []api.Paste
 
 	if userid != nil && userid.(int64) != 0 {

@@ -348,10 +348,10 @@ func (h *APIServer) handlePasteGetWithPassword(c *gin.Context) {
 	// prepared it for us.
 	var pwd string
 	if data, ok := c.Get("payload"); !ok {
-		log.Println("handlePasteGetWithPassword: unexpected error: ", err.Error())
+		log.Println("handlePasteGetWithPassword: unexpected error: can't get the payload")
 		c.JSON(http.StatusInternalServerError, api.HTTPError{
 			Code:    http.StatusInternalServerError,
-			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+			Message: fmt.Sprintf("%s: can't get the payload", http.StatusText(http.StatusInternalServerError)),
 		})
 		return
 	} else {
@@ -407,9 +407,18 @@ func (h *APIServer) handlePasteGetWithPassword(c *gin.Context) {
 // error. Body size is currently limited to a configurable value of
 // Options.MaxBodySize.
 func (h *APIServer) handlePasteCreate(c *gin.Context) {
-	data := c.MustGet("payload").(*api.PasteForm)
+	var data interface{}
+	var ok bool
+	if data, ok = c.Get("payload"); !ok {
+		log.Println("handlePasteGetWithPassword: unexpected error: can't get the payload")
+		c.JSON(http.StatusInternalServerError, api.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: can't get the payload", http.StatusText(http.StatusInternalServerError)),
+		})
+		return
+	}
 
-	p, err := h.PasteService.Create(*data)
+	p, err := h.PasteService.Create(*data.(*api.PasteForm))
 	if err != nil {
 		log.Printf("handleCreate: failed to create paste: %v\n", err)
 		c.JSON(http.StatusBadRequest, api.HTTPError{

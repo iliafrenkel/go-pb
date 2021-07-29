@@ -96,6 +96,7 @@ func (s *PasteService) Create(p api.PasteForm) (*api.Paste, error) {
 		Body:            p.Body,
 		Expires:         expires,
 		DeleteAfterRead: p.DeleteAfterRead,
+		Privacy:         p.Privacy,
 		Password:        p.Password,
 		Created:         created,
 		Syntax:          p.Syntax,

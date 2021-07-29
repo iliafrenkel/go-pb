@@ -21,6 +21,7 @@ type Paste struct {
 	Body            string    `json:"body"`
 	Expires         time.Time `json:"expires" gorm:"index"`
 	DeleteAfterRead bool      `json:"delete_after_read"`
+	Privacy         string    `json:"privacy"`
 	Password        string    `json:"password"`
 	Created         time.Time `json:"created"`
 	Syntax          string    `json:"syntax"`
@@ -105,6 +106,7 @@ type PasteForm struct {
 	Body            string `json:"body" form:"body" binding:"required"`
 	Expires         string `json:"expires" form:"expires" binding:"required"`
 	DeleteAfterRead bool   `json:"delete_after_read" form:"delete_after_read" binding:"-"`
+	Privacy         string `json:"privacy" form:"privacy" binding:"required"`
 	Password        string `json:"password" form:"password"`
 	Syntax          string `json:"syntax" form:"syntax" binding:"required"`
 	UserID          int64  `json:"user_id"`
