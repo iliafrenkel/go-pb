@@ -182,6 +182,7 @@ func Test_PasteCreateRoute(t *testing.T) {
 	form.Set("title", "Test create paste")
 	form.Set("body", "This is a test create paste")
 	form.Set("expires", "never")
+	form.Set("privacy", "public")
 	form.Set("syntax", "none")
 	form.Set("delete_after_read", "false")
 	w := httptest.NewRecorder()
@@ -204,6 +205,7 @@ func Test_PasteCreateNoBodyRoute(t *testing.T) {
 	form := url.Values{}
 	form.Set("title", "Test create paste")
 	form.Set("expires", "never")
+	form.Set("privacy", "public")
 	form.Set("syntax", "none")
 	form.Set("delete_after_read", "false")
 	w := httptest.NewRecorder()
@@ -226,6 +228,7 @@ func Test_PasteCreateNoSyntaxRoute(t *testing.T) {
 	form := url.Values{}
 	form.Set("title", "Test create paste")
 	form.Set("body", "This is a test create paste")
+	form.Set("privacy", "public")
 	form.Set("delete_after_read", "false")
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("POST", "/p/", strings.NewReader(form.Encode()))
