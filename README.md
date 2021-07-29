@@ -25,10 +25,10 @@ made regularly, including breaking changes. This is not a usable product yet!
 - ✔ Syntax highlighting for over 250 languages.
 - ✔ Burner pastes - paste will be deleted after the first read.
 - ⏳ Set expiration time on a paste.
-- ⏳ Password protection.
+- ✔ Password protection.
 - ✔ Paste anonymously, no need to login.
 - ✔ Register and you will be able to see the list of pastes you created.
-- ⏳ Create private pastes. Once logged in, you can create pastes that no one can see.
+- ✔ Create private pastes. Once logged in, you can create pastes that no one can see.
 - ⏳ Public API to create pastes from command line and 3rd party applications.
 - ⏳ Admin interface to manage users, pastes and other settings.
 
