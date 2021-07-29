@@ -28,6 +28,7 @@ func createTestPaste() *api.PasteForm {
 		Body:            "Test body",
 		Expires:         "never",
 		DeleteAfterRead: false,
+		Privacy:         "public",
 		Password:        "",
 		Syntax:          "none",
 		UserID:          0,
@@ -343,6 +344,7 @@ func Test_CreatePasteWrongFieldType(t *testing.T) {
 		"title": 1,
 		"body": "body",
 		"expires":"never",
+		"privacy":"public",
 		"syntax":"none"
 	}`
 	resp, err := http.Post(mckSrv.URL+"/paste", "application/json", bytes.NewBuffer([]byte(body)))
