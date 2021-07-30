@@ -2,9 +2,9 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE.txt file.
 
-// Package sqlite provides an implementation of api.UserService that uses
-// sqlite database as a storage.
-package sqlite
+// Package sqldb provides an implementation of api.UserService that uses
+// a database as a storage.
+package sqldb
 
 import (
 	"errors"

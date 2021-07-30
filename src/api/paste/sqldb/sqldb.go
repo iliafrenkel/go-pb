@@ -2,9 +2,9 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE.txt file.
 
-// Package sqlite provides implementation of api.PasteService that uses
-// sqlite database as a storage.
-package sqlite
+// Package sqldb provides implementation of api.PasteService that uses
+// a database as a storage.
+package sqldb
 
 import (
 	"errors"
@@ -29,7 +29,7 @@ type SvcOptions struct {
 	DBAutoMigrate bool
 }
 
-// PasteService stores all the pastes in sqlite database and implements the
+// PasteService stores all the pastes in a database and implements the
 // api.PasteService interface.
 type PasteService struct {
 	db      *gorm.DB
