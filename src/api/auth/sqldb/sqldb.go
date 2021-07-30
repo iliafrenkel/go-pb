@@ -3,7 +3,8 @@
 // license that can be found in the LICENSE.txt file.
 
 // Package sqldb provides an implementation of api.UserService that uses
-// a database as a storage.
+// a database as a storage. It doesn't dictitate what type of database.
+// Any database supported by the gorm(http://gorm.io) package will do.
 package sqldb
 
 import (
@@ -19,39 +20,49 @@ import (
 	"gorm.io/gorm"
 )
 
-// SvcOptions contains all the options needed to create an instance
-// of UserService
+// SvcOptions contains all the options needed to create a new instance
+// of UserService.
 type SvcOptions struct {
-	// Database connection string.
-	// For sqlite it should be either a file name or `file::memory:?cache=shared`
+	// Database connection string. See gorm package documentation for details.
+	// For sqlite it can be either a file name or `file::memory:?cache=shared`
 	// to use temporary database in memory (ex. for testing).
 	DBConnection *gorm.DB
-	//
+	// Whether to automatically create/update the database schema of service
+	// creation. In any case, the auto migration will never delete or change
+	// any data.
 	DBAutoMigrate bool
-	//
+	// A secret string used to generate JWT tokens.
 	TokenSecret string
 }
 
-// UserService stores all the users in sqlite database and implements
-// auth.UserService interface.
+// UserService is an implementation of the api.UserService interface with sql
+// database as a storage.
 type UserService struct {
 	db      *gorm.DB
 	Options SvcOptions
 }
 
-// New initialises and returns an instance of UserService.
+// New initialises and returns an instance of UserService. It returns an error
+// if there is a problem connecting to the database.
 func New(opts SvcOptions) (*UserService, error) {
 	var s UserService
+	var err error
 	s.Options = opts
 	db := opts.DBConnection
 	rand.Seed(time.Now().UnixNano())
 
 	if s.Options.DBAutoMigrate {
-		db.AutoMigrate(&api.User{})
+		err = db.AutoMigrate(&api.User{})
+	} else {
+		if d, e := db.DB(); e == nil {
+			err = d.Ping()
+		} else {
+			err = e
+		}
 	}
 	s.db = db
 
-	return &s, nil
+	return &s, err
 }
 
 // findByUsername finds a user by username.
@@ -76,6 +87,7 @@ func (s *UserService) findByUsername(uname string) (*api.User, error) {
 }
 
 // findByEmail finds a user by email.
+// The return values logic is the same as in findByUsername.
 func (s *UserService) findByEmail(email string) (*api.User, error) {
 	if s.db == nil {
 		return nil, errors.New("findUserByName: no database connection")
@@ -92,7 +104,7 @@ func (s *UserService) findByEmail(email string) (*api.User, error) {
 	return &usr, nil
 }
 
-// authToken returns an JWT token for provided user.
+// authToken generates a JWT token for the user.
 func (s *UserService) authToken(u api.User) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorised"] = true
@@ -105,8 +117,8 @@ func (s *UserService) authToken(u api.User) (string, error) {
 }
 
 // Create creates a new user.
-// Returns an error if user with the same username or the same email
-// already exist or if passwords do not match.
+// Returns an error if user with the same username or email already exists
+// or if passwords do not match.
 func (s *UserService) Create(u api.UserRegister) error {
 	usr, err := s.findByUsername(u.Username)
 	if err != nil {
@@ -150,10 +162,10 @@ func (s *UserService) Create(u api.UserRegister) error {
 	return nil
 }
 
-// Authenticate authenticates a user by validating that it exists and hash of the
-// provided password matches. On success returns a JWT token.
+// Authenticate authenticates a user by validating that it exists and that the
+// hash of the provided password matches. On success it returns a JWT token.
 // While this method returns different errors for different failures the
-// end user should only see a generic "invalid credentials" message.
+// end user should only be shown a generic "invalid credentials" message.
 func (s *UserService) Authenticate(u api.UserLogin) (api.UserInfo, error) {
 	inf := api.UserInfo{
 		ID:       0,

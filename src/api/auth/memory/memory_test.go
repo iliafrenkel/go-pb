@@ -10,7 +10,9 @@ import (
 var usrSvc *UserService
 
 func TestMain(m *testing.M) {
-	usrSvc = New()
+	usrSvc = New(SvcOptions{
+		TokenSecret: "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
+	})
 
 	os.Exit(m.Run())
 }

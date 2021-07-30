@@ -17,7 +17,9 @@ import (
 )
 
 var pasteSvc api.PasteService = pasteMem.New()
-var userSvc api.UserService = userMem.New()
+var userSvc api.UserService = userMem.New(userMem.SvcOptions{
+	TokenSecret: "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
+})
 var apiSrv *APIServer
 var mckSrv *httptest.Server
 

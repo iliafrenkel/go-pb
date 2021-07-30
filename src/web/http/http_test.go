@@ -17,7 +17,9 @@ import (
 var webSrv *WebServer
 var apiSrv *apihttp.APIServer
 var pasteSvc api.PasteService = pasteMem.New()
-var userSvc api.UserService = userMem.New()
+var userSvc api.UserService = userMem.New(userMem.SvcOptions{
+	TokenSecret: "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
+})
 var mckSrv *httptest.Server
 
 // createTestPaste creates a paste with a random ID and a random body.

@@ -19,23 +19,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	tokenSecret = []byte("hardcodeddefault") // TODO:(os.Getenv("GOPB_TOKEN_SECRET"))
-)
+// SvcOptions contains all the options needed to create a new instance
+// of UserService.
+type SvcOptions struct {
+	// A secret string used to generate JWT tokens.
+	TokenSecret string
+}
 
 // UserService stores all the users in memory and implements auth.UserService
 // interface.
 type UserService struct {
 	users     map[int64]*api.User
 	usersLock *sync.RWMutex // controls access to users map
+	Options   SvcOptions
 }
 
 // New returns a new UserService.
 // It initialises the underlying storage which in this case is map.
-func New() *UserService {
+func New(opts SvcOptions) *UserService {
 	var s UserService
 	s.users = make(map[int64]*api.User)
 	s.usersLock = &sync.RWMutex{}
+	s.Options = opts
 	rand.Seed(time.Now().UnixNano())
 	return &s
 }
@@ -66,7 +71,7 @@ func (s *UserService) findByEmail(email string) *api.User {
 	return nil
 }
 
-// authToken returns an JWT token for provided user.
+// authToken generates a JWT token for the user.
 func (s *UserService) authToken(u api.User) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorised"] = true
@@ -74,13 +79,13 @@ func (s *UserService) authToken(u api.User) (string, error) {
 	claims["username"] = u.Username
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims)
-	authToken, err := token.SignedString(tokenSecret)
+	authToken, err := token.SignedString([]byte(s.Options.TokenSecret))
 	return authToken, err
 }
 
 // Create creates a new user.
-// Returns an error if user with the same username or the same email
-// already exist or if passwords do not match.
+// Returns an error if user with the same username or email already exists
+// or if passwords do not match.
 func (s *UserService) Create(u api.UserRegister) error {
 	if s.findByUsername(u.Username) != nil {
 		return errors.New("user with such username already exists")
@@ -115,10 +120,10 @@ func (s *UserService) Create(u api.UserRegister) error {
 	return nil
 }
 
-// Authenticate authenticates a user by validating that it exists and hash of
-// the provided password matches. On success returns a JWT token.
+// Authenticate authenticates a user by validating that it exists and that the
+// hash of the provided password matches. On success it returns a JWT token.
 // While this method returns different errors for different failures the
-// end user should only see a generic "invalid credentials" message.
+// end user should only be shown a generic "invalid credentials" message.
 func (s *UserService) Authenticate(u api.UserLogin) (api.UserInfo, error) {
 	inf := api.UserInfo{Username: "", Token: ""}
 	usr := s.findByUsername(u.Username)
@@ -150,7 +155,7 @@ func (s *UserService) Validate(u api.User, t string) (api.UserInfo, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("token signing method is not valid: %v", token.Header["alg"])
 		}
-		return tokenSecret, nil
+		return []byte(s.Options.TokenSecret), nil
 	})
 
 	if err != nil {
