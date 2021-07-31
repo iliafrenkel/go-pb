@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var pasteSvc *PasteService
+var pasteSvc *DBPasteService
 var pCount uint = 0
 var testUser api.User
 
@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 		PasswordHash: "test",
 		CreatedAt:    time.Time{},
 	}
-	db.Model(&testUser).Create(&testUser)
+	db.Model(&testUser).Save(&testUser)
 
 	os.Exit(m.Run())
 }
@@ -179,7 +179,7 @@ func Test_GetPaste(t *testing.T) {
 func Test_PasteNotFound(t *testing.T) {
 	t.Parallel()
 
-	p, err := pasteSvc.Get(0)
+	p, err := pasteSvc.Get(1)
 	if err != nil {
 		t.Errorf("failed to get a paste: %v", err)
 	} else {
@@ -215,7 +215,7 @@ func Test_Delete(t *testing.T) {
 func Test_DeleteNotFound(t *testing.T) {
 	t.Parallel()
 
-	err := pasteSvc.Delete(0)
+	err := pasteSvc.Delete(1)
 	if err != nil {
 		t.Errorf("failed to delete a non-existsing paste: %v", err)
 	}
@@ -231,7 +231,7 @@ func Test_List(t *testing.T) {
 		return
 	}
 
-	list := pasteSvc.List(testUser.ID)
+	list, _ := pasteSvc.List(testUser.ID)
 	if len(list) != 1 {
 		t.Errorf("Expected a list of 1, got %d\n%v\n", len(list), list)
 		return

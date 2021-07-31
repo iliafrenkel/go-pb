@@ -48,7 +48,7 @@ type APIServerOptions struct {
 	LogMode string
 	//
 	DBAutoMigrate bool
-	//
+	// A secret used to generate JWT tokens
 	TokenSecret string
 }
 
@@ -464,7 +464,15 @@ func (h *APIServer) handlePasteList(c *gin.Context) {
 		})
 		return
 	}
-	pastes := h.PasteService.List(id)
+	pastes, err := h.PasteService.List(id)
+	if err != nil {
+		log.Println("handlePasteList: unexpected error: ", err.Error())
+		c.JSON(http.StatusInternalServerError, api.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, pastes)
 }
@@ -476,7 +484,7 @@ func (h *APIServer) handleUserLogin(c *gin.Context) {
 
 	// Login returns Username and JWT token
 	var usr api.UserInfo
-	usr, err := h.UserService.Authenticate(*data)
+	usr, err := h.UserService.Authenticate(*data, h.Options.TokenSecret)
 	if err != nil {
 		log.Printf("failed to login: %v\n", err)
 		c.JSON(http.StatusUnauthorized, api.HTTPError{
@@ -513,7 +521,7 @@ func (h *APIServer) handleUserRegister(c *gin.Context) {
 func (h *APIServer) handleUserValidate(c *gin.Context) {
 	data := c.MustGet("payload").(*api.UserInfo)
 
-	usr, err := h.UserService.Validate(api.User{}, data.Token)
+	usr, err := h.UserService.Validate(api.User{}, data.Token, h.Options.TokenSecret)
 	if err != nil {
 		log.Printf("handleUserValidate: validation failed: %v\n", err.Error())
 		c.JSON(http.StatusUnauthorized, api.HTTPError{

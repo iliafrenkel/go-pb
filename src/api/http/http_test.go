@@ -38,7 +38,10 @@ func createTestPaste() *api.PasteForm {
 }
 
 func TestMain(m *testing.M) {
-	apiSrv = New(pasteSvc, userSvc, APIServerOptions{MaxBodySize: 10240})
+	apiSrv = New(pasteSvc, userSvc, APIServerOptions{
+		MaxBodySize: 10240,
+		TokenSecret: "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
+	})
 	mckSrv = httptest.NewServer(apiSrv.Router)
 
 	os.Exit(m.Run())
@@ -85,6 +88,67 @@ func Test_GetPaste(t *testing.T) {
 	}
 }
 
+func Test_GetPasteWithPassword(t *testing.T) {
+	var p = createTestPaste()
+	p.Password = "password"
+	paste, err := pasteSvc.Create(*p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check that we can't get a password protected paste
+	resp, err := http.Get(mckSrv.URL + "/paste/" + paste.URL())
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("Status should be %d, got %d", http.StatusUnauthorized, resp.StatusCode)
+	}
+
+	// Check that we can get a password protected paste
+	body, _ := json.Marshal(api.PastePassword{Password: "password"})
+	resp, err = http.Post(mckSrv.URL+"/paste/"+paste.URL(), "application/json", bytes.NewBuffer(body))
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check Content-Type
+	if hdr := resp.Header.Get("Content-Type"); !strings.HasPrefix(hdr, "application/json") {
+		t.Errorf("Content type should start with [application/json], got [%s]", hdr)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want, err := json.Marshal(paste)
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != string(want) {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
 func Test_GetPasteDeleteAfterRead(t *testing.T) {
 	var p = createTestPaste()
 	p.DeleteAfterRead = true
@@ -777,7 +841,7 @@ func Test_UserValidate(t *testing.T) {
 		Username: ur.Username,
 		Password: ur.Password,
 	}
-	ui, err := userSvc.Authenticate(ul)
+	ui, err := userSvc.Authenticate(ul, apiSrv.Options.TokenSecret)
 	if err != nil {
 		t.Fatal(err)
 	}

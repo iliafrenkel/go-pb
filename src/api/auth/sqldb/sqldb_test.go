@@ -10,7 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var usrSvc *UserService
+var usrSvc *DBUserService
+var tokenSecret = "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq"
 
 func TestMain(m *testing.M) {
 	var err error
@@ -24,7 +25,6 @@ func TestMain(m *testing.M) {
 	usrSvc, _ = New(SvcOptions{
 		DBConnection:  db,
 		DBAutoMigrate: true,
-		TokenSecret:   "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
 	})
 
 	os.Exit(m.Run())
@@ -47,7 +47,7 @@ func Test_CreateUser(t *testing.T) {
 	}
 
 	// Check if we can find the user by username
-	u, err := usrSvc.findByUsername(usr.Username)
+	u, err := usrSvc.store.Find(api.User{Username: usr.Username})
 	if err != nil {
 		t.Errorf("findByUsername failed: %w", err)
 		return
@@ -56,7 +56,7 @@ func Test_CreateUser(t *testing.T) {
 		t.Errorf("Failed to find a user by username")
 	}
 	// Check if we can find the user by email
-	u, err = usrSvc.findByEmail(usr.Email)
+	u, err = usrSvc.store.Find(api.User{Email: usr.Email})
 	if err != nil {
 		t.Errorf("findByUsername failed: %w", err)
 		return
@@ -143,7 +143,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		Password: usr.Password,
 	}
 
-	inf, err := usrSvc.Authenticate(usrLogin)
+	inf, err := usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err != nil {
 		t.Errorf("Failed to authenticate a user: %v", err)
@@ -159,7 +159,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		Password: "idontmatter",
 	}
 
-	_, err = usrSvc.Authenticate(usrLogin)
+	_, err = usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err == nil {
 		t.Errorf("Authentication succeeded for a user that doesn't exist: %#v", usrLogin)
@@ -170,7 +170,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		Username: usr.Username,
 		Password: "wrong",
 	}
-	_, err = usrSvc.Authenticate(usrLogin)
+	_, err = usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err == nil {
 		t.Errorf("Authentication succeeded with incorrect password: %#v", usrLogin)
@@ -196,18 +196,18 @@ func Test_ValidateToken(t *testing.T) {
 		Password: usr.Password,
 	}
 
-	inf, err := usrSvc.Authenticate(usrLogin)
+	inf, err := usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err != nil {
 		t.Errorf("Failed to authenticate a user: %v", err)
 	}
 
-	u, err := usrSvc.findByUsername(usr.Username)
+	u, err := usrSvc.store.Find(api.User{Username: usr.Username})
 	if err != nil {
 		t.Errorf("findByUsername failed: %w", err)
 		return
 	}
-	v, err := usrSvc.Validate(*u, inf.Token)
+	v, err := usrSvc.Validate(*u, inf.Token, tokenSecret)
 	if err != nil {
 		t.Errorf("Failed to validate token: %v", err)
 	}
