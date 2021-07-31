@@ -9,6 +9,7 @@ on:
       - '.github/workflows/test.yml'
       - 'cmd/**'
       - 'src/**'
+  pull_request:
 
 jobs:
   test:
