@@ -16,6 +16,7 @@ CREATE TABLE "public"."pastes" (
     "created" timestamptz,
     "syntax" text,
     "user_id" bigint,
+    "privacy" text,
     CONSTRAINT "pastes_pkey" PRIMARY KEY ("id")
 ) WITH (oids = false);
 
