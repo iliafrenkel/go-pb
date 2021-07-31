@@ -7,8 +7,8 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](./docs/CODE_OF_CONDUCT.md) 
 ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/iliafrenkel/go-pb?include_prereleases&sort=semver)
 [![codecov](https://codecov.io/gh/iliafrenkel/go-pb/branch/main/graph/badge.svg?token=WR1DWNVE58)](https://codecov.io/gh/iliafrenkel/go-pb)
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/iliafrenkel/go-pb/Test/main?label=test)
-
+[![Test](https://github.com/iliafrenkel/go-pb/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/iliafrenkel/go-pb/actions/workflows/test.yml)
+ 
 </div>
 
 Go PB is paste service similar to [Pastebin](https://pastebin.com) that you can
