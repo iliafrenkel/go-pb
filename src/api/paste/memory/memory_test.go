@@ -188,7 +188,7 @@ func Test_List(t *testing.T) {
 		return
 	}
 
-	list := service.List(1)
+	list, _ := service.List(1)
 	if len(list) != 1 {
 		t.Errorf("Expected a list of 1, got %d", len(list))
 		return

@@ -132,7 +132,21 @@ type PasteService interface {
 	// exist this method does nothing, it will not return an error in such case.
 	Delete(id int64) error
 	// List returns a list of pastes for a user specified by ID.
-	List(uid int64) []Paste
+	List(uid int64) ([]Paste, error)
+}
+
+// PasteStore is the interface that defines methods required to persist and
+// retrieve pastes from a storage back-end.
+type PasteStore interface {
+	// Save the paste into the storage backend.
+	Store(paste Paste) error
+	// Find and return a slice of pastes from a storage back-end using
+	// provided paste details as a filter. Fields with zero values are
+	// ignored.
+	Find(paste Paste) ([]Paste, error)
+	// Delete deletes the paste from a storage back-end using provided paste
+	// details as a filter. Fields with zero values are ignored.
+	Delete(paste Paste) error
 }
 
 // User is a type that represents a single user the way it is stored in the
@@ -198,7 +212,7 @@ type UserService interface {
 // UserStore is the interface that defines methods required to persist and
 // retrieve users from a storage back-end.
 type UserStore interface {
-	// Save the user into storage backend.
+	// Save the user into the storage backend.
 	Store(usr User) error
 	// Find and return a user from a storage back-end using provided user
 	// details as a filter. Fields with zero values are ignored.

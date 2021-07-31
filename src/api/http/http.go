@@ -464,7 +464,15 @@ func (h *APIServer) handlePasteList(c *gin.Context) {
 		})
 		return
 	}
-	pastes := h.PasteService.List(id)
+	pastes, err := h.PasteService.List(id)
+	if err != nil {
+		log.Println("handlePasteList: unexpected error: ", err.Error())
+		c.JSON(http.StatusInternalServerError, api.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, pastes)
 }
