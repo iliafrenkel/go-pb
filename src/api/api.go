@@ -2,13 +2,15 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE.txt file.
 
-// Package api defines types and interfaces used to implement go-pb API.
+// Package api defines basic types and interfaces needed to implement the go-pb
+// API.
 package api
 
 import (
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/iliafrenkel/go-pb/src/api/base62"
 )
 
@@ -143,6 +145,19 @@ type User struct {
 	CreatedAt    time.Time `json:"-"`
 }
 
+// GenerateAuthToken generates a JWT token for the user.
+func (u User) GenerateAuthToken(secret string) (string, error) {
+	claims := jwt.MapClaims{}
+	claims["authorised"] = true
+	claims["user_id"] = u.ID
+	claims["username"] = u.Username
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims)
+	authToken, err := token.SignedString([]byte(secret))
+
+	return authToken, err
+}
+
 // UserRegister represents the data that we expect to recieve from the
 // registration form.
 type UserRegister struct {
@@ -175,9 +190,19 @@ type UserService interface {
 	Create(u UserRegister) error
 	// Authenticates a user by validating that it exists and hash of the
 	// provided password matches. On success returns a JWT token.
-	Authenticate(u UserLogin) (UserInfo, error)
+	Authenticate(usr UserLogin, secret string) (UserInfo, error)
 	// Validates given token for a given user.
-	Validate(u User, t string) (UserInfo, error)
+	Validate(usr User, token string, secret string) (UserInfo, error)
+}
+
+// UserStore is the interface that defines methods required to persist and
+// retrieve users from a storage back-end.
+type UserStore interface {
+	// Save the user into storage backend.
+	Store(usr User) error
+	// Find and return a user from a storage back-end using provided user
+	// details as a filter. Fields with zero values are ignored.
+	Find(usr User) (*User, error)
 }
 
 // HTTPError represents an error that API sends to consumers.

@@ -7,12 +7,11 @@ import (
 	"github.com/iliafrenkel/go-pb/src/api"
 )
 
-var usrSvc *UserService
+var usrSvc *MemoryUserService
+var tokenSecret = "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq"
 
 func TestMain(m *testing.M) {
-	usrSvc = New(SvcOptions{
-		TokenSecret: "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
-	})
+	usrSvc = New()
 
 	os.Exit(m.Run())
 }
@@ -25,6 +24,7 @@ func Test_CreateUser(t *testing.T) {
 		Password:   "12345",
 		RePassword: "12345",
 	}
+	var id int64
 
 	err := usrSvc.Create(usr)
 
@@ -33,14 +33,21 @@ func Test_CreateUser(t *testing.T) {
 	}
 
 	// Check if we can find the user by username
-	u := usrSvc.findByUsername(usr.Username)
+	u, _ := usrSvc.store.Find(api.User{Username: usr.Username})
 	if u == nil {
 		t.Errorf("Failed to find a user by username")
+	} else {
+		id = u.ID
 	}
 	// Check if we can find the user by email
-	u = usrSvc.findByEmail(usr.Email)
+	u, _ = usrSvc.store.Find(api.User{Email: usr.Email})
 	if u == nil {
 		t.Errorf("Failed to find a user by email")
+	}
+	// Check if we can find the user by id
+	u, _ = usrSvc.store.Find(api.User{ID: id})
+	if u == nil {
+		t.Errorf("Failed to find a user by ID")
 	}
 
 	// Try to create with the same username but different email
@@ -117,7 +124,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		Password: usr.Password,
 	}
 
-	inf, err := usrSvc.Authenticate(usrLogin)
+	inf, err := usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err != nil {
 		t.Errorf("Failed to authenticate a user: %v", err)
@@ -133,7 +140,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		Password: "idontmatter",
 	}
 
-	_, err = usrSvc.Authenticate(usrLogin)
+	_, err = usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err == nil {
 		t.Errorf("Authentication succeeded for a user that doesn't exist: %#v", usrLogin)
@@ -144,7 +151,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		Username: usr.Username,
 		Password: "wrong",
 	}
-	_, err = usrSvc.Authenticate(usrLogin)
+	_, err = usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err == nil {
 		t.Errorf("Authentication succeeded with incorrect password: %#v", usrLogin)
@@ -169,19 +176,19 @@ func Test_ValidateToken(t *testing.T) {
 		Password: usr.Password,
 	}
 
-	inf, err := usrSvc.Authenticate(usrLogin)
+	inf, err := usrSvc.Authenticate(usrLogin, tokenSecret)
 
 	if err != nil {
 		t.Errorf("Failed to authenticate a user: %v", err)
 	}
 
-	u := usrSvc.findByUsername(usr.Username)
+	u, _ := usrSvc.store.Find(api.User{Username: usr.Username})
 	if u == nil {
 		t.Errorf("Failed to find user by name: %v", u)
 		return
 	}
 
-	v, err := usrSvc.Validate(*u, inf.Token)
+	v, err := usrSvc.Validate(*u, inf.Token, tokenSecret)
 	if err != nil {
 		t.Errorf("Failed to validate token: %v", err)
 	}
