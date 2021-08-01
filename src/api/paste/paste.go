@@ -14,6 +14,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// PasteService implements api.PasteService interface. This implementation is
+// "abstract" in a way, it doesn't have a concrete store. It's main purpose is
+// to be embedded within other implementations. See memory.UserService and
+// sqldb.UserService for examples.
 type PasteService struct {
 	PasteStore api.PasteStore
 }

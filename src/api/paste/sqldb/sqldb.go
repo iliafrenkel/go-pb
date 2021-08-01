@@ -78,7 +78,7 @@ type SvcOptions struct {
 	DBAutoMigrate bool
 }
 
-// PasteService stores all the pastes in a database and implements the
+// DBPasteService stores all the pastes in a database and implements the
 // api.PasteService interface.
 type DBPasteService struct {
 	Options SvcOptions

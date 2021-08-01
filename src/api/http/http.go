@@ -347,16 +347,19 @@ func (h *APIServer) handlePasteGetWithPassword(c *gin.Context) {
 	// Get the password from the context, the verifyJSONMiddlerware should've
 	// prepared it for us.
 	var pwd string
-	if data, ok := c.Get("payload"); !ok {
+	var (
+		data interface{}
+		ok   bool
+	)
+	if data, ok = c.Get("payload"); !ok {
 		log.Println("handlePasteGetWithPassword: unexpected error: can't get the payload")
 		c.JSON(http.StatusInternalServerError, api.HTTPError{
 			Code:    http.StatusInternalServerError,
 			Message: fmt.Sprintf("%s: can't get the payload", http.StatusText(http.StatusInternalServerError)),
 		})
 		return
-	} else {
-		pwd = data.(*api.PastePassword).Password
 	}
+	pwd = data.(*api.PastePassword).Password
 	// Get the paste
 	p, err := h.PasteService.Get(id)
 	// Service returned an error and we don't know what to do here. We log the
