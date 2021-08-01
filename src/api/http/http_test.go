@@ -701,14 +701,25 @@ func Test_UserLogin(t *testing.T) {
 	if ui.Token == "" {
 		t.Errorf("Response should have token, got empty")
 	}
+}
+func Test_UserLoginWrong(t *testing.T) {
+	var ur = api.UserRegister{
+		Username:   "test_wrong_password",
+		Email:      "test_wrong_password@example.com",
+		Password:   "12345",
+		RePassword: "12345",
+	}
+	if err := userSvc.Create(ur); err != nil {
+		t.Fatal(err)
+	}
 
 	// Login with wrong password
-	ul = api.UserLogin{
+	var ul = api.UserLogin{
 		Username: ur.Username,
 		Password: "wrong",
 	}
-	data, _ = json.Marshal(ul)
-	resp, err = http.Post(mckSrv.URL+"/user/login", "application/json", bytes.NewBuffer([]byte(data)))
+	data, _ := json.Marshal(ul)
+	resp, err := http.Post(mckSrv.URL+"/user/login", "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -719,7 +730,7 @@ func Test_UserLogin(t *testing.T) {
 
 	// Check body
 	defer resp.Body.Close()
-	b, err = ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
