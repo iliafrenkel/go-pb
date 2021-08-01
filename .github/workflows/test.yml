@@ -32,13 +32,9 @@ jobs:
           POSTGRES_HOST: postgres
           POSTGRES_PORT: 5432
 
-      - name: Upload Coverage report to CodeCov
-        uses: codecov/codecov-action@v1.0.0
-        with:
-          token: ${{secrets.CODECOV_TOKEN}}
-          file: ./coverage.txt
       - name: Install goveralls
         run: go install github.com/mattn/goveralls@latest
+
       - name: Send coverage report to Coveralls
         env:
             COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}

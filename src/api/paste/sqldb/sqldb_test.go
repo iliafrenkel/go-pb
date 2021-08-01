@@ -58,6 +58,23 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func Test_DBConnectionPing(t *testing.T) {
+	t.Parallel()
+	db, err := gorm.Open(postgres.Open("host=localhost user=test password=test dbname=test port=5432 sslmode=disable"), &gorm.Config{})
+	if err != nil {
+		t.Errorf("Failed to connect to database: %v\n", err)
+		return
+	}
+	_, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: false,
+	})
+	if err != nil {
+		t.Errorf("Failed to ping the database: %v\n", err)
+		return
+	}
+}
+
 func Test_Create(t *testing.T) {
 	t.Parallel()
 

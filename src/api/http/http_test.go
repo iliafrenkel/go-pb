@@ -41,6 +41,7 @@ func TestMain(m *testing.M) {
 	apiSrv = New(pasteSvc, userSvc, APIServerOptions{
 		MaxBodySize: 10240,
 		TokenSecret: "5TEdWbDmxZ2ASXcMinBYwGi66vHiU9rq",
+		LogFile:     "test.log",
 	})
 	mckSrv = httptest.NewServer(apiSrv.Router)
 

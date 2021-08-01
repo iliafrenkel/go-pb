@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 	var db *gorm.DB
 	db, err = gorm.Open(postgres.Open("host=localhost user=test password=test dbname=test port=5432 sslmode=disable"), &gorm.Config{})
 	if err != nil {
-		fmt.Printf("Failed to create a UserService: %v\n", err)
+		fmt.Printf("Failed to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 	db.Migrator().DropTable(&api.User{})
@@ -28,6 +28,23 @@ func TestMain(m *testing.M) {
 	})
 
 	os.Exit(m.Run())
+}
+
+func Test_DBConnectionPing(t *testing.T) {
+	t.Parallel()
+	db, err := gorm.Open(postgres.Open("host=localhost user=test password=test dbname=test port=5432 sslmode=disable"), &gorm.Config{})
+	if err != nil {
+		t.Errorf("Failed to connect to database: %v\n", err)
+		return
+	}
+	_, err = New(SvcOptions{
+		DBConnection:  db,
+		DBAutoMigrate: false,
+	})
+	if err != nil {
+		t.Errorf("Failed to ping the database: %v\n", err)
+		return
+	}
 }
 
 func Test_CreateUser(t *testing.T) {
