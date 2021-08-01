@@ -172,7 +172,7 @@ func (u User) GenerateAuthToken(secret string) (string, error) {
 	return authToken, err
 }
 
-// UserRegister represents the data that we expect to recieve from the
+// UserRegister represents the data that we expect to receive from the
 // registration form.
 type UserRegister struct {
 	Username   string `json:"username" form:"username" binding:"required"`
@@ -181,7 +181,7 @@ type UserRegister struct {
 	RePassword string `json:"repassword" form:"repassword" binding:"required"`
 }
 
-// UserLogin represents the data that we expect to recieve from the
+// UserLogin represents the data that we expect to receive from the
 // login form.
 type UserLogin struct {
 	Username string `json:"username" form:"username" binding:"required"`

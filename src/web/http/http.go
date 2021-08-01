@@ -323,7 +323,7 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 	)
 }
 
-// handleDoUserLogin recieves login form data and calls the user API to
+// handleDoUserLogin receives login form data and calls the user API to
 // authenticate the user. If successful, it sets the token cookie and
 // redirects to the home page.
 func (h *WebServer) handleDoUserLogin(c *gin.Context) {
@@ -427,7 +427,7 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 	)
 }
 
-// handleDoUserRegister recieves the registration form data and calls the user
+// handleDoUserRegister receives the registration form data and calls the user
 // API to create new user. If successful it redirects to the login page.
 func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 	var u api.UserRegister
