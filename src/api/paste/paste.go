@@ -109,3 +109,8 @@ func (s *PasteService) List(uid int64) ([]api.Paste, error) {
 	}
 	return pastes, nil
 }
+
+// Update updates existing paste
+func (s *PasteService) Update(p api.Paste) error {
+	return s.PasteStore.Store(p)
+}

@@ -71,6 +71,7 @@ type APIServer struct {
 // The routes are:
 //   GET    /paste/{id}      - get paste by ID
 //   POST   /paste/{id}      - get password protected paste by ID
+//   PATCH  /paste/{id}/view - update existing paste view count
 //   POST   /paste           - create new paste
 //   DELETE /paste/{id}      - delete paste by ID
 //   GET    /paste/list/{id} - get a list of pastes by UserID
@@ -115,6 +116,7 @@ func New(pSvc api.PasteService, uSvc api.UserService, opts APIServerOptions) *AP
 	{
 		paste.GET("/:id", handler.handlePasteGet)
 		paste.POST("/:id", handler.verifyJSONMiddleware(new(api.PastePassword)), handler.handlePasteGetWithPassword)
+		paste.PATCH("/:id/view", handler.handlePasteUpdateViewCount)
 		paste.POST("", handler.verifyJSONMiddleware(new(api.PasteForm)), handler.handlePasteCreate)
 		paste.DELETE("/:id", handler.handlePasteDelete)
 		paste.GET("/list/:id", handler.handlePasteList)
@@ -478,6 +480,56 @@ func (h *APIServer) handlePasteList(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, pastes)
+}
+
+// handlePasteUpdateViewCount is an HTTP handler for PATCH /paste/:id route.
+// It updates the paste view count.
+func (h *APIServer) handlePasteUpdateViewCount(c *gin.Context) {
+	// We expect the id parameter as base62 encoded string, we try to decode
+	// it into a int64 paste id and return 404 if we can't.
+	id, err := base62.Decode(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, api.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
+		return
+	}
+
+	p, err := h.PasteService.Get(id)
+	// Service returned an error and we don't know what to do here. We log the
+	// error and send 500 InternalServerError back to the caller.
+	if err != nil {
+		log.Println("handlePasteUpdateViewCount: unexpected error: ", err.Error())
+		c.JSON(http.StatusInternalServerError, api.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+		})
+		return
+	}
+	// Service call was successful but returned nil. Respond with 404 NoFound.
+	if p == nil {
+		c.JSON(http.StatusNotFound, api.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: "Paste not found",
+		})
+		return
+	}
+
+	// Increase the view count and save the paste.
+	p.Views += 1
+	err = h.PasteService.Update(*p)
+	if err != nil {
+		log.Println("handlePasteUpdateViewCount: unexpected error: ", err.Error())
+		c.JSON(http.StatusInternalServerError, api.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("%s: %s", http.StatusText(http.StatusInternalServerError), err.Error()),
+		})
+		return
+	}
+
+	c.Header("Content-Type", "application/json")
+	c.Status(http.StatusOK)
 }
 
 // handleUserLogin is an HTTP handler for POST /user/login route. It returns

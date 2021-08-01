@@ -286,3 +286,32 @@ func Test_List(t *testing.T) {
 		t.Errorf("wrong title, want %s got %s", p.Title, list[0].Title)
 	}
 }
+
+func Test_Update(t *testing.T) {
+	t.Parallel()
+
+	var p = createTestPaste()
+	var paste *api.Paste
+	paste, err := service.Create(*p)
+	if err != nil {
+		t.Errorf("failed to create a paste: %v", err)
+		return
+	}
+	// update the paste
+	paste.Views += 1
+	err = service.Update(*paste)
+	if err != nil {
+		t.Errorf("failed to update the paste: %v", err)
+		return
+	}
+	// check that the update was saved
+	updPaste, err := service.Get(paste.ID)
+	if err != nil {
+		t.Errorf("failed to get updated paste: %v", err)
+		return
+	}
+	if updPaste.Views != 1 {
+		t.Errorf("wrong view count, want 1 got %d", updPaste.Views)
+	}
+
+}

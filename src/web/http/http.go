@@ -588,6 +588,24 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 		sort.Slice(pastes, func(i, j int) bool { return pastes[i].Created.After(pastes[j].Created) })
 	}
 
+	session := sessions.Default(c)
+	val := session.Get("view_counted")
+	if val == nil {
+		_, code, err := h.makeAPICall(
+			"/paste/"+id+"/view",
+			"PATCH",
+			nil,
+			map[int]struct{}{
+				http.StatusOK: {},
+			})
+		if err != nil {
+			log.Println("handleGetPaste: error talking to API: ", err)
+		} else if code != http.StatusOK {
+			log.Println("handleGetPaste: API returned: ", code)
+		}
+		session.Set("view_counted", true)
+		session.Save()
+	}
 	// Send HTML
 	username, _ := c.Get("username")
 	c.HTML(
