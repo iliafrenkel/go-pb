@@ -66,7 +66,7 @@ type SvcOptions struct {
 	DBAutoMigrate bool
 }
 
-// UserService is an implementation of the api.UserService interface with sql
+// DBUserService is an implementation of the api.UserService interface with sql
 // database as a storage.
 type DBUserService struct {
 	Options SvcOptions

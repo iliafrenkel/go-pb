@@ -105,7 +105,7 @@ func Test_Create(t *testing.T) {
 	}
 }
 
-func Test_CreateWithExpiration(t *testing.T) {
+func Test_CreateWithExpirationMinutes(t *testing.T) {
 	t.Parallel()
 	var p = createTestPaste()
 	// Minutes
@@ -117,6 +117,10 @@ func Test_CreateWithExpiration(t *testing.T) {
 			t.Errorf("minutes, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
 		}
 	}
+}
+func Test_CreateWithExpirationHours(t *testing.T) {
+	t.Parallel()
+	var p = createTestPaste()
 	// Hours
 	p.Expires = "2h"
 	if paste, err := service.Create(*p); err != nil {
@@ -126,6 +130,10 @@ func Test_CreateWithExpiration(t *testing.T) {
 			t.Errorf("hours, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
 		}
 	}
+}
+func Test_CreateWithExpirationDays(t *testing.T) {
+	t.Parallel()
+	var p = createTestPaste()
 	// Days
 	p.Expires = "2d"
 	if paste, err := service.Create(*p); err != nil {
@@ -135,6 +143,10 @@ func Test_CreateWithExpiration(t *testing.T) {
 			t.Errorf("days, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
 		}
 	}
+}
+func Test_CreateWithExpirationWeeks(t *testing.T) {
+	t.Parallel()
+	var p = createTestPaste()
 	// Weeks
 	p.Expires = "1w"
 	if paste, err := service.Create(*p); err != nil {
@@ -144,6 +156,10 @@ func Test_CreateWithExpiration(t *testing.T) {
 			t.Errorf("weeks, wrong expiration: created %s, expires %s", paste.Created, paste.Expires)
 		}
 	}
+}
+func Test_CreateWithExpirationMonths(t *testing.T) {
+	t.Parallel()
+	var p = createTestPaste()
 	// Months
 	p.Expires = "6M"
 	if paste, err := service.Create(*p); err != nil {
@@ -156,6 +172,10 @@ func Test_CreateWithExpiration(t *testing.T) {
 			t.Errorf("months, wrong expiration: created %s[%d], expires %s[%d]", paste.Created, m2, paste.Expires, m1)
 		}
 	}
+}
+func Test_CreateWithExpirationYears(t *testing.T) {
+	t.Parallel()
+	var p = createTestPaste()
 	// Years
 	p.Expires = "1y"
 	if paste, err := service.Create(*p); err != nil {
@@ -167,6 +187,10 @@ func Test_CreateWithExpiration(t *testing.T) {
 			t.Errorf("years, wrong expiration: created %s[%d], expires %s[%d]", paste.Created, y2, paste.Expires, y1)
 		}
 	}
+}
+func Test_CreateWithExpirationWrongFormat(t *testing.T) {
+	t.Parallel()
+	var p = createTestPaste()
 	// Unknown format
 	p.Expires = "1z"
 	if _, err := service.Create(*p); err == nil {

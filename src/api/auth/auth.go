@@ -25,7 +25,7 @@ type UserService struct {
 	UserStore api.UserStore
 }
 
-// Create recieves user registration information and creates a new user.
+// Create receives user registration information and creates a new user.
 // It returns an error if the information doesn't pass validation or if it
 // fails to store the new user.
 func (s UserService) Create(usr api.UserRegister) error {

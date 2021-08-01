@@ -49,8 +49,8 @@ var opts struct {
 		LogFile       string `long:"log-file" env:"LOG_FILE" default:"" description:"full path to the log file, default is stdout"`
 		LogMode       string `long:"log-mode" env:"LOG_MODE" default:"production" choice:"debug" choice:"production" description:"log mode, can be 'debug' or 'production'"`
 		CookieAuthKey string `long:"cookie-auth-key" env:"COOKIE_AUTH_KEY" default:"" description:"secret authentication key, must be 32 or 64 bytes long"`
-		BrandName     string `long:"brand-name" env:"BRAND_NAME" default:"Go PB" descritpion:"brand name shown in the header of every page"`
-		BrandTagline  string `long:"brand-tagline" env:"BRAND_TAGLINE" default:"A nice and simple pastebin alternative that you can host yourself." descritpion:"brand tagline shown below the brand name"`
+		BrandName     string `long:"brand-name" env:"BRAND_NAME" default:"Go PB" description:"brand name shown in the header of every page"`
+		BrandTagline  string `long:"brand-tagline" env:"BRAND_TAGLINE" default:"A nice and simple pastebin alternative that you can host yourself." description:"brand tagline shown below the brand name"`
 		Assets        string `long:"assets" env:"ASSETS" default:"./assets" description:"path to the assets folder"`
 		Templates     string `long:"templates" env:"TEMPLATES" default:"./templates" description:"path to the templates folder"`
 		Logo          string `long:"logo" env:"LOGO" default:"" description:"name of the logo image file within the assets folder"`
@@ -98,7 +98,7 @@ func main() {
 		Version:       version,
 	}
 
-	// Create two channels, quit for OS signals and errc for errors comming
+	// Create two channels, quit for OS signals and errc for errors coming
 	// from the servers.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

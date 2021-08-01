@@ -57,36 +57,26 @@ func (p *Paste) Expiration() string {
 	switch {
 	case diff <= 0:
 		return "now"
-	case diff <= 2:
-		return "1 second"
 	case diff < 1*Minute:
 		return fmt.Sprintf("%d seconds", diff)
-
-	case diff < 2*Minute:
-		return "1 minute"
 	case diff < 1*Hour:
 		return fmt.Sprintf("%d minutes", diff/Minute)
-
 	case diff < 2*Hour:
 		return "1 hour"
 	case diff < 1*Day:
 		return fmt.Sprintf("%d hours", diff/Hour)
-
 	case diff < 2*Day:
 		return "1 day"
 	case diff < 1*Week:
 		return fmt.Sprintf("%d days", diff/Day)
-
 	case diff < 2*Week:
 		return "1 week"
 	case diff < 1*Month:
 		return fmt.Sprintf("%d weeks", diff/Week)
-
 	case diff < 2*Month:
 		return "1 month"
 	case diff < 1*Year:
 		return fmt.Sprintf("%d months", diff/Month)
-
 	case diff < 18*Month:
 		return "~1 year"
 	case diff < 2*Year:
@@ -172,7 +162,7 @@ func (u User) GenerateAuthToken(secret string) (string, error) {
 	return authToken, err
 }
 
-// UserRegister represents the data that we expect to recieve from the
+// UserRegister represents the data that we expect to receive from the
 // registration form.
 type UserRegister struct {
 	Username   string `json:"username" form:"username" binding:"required"`
@@ -181,7 +171,7 @@ type UserRegister struct {
 	RePassword string `json:"repassword" form:"repassword" binding:"required"`
 }
 
-// UserLogin represents the data that we expect to recieve from the
+// UserLogin represents the data that we expect to receive from the
 // login form.
 type UserLogin struct {
 	Username string `json:"username" form:"username" binding:"required"`
