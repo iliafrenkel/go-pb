@@ -43,13 +43,12 @@ func (p *Paste) Expiration() string {
 	}
 	// Seconds-based time units
 	const (
-		Minute   = 60
-		Hour     = 60 * Minute
-		Day      = 24 * Hour
-		Week     = 7 * Day
-		Month    = 30 * Day
-		Year     = 12 * Month
-		LongTime = 37 * Year
+		Minute = 60
+		Hour   = 60 * Minute
+		Day    = 24 * Hour
+		Week   = 7 * Day
+		Month  = 30 * Day
+		Year   = 12 * Month
 	)
 
 	diff := time.Until(p.Expires) / time.Second
@@ -79,9 +78,7 @@ func (p *Paste) Expiration() string {
 		return fmt.Sprintf("%d months", diff/Month)
 	case diff < 18*Month:
 		return "~1 year"
-	case diff < 2*Year:
-		return "~2 years"
-	case diff < LongTime:
+	case diff < 20*Year:
 		return fmt.Sprintf("%d years", diff/Year)
 	}
 

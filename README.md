@@ -3,11 +3,13 @@
  <h1>Go PB - Pastebin alternative, written in Go</h1>
 
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE.txt)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) 
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](./docs/CODE_OF_CONDUCT.md) 
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](./docs/CODE_OF_CONDUCT.md)
+
 ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/iliafrenkel/go-pb?include_prereleases&sort=semver)
 [![codecov](https://codecov.io/gh/iliafrenkel/go-pb/branch/main/graph/badge.svg?token=WR1DWNVE58)](https://codecov.io/gh/iliafrenkel/go-pb)
 [![Test](https://github.com/iliafrenkel/go-pb/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/iliafrenkel/go-pb/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/iliafrenkel/go-pb)](https://goreportcard.com/report/github.com/iliafrenkel/go-pb)
  
 </div>
 
