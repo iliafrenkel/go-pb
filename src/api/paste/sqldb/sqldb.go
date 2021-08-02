@@ -27,9 +27,9 @@ type DBPasteStore struct {
 func (s DBPasteStore) Store(paste api.Paste) error {
 	var err error
 	if paste.UserID == 0 {
-		err = s.db.Omit("user_id").Create(&paste).Error
+		err = s.db.Omit("user_id").Save(&paste).Error
 	} else {
-		err = s.db.Create(&paste).Error
+		err = s.db.Save(&paste).Error
 	}
 	if err != nil {
 		return err

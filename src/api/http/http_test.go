@@ -636,6 +636,53 @@ func Test_ListPastesWrongID(t *testing.T) {
 		t.Errorf("Response should be [%s], got [%s]", want, got)
 	}
 }
+
+func Test_UpdatePasteViewCount(t *testing.T) {
+	var p = createTestPaste()
+	paste, err := pasteSvc.Create(*p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Update view count
+	client := &http.Client{}
+	req, _ := http.NewRequest(http.MethodPatch, mckSrv.URL+"/paste/"+paste.URL()+"/view", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	_, err = client.Do(req)
+	if err != nil {
+		t.Errorf("Failed to update view count: %v", err)
+		return
+	}
+	paste.Views += 1
+	// Get the paste back
+	resp, err := http.Get(mckSrv.URL + "/paste/" + paste.URL())
+
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check status
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Status should be OK, got %d", resp.StatusCode)
+	}
+
+	// Check body
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want, err := json.Marshal(paste)
+	// Handle any unexpected error
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != string(want) {
+		t.Errorf("Response should be [%s], got [%s]", want, got)
+	}
+}
 func Test_DeletePasteNotFound(t *testing.T) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodDelete, mckSrv.URL+"/paste/qweasd", nil)

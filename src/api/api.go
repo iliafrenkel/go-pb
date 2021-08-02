@@ -27,6 +27,7 @@ type Paste struct {
 	Syntax          string    `json:"syntax"`
 	UserID          int64     `json:"user_id" gorm:"index default:null"`
 	User            User      `json:"-"`
+	Views           int64     `json:"views"`
 }
 
 // URL generates a base62 encoded string from the paste ID. This string is
@@ -120,6 +121,8 @@ type PasteService interface {
 	Delete(id int64) error
 	// List returns a list of pastes for a user specified by ID.
 	List(uid int64) ([]Paste, error)
+	// Update updates existing paste
+	Update(p Paste) error
 }
 
 // PasteStore is the interface that defines methods required to persist and
