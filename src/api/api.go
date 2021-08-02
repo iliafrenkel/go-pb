@@ -42,45 +42,23 @@ func (p *Paste) Expiration() string {
 	if p.Expires.IsZero() {
 		return "Never"
 	}
-	// Seconds-based time units
-	const (
-		Minute = 60
-		Hour   = 60 * Minute
-		Day    = 24 * Hour
-		Week   = 7 * Day
-		Year   = 365 * Day
-		Month  = Year / 12
-	)
 
-	diff := time.Until(p.Expires) / time.Second
+	diff := time.Time{}.Add(time.Until(p.Expires))
+
+	years, months, days := diff.Date()
+	hours, minutes, seconds := diff.Clock()
 
 	switch {
-	case diff <= 0:
-		return "now"
-	case diff < 1*Minute:
-		return fmt.Sprintf("%d seconds", diff)
-	case diff < 1*Hour:
-		return fmt.Sprintf("%d minutes", diff/Minute)
-	case diff < 2*Hour:
-		return "1 hour"
-	case diff < 1*Day:
-		return fmt.Sprintf("%d hours", diff/Hour)
-	case diff < 2*Day:
-		return "1 day"
-	case diff < 1*Week:
-		return fmt.Sprintf("%d days", diff/Day)
-	case diff < 2*Week:
-		return "1 week"
-	case diff < 1*Month:
-		return fmt.Sprintf("%d weeks", diff/Week)
-	case diff < 2*Month:
-		return "1 month"
-	case diff < 1*Year:
-		return fmt.Sprintf("%d months", diff/Month)
-	case diff < 18*Month:
-		return "~1 year"
-	case diff < 20*Year:
-		return fmt.Sprintf("%d years", diff/Year)
+	case years >= 2:
+		return fmt.Sprintf("%s, %d", months.String(), p.Expires.Year())
+	case months >= 2:
+		return fmt.Sprintf("%s, %d", p.Expires.Month(), days)
+	case days >= 2:
+		return fmt.Sprintf("%d days", days-1+hours/12)
+	case hours >= 1:
+		return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	case seconds >= 1:
+		return fmt.Sprintf("%ds", seconds)
 	}
 
 	return p.Expires.Sub(p.Created).String()
