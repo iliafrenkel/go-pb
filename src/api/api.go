@@ -48,8 +48,8 @@ func (p *Paste) Expiration() string {
 		Hour   = 60 * Minute
 		Day    = 24 * Hour
 		Week   = 7 * Day
-		Month  = 30 * Day
-		Year   = 12 * Month
+		Year   = 365 * Day
+		Month  = Year / 12
 	)
 
 	diff := time.Until(p.Expires) / time.Second
