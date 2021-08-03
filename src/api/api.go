@@ -50,9 +50,9 @@ func (p *Paste) Expiration() string {
 
 	switch {
 	case years >= 2:
-		return fmt.Sprintf("%s, %d", months.String(), p.Expires.Year())
+		return fmt.Sprintf("%d years", years-1)
 	case months >= 2:
-		return fmt.Sprintf("%s, %d", p.Expires.Month(), days)
+		return fmt.Sprintf("%d months", months-1)
 	case days >= 2:
 		return fmt.Sprintf("%d days", days-1+hours/12)
 	case hours >= 1:
