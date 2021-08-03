@@ -58,6 +58,8 @@ type WebServerOptions struct {
 	Templates string
 	//
 	Logo string
+	//
+	BootstrapTheme string
 	// Version that will be displayed in the footer
 	Version string
 }
@@ -289,6 +291,7 @@ func (h *WebServer) handleRoot(c *gin.Context) {
 			"brand":    h.Options.BrandName,
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
+			"theme":    h.Options.BootstrapTheme,
 			"username": username,
 			"pastes":   pastes,
 			"version":  h.Options.Version,
@@ -316,6 +319,7 @@ func (h *WebServer) handleUserLogin(c *gin.Context) {
 			"brand":    h.Options.BrandName,
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
+			"theme":    h.Options.BootstrapTheme,
 			"errorMsg": "",
 			"username": username,
 			"version":  h.Options.Version,
@@ -366,6 +370,7 @@ func (h *WebServer) handleDoUserLogin(c *gin.Context) {
 				"brand":    h.Options.BrandName,
 				"tagline":  h.Options.BrandTagline,
 				"logo":     h.Options.Logo,
+				"theme":    h.Options.BootstrapTheme,
 				"errorMsg": "Either username or password is incorrect",
 				"username": "",
 				"version":  h.Options.Version,
@@ -420,6 +425,7 @@ func (h *WebServer) handleUserRegister(c *gin.Context) {
 			"brand":    h.Options.BrandName,
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
+			"theme":    h.Options.BootstrapTheme,
 			"errorMsg": "",
 			"username": username,
 			"version":  h.Options.Version,
@@ -474,6 +480,7 @@ func (h *WebServer) handleDoUserRegister(c *gin.Context) {
 					"brand":    h.Options.BrandName,
 					"tagline":  h.Options.BrandTagline,
 					"logo":     h.Options.Logo,
+					"theme":    h.Options.BootstrapTheme,
 					"errorMsg": msg.Message,
 					"version":  h.Options.Version,
 				},
@@ -514,6 +521,7 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 				"brand":    h.Options.BrandName,
 				"tagline":  h.Options.BrandTagline,
 				"logo":     h.Options.Logo,
+				"theme":    h.Options.BootstrapTheme,
 				"id":       id,
 				"message":  "This paste is protected by a password",
 				"username": username,
@@ -616,6 +624,7 @@ func (h *WebServer) handleGetPaste(c *gin.Context) {
 			"brand":    h.Options.BrandName,
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
+			"theme":    h.Options.BootstrapTheme,
 			"Paste":    &p,
 			"URL":      p.URL(),
 			"Server":   h.Options.Proto + "://" + h.Options.Addr,
@@ -667,6 +676,7 @@ func (h *WebServer) handleGetPasteWithPassword(c *gin.Context) {
 				"brand":    h.Options.BrandName,
 				"tagline":  h.Options.BrandTagline,
 				"logo":     h.Options.Logo,
+				"theme":    h.Options.BootstrapTheme,
 				"id":       id,
 				"message":  "This paste is protected by a password",
 				"username": username,
@@ -727,6 +737,7 @@ func (h *WebServer) handleGetPasteWithPassword(c *gin.Context) {
 			"brand":    h.Options.BrandName,
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
+			"theme":    h.Options.BootstrapTheme,
 			"Paste":    &p,
 			"URL":      p.URL(),
 			"Server":   h.Options.Proto + "://" + h.Options.Addr,
@@ -774,6 +785,7 @@ func (h *WebServer) handleGetPastesList(c *gin.Context) {
 			"brand":    h.Options.BrandName,
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
+			"theme":    h.Options.BootstrapTheme,
 			"Server":   h.Options.Proto + "://" + h.Options.Addr,
 			"username": username,
 			"pastes":   pastes,
@@ -877,6 +889,7 @@ func (h *WebServer) handleCreatePaste(c *gin.Context) {
 			"brand":    h.Options.BrandName,
 			"tagline":  h.Options.BrandTagline,
 			"logo":     h.Options.Logo,
+			"theme":    h.Options.BootstrapTheme,
 			"Server":   h.Options.Proto + "://" + h.Options.Addr,
 			"Paste":    &paste,
 			"URL":      resp.Header.Get("Location"),
@@ -920,6 +933,7 @@ func (h *WebServer) showError(c *gin.Context) {
 			"brand":        h.Options.BrandName,
 			"tagline":      h.Options.BrandTagline,
 			"logo":         h.Options.Logo,
+			"theme":        h.Options.BootstrapTheme,
 			"errorCode":    errorCode,
 			"errorText":    errorText,
 			"errorMessage": errorMsg,

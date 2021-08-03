@@ -43,17 +43,18 @@ var opts struct {
 		TokenSecret   string `long:"token-secret" env:"TOKEN_SECRET" default:"" description:"secret string used to sign JWT tokens"`
 	} `group:"api" namespace:"api" env-namespace:"GOPB_API"`
 	Web struct {
-		Proto         string `long:"proto" env:"PROTO" default:"http" choice:"http" choice:"https" description:"protocol part of the Web server address (http/https)"`
-		Host          string `long:"host" env:"HOST" default:"localhost" description:"hostname part of the Web server address"`
-		Port          uint16 `long:"port" env:"PORT" default:"8080" description:"port part of the Web server address"`
-		LogFile       string `long:"log-file" env:"LOG_FILE" default:"" description:"full path to the log file, default is stdout"`
-		LogMode       string `long:"log-mode" env:"LOG_MODE" default:"production" choice:"debug" choice:"production" description:"log mode, can be 'debug' or 'production'"`
-		CookieAuthKey string `long:"cookie-auth-key" env:"COOKIE_AUTH_KEY" default:"" description:"secret authentication key, must be 32 or 64 bytes long"`
-		BrandName     string `long:"brand-name" env:"BRAND_NAME" default:"Go PB" description:"brand name shown in the header of every page"`
-		BrandTagline  string `long:"brand-tagline" env:"BRAND_TAGLINE" default:"A nice and simple pastebin alternative that you can host yourself." description:"brand tagline shown below the brand name"`
-		Assets        string `long:"assets" env:"ASSETS" default:"./assets" description:"path to the assets folder"`
-		Templates     string `long:"templates" env:"TEMPLATES" default:"./templates" description:"path to the templates folder"`
-		Logo          string `long:"logo" env:"LOGO" default:"" description:"name of the logo image file within the assets folder"`
+		Proto          string `long:"proto" env:"PROTO" default:"http" choice:"http" choice:"https" description:"protocol part of the Web server address (http/https)"`
+		Host           string `long:"host" env:"HOST" default:"localhost" description:"hostname part of the Web server address"`
+		Port           uint16 `long:"port" env:"PORT" default:"8080" description:"port part of the Web server address"`
+		LogFile        string `long:"log-file" env:"LOG_FILE" default:"" description:"full path to the log file, default is stdout"`
+		LogMode        string `long:"log-mode" env:"LOG_MODE" default:"production" choice:"debug" choice:"production" description:"log mode, can be 'debug' or 'production'"`
+		CookieAuthKey  string `long:"cookie-auth-key" env:"COOKIE_AUTH_KEY" default:"" description:"secret authentication key, must be 32 or 64 bytes long"`
+		BrandName      string `long:"brand-name" env:"BRAND_NAME" default:"Go PB" description:"brand name shown in the header of every page"`
+		BrandTagline   string `long:"brand-tagline" env:"BRAND_TAGLINE" default:"A nice and simple pastebin alternative that you can host yourself." description:"brand tagline shown below the brand name"`
+		Assets         string `long:"assets" env:"ASSETS" default:"./assets" description:"path to the assets folder"`
+		Templates      string `long:"templates" env:"TEMPLATES" default:"./templates" description:"path to the templates folder"`
+		BootstrapTheme string `long:"bootstrap-theme" env:"BOOTSTRAP_THEME" default:"original" choice:"flatly" choice:"litera" choice:"materia" choice:"original" choice:"sandstone" choice:"yeti" choice:"zephyr" description:"name of the bootstrap theme to use [flatly, litera, materia, sandstone, yeti or zephyr]"`
+		Logo           string `long:"logo" env:"LOGO" default:"" description:"name of the logo image file within the assets folder"`
 	} `group:"web" namespace:"web" env-namespace:"GOPB_WEB"`
 }
 
@@ -84,18 +85,19 @@ func main() {
 		TokenSecret:        opts.API.TokenSecret,
 	}
 	var webOpts = hweb.WebServerOptions{
-		Addr:          opts.Web.Host + ":" + fmt.Sprintf("%d", opts.Web.Port),
-		Proto:         opts.Web.Proto,
-		APIURL:        opts.API.Proto + "://" + opts.API.Host + ":" + fmt.Sprintf("%d", opts.API.Port),
-		LogFile:       opts.Web.LogFile,
-		LogMode:       opts.Web.LogMode,
-		CookieAuthKey: opts.Web.CookieAuthKey,
-		BrandName:     opts.Web.BrandName,
-		BrandTagline:  opts.Web.BrandTagline,
-		Assets:        opts.Web.Assets,
-		Templates:     opts.Web.Templates,
-		Logo:          opts.Web.Logo,
-		Version:       version,
+		Addr:           opts.Web.Host + ":" + fmt.Sprintf("%d", opts.Web.Port),
+		Proto:          opts.Web.Proto,
+		APIURL:         opts.API.Proto + "://" + opts.API.Host + ":" + fmt.Sprintf("%d", opts.API.Port),
+		LogFile:        opts.Web.LogFile,
+		LogMode:        opts.Web.LogMode,
+		CookieAuthKey:  opts.Web.CookieAuthKey,
+		BrandName:      opts.Web.BrandName,
+		BrandTagline:   opts.Web.BrandTagline,
+		Assets:         opts.Web.Assets,
+		Templates:      opts.Web.Templates,
+		Logo:           opts.Web.Logo,
+		BootstrapTheme: opts.Web.BootstrapTheme,
+		Version:        version,
 	}
 
 	// Create two channels, quit for OS signals and errc for errors coming
