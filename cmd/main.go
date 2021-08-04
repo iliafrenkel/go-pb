@@ -131,8 +131,6 @@ func main() {
 	// means that the timeout is for BOTH severs - if the timeout is 10
 	// seconds and Web server takes 9 seconds to shutdown it will leave
 	// the API server only one second.
-	//
-	// TODO: #17 Shutdown timeout must be configurable.
 	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeouts.Shutdown)
 	defer cancel()
 
