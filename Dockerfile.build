@@ -10,8 +10,8 @@ RUN make clean && make build
 FROM scratch
 
 COPY --from=build /build/build/go-pb /go-pb
-COPY --from=build /build/src/web/assets /assets
-COPY --from=build /build/src/web/templates /templates
+COPY --from=build /build/assets /assets
+COPY --from=build /build/templates /templates
 
 WORKDIR /
 ENTRYPOINT ["/go-pb"]

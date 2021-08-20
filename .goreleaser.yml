@@ -41,7 +41,8 @@ dockers:
     dockerfile: Dockerfile.release
     use: docker
     extra_files:
-      - src
+      - assets
+      - templates
     build_flag_templates:
     - "--label=org.opencontainers.image.created={{.Date}}"
     - "--label=org.opencontainers.image.title={{.ProjectName}}"
@@ -53,10 +54,10 @@ archives:
     files:
       - LICENSE.txt
       - README.md
-      - src: ./src/web/assets
+      - src: ./assets
         dst: assets
         strip_parent: true
-      - src: ./src/web/templates
+      - src: ./templates
         dst: templates
         strip_parent: true
     format_overrides:
