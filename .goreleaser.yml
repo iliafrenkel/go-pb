@@ -9,7 +9,6 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - freebsd
       - windows
       - darwin
     goarch:
@@ -19,16 +18,15 @@ builds:
     ignore:
       - goos: darwin
         goarch: arm
-      - goos: freebsd
-        goarch: arm
-      - goos: freebsd
-        goarch: arm64
       - goos: windows
         goarch: arm
       - goos: windows
         goarch: arm64
     dir: ./cmd
     ldflags: "-s -w -X main.revision={{.Tag}}-{{.ShortCommit}}-{{.CommitDate}} -X main.version={{.Tag}} -X main.branch={{.Branch}}"
+    hooks:
+      post:
+        - upx "{{ .Path }}"
 dockers:
   - goos: linux
     goarch: amd64

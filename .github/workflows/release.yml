@@ -21,6 +21,9 @@ jobs:
         with:
           go-version: 1.16
 
+      - name: Install upx
+        run: sudo apt install upx -y
+
       - name: Login to registry
         run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
