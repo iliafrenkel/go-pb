@@ -24,6 +24,7 @@ type Service struct {
 	store store.Interface
 }
 
+// ErrPasteNotFound and other common errors.
 var (
 	ErrPasteNotFound    = errors.New("paste not found")
 	ErrUserNotFound     = errors.New("user not found")
@@ -48,7 +49,7 @@ type PasteRequest struct {
 	UserID          string `json:"user_id"`
 }
 
-// Returns new Service with provided store as a back-end storage.
+// New returns new Service with provided store as a back-end storage.
 func New(store store.Interface) *Service {
 	var s *Service = new(Service)
 	s.store = store
@@ -57,12 +58,12 @@ func New(store store.Interface) *Service {
 	return s
 }
 
-// Returns new Service with memory as a store.
+// NewWithMemDB returns new Service with memory as a store.
 func NewWithMemDB() *Service {
 	return New(store.NewMemDB())
 }
 
-// Returns new Service with postgres db as a store.
+// NewWithPostgres returns new Service with postgres db as a store.
 func NewWithPostgres(conn string) (*Service, error) {
 	s, err := store.NewPostgresDB(conn, true)
 	if err != nil {
@@ -71,13 +72,51 @@ func NewWithPostgres(conn string) (*Service, error) {
 	return New(s), nil
 }
 
-// Create new Paste from the request and save it in the store.
+// parseExpiration tries to parse PasteRequest.Expires string and return
+// corresponding time.Time.
+// We expect the expiration to be in the form of "nx" where "n" is a number
+// and "x" is a time unit character: m for minute, h for hour, d for day,
+// w for week, M for month and y for year.
+func (s Service) parseExpiration(exp string) (time.Time, error) {
+	res := time.Time{}
+	now := time.Now()
+
+	if exp != "never" && len(exp) > 1 {
+		dur, err := strconv.Atoi(exp[:len(exp)-1])
+		if err != nil {
+			return time.Time{}, fmt.Errorf("Service.parseExpiration: %w: %s (%v)", ErrWrongDuration, exp, err)
+		}
+		switch exp[len(exp)-1] {
+		case 'm': //minutes
+			res = now.Add(time.Duration(dur) * time.Minute)
+		case 'h': //hours
+			res = now.Add(time.Duration(dur) * time.Hour)
+		case 'd': //days
+			res = now.AddDate(0, 0, dur)
+		case 'w': //weeks
+			res = now.AddDate(0, 0, dur*7)
+		case 'M': //months
+			res = now.AddDate(0, dur, 0)
+		case 'y': //years
+			res = now.AddDate(dur, 0, 0)
+		default:
+			return time.Time{}, fmt.Errorf("Service.NewPaste: %w: %s", ErrWrongDuration, exp)
+		}
+	}
+	return res, nil
+}
+
+// NewPaste creates new Paste from the request and saves it in the store.
 // Paste.Body is mandatory, Paste.Expires is default to never, Paste.Privacy
 // must be on of ["private","public","unlisted"]. If password is provided it
 // is stored as a hash.
 func (s Service) NewPaste(pr PasteRequest) (store.Paste, error) {
+	var err error
 	created := time.Now()
-	expires := time.Time{} // zero time means no expiration, this is the default
+	expires, err := s.parseExpiration(pr.Expires)
+	if err != nil {
+		return store.Paste{}, fmt.Errorf("Service.NewPaste: %w", err)
+	}
 
 	// Check that body is not empty
 	if pr.Body == "" {
@@ -89,31 +128,6 @@ func (s Service) NewPaste(pr PasteRequest) (store.Paste, error) {
 		return store.Paste{}, ErrWrongPrivacy
 	}
 
-	// We expect the expiration to be in the form of "nx" where "n" is a number
-	// and "x" is a time unit character: m for minute, h for hour, d for day,
-	// w for week, M for month and y for year.
-	if pr.Expires != "never" && len(pr.Expires) > 1 {
-		dur, err := strconv.Atoi(pr.Expires[:len(pr.Expires)-1])
-		if err != nil {
-			return store.Paste{}, fmt.Errorf("Service.NewPaste: %w: %s (%v)", ErrWrongDuration, pr.Expires, err)
-		}
-		switch pr.Expires[len(pr.Expires)-1] {
-		case 'm': //minutes
-			expires = created.Add(time.Duration(dur) * time.Minute)
-		case 'h': //hours
-			expires = created.Add(time.Duration(dur) * time.Hour)
-		case 'd': //days
-			expires = created.AddDate(0, 0, dur)
-		case 'w': //weeks
-			expires = created.AddDate(0, 0, dur*7)
-		case 'M': //months
-			expires = created.AddDate(0, dur, 0)
-		case 'y': //years
-			expires = created.AddDate(dur, 0, 0)
-		default:
-			return store.Paste{}, fmt.Errorf("Service.NewPaste: %w: %s", ErrWrongDuration, pr.Expires)
-		}
-	}
 	// If password is not empty, hash it before storing
 	if pr.Password != "" {
 		hash, err := bcrypt.GenerateFromPassword([]byte(pr.Password), bcrypt.DefaultCost)
@@ -124,7 +138,6 @@ func (s Service) NewPaste(pr PasteRequest) (store.Paste, error) {
 	}
 	// If the user is known check that it is in our database and add if it's not
 	var usr store.User
-	var err error
 	if pr.UserID != "" {
 		usr, err = s.store.User(pr.UserID)
 		if err != nil || usr == (store.User{}) {
@@ -190,7 +203,7 @@ func (s Service) GetPaste(url string, uid string, pwd string) (store.Paste, erro
 		return store.Paste{}, ErrWrongPassword
 	}
 	// Update the view count
-	p.Views += 1
+	p.Views++
 	p, _ = s.store.Update(p) // we ignore the error here because we only update the view count
 	// Check if paste is a "burner" and delete it if yes
 	if p.DeleteAfterRead {

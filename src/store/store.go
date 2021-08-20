@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE.txt file.
 
 // Package store defines a common interface that any concrete storage
-// implementation must implement. Along wiht some supporting types.
+// implementation must implement. Along with some supporting types.
 // It provides two implementations of store.Interface - MemDB and PostgresDB.
 package store
 

@@ -85,7 +85,7 @@ func main() {
 	}
 
 	// Start the server
-	webServer := web.New(log, web.WebServerOptions{
+	webServer := web.New(log, web.ServerOptions{
 		Addr:               opts.Web.Host + ":" + fmt.Sprintf("%d", opts.Web.Port),
 		Proto:              opts.Web.Proto,
 		ReadTimeout:        opts.Timeouts.HTTPRead,

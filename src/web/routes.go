@@ -1,6 +1,7 @@
 // Copyright 2021 Ilia Frenkel. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE.txt file.
+
 package web
 
 import (
@@ -14,7 +15,7 @@ import (
 	"github.com/iliafrenkel/go-pb/src/store"
 )
 
-// All the data that any page template may need.
+// PageData contains the data that any page template may need.
 type PageData struct {
 	Title        string
 	Brand        string
@@ -35,7 +36,7 @@ type PageData struct {
 }
 
 // Generate HTML from a template with PageData.
-func (h *WebServer) generateHTML(tpl string, p PageData) []byte {
+func (h *Server) generateHTML(tpl string, p PageData) []byte {
 	var html bytes.Buffer
 	pcnt, ucnt := h.service.GetCount()
 	var pd = PageData{
@@ -65,7 +66,7 @@ func (h *WebServer) generateHTML(tpl string, p PageData) []byte {
 	return html.Bytes()
 }
 
-func (h *WebServer) showInternalError(w http.ResponseWriter, err error) {
+func (h *Server) showInternalError(w http.ResponseWriter, err error) {
 	h.log.Logf("ERROR : %v", err)
 	w.WriteHeader(http.StatusInternalServerError)
 	_, e := w.Write(h.generateHTML("error.html", PageData{
@@ -79,8 +80,8 @@ func (h *WebServer) showInternalError(w http.ResponseWriter, err error) {
 	}
 }
 
-// handleGetHomePage shows the homepage in reponse to a GET / request.
-func (h *WebServer) handleGetHomePage(w http.ResponseWriter, r *http.Request) {
+// handleGetHomePage shows the homepage in response to a GET / request.
+func (h *Server) handleGetHomePage(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
 
 	pastes, err := h.service.UserPastes(usr.ID)
@@ -96,7 +97,7 @@ func (h *WebServer) handleGetHomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // handlePostPaste creates new paste from the form data
-func (h *WebServer) handlePostPaste(w http.ResponseWriter, r *http.Request) {
+func (h *Server) handlePostPaste(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
 	// Read the form data
 	r.Body = http.MaxBytesReader(w, r.Body, h.options.MaxBodySize)
@@ -200,7 +201,7 @@ func (h *WebServer) handlePostPaste(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleGetPastePage generates a page to view a single paste.
-func (h *WebServer) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
+func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
 	// Get paste encoded ID
 	vars := mux.Vars(r)
@@ -305,7 +306,7 @@ func (h *WebServer) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleGetPastesList generates a page to view a list of pastes.
-func (h *WebServer) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
+func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
 
 	pastes, err := h.service.UserPastes(usr.ID)
@@ -321,7 +322,7 @@ func (h *WebServer) handleGetPastesList(w http.ResponseWriter, r *http.Request) 
 }
 
 // Show 404 Not Found error page
-func (h *WebServer) notFound(w http.ResponseWriter, r *http.Request) {
+func (h *Server) notFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	_, e := w.Write(h.generateHTML("error.html", PageData{
 		Title:        "Error",

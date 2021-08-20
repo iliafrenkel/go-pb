@@ -1,6 +1,7 @@
 // Copyright 2021 Ilia Frenkel. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE.txt file.
+
 package store
 
 import (
@@ -129,13 +130,16 @@ func (m *MemDB) User(id string) (User, error) {
 	m.RLock()
 	defer m.RUnlock()
 
-	if usr, ok := m.users[id]; !ok {
+	var usr User
+	var ok bool
+
+	if usr, ok = m.users[id]; !ok {
 		return User{}, fmt.Errorf("MemDB.User: user not found")
-	} else {
-		return usr, nil
 	}
+	return usr, nil
 }
 
+// Update updates existing paste.
 func (m *MemDB) Update(p Paste) (Paste, error) {
 	m.RLock()
 	if _, ok := m.pastes[p.ID]; !ok {
