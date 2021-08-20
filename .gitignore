@@ -33,3 +33,5 @@ dist/
 .idea/
 
 .env
+.env.ps1
+.tmp
