@@ -5,3 +5,6 @@ $Env:GOPB_WEB_BOOTSTRAP_THEME="original"
 $Env:GOPB_WEB_PORT=8080
 Set-Location ../cmd/
 go run . --api-db-conn-string="host=localhost user=iliaf password=iliaf dbname=iliaf port=5432 sslmode=disable" --web-templates=../src/web/templates/ --web-assets=../src/web/assets/
+
+# docker run --rm -v "${PWD}:/src" returntocorp/semgrep --lang=go --config=p/ci
+# docker run --rm -v "${PWD}:/src" returntocorp/semgrep --lang=go --config=p/security-audit
