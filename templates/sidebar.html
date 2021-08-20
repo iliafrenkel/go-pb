@@ -1,0 +1,23 @@
+<div class="card text-dark bg-white">
+    <div class="card-header">
+        {{if .User.Name}}
+            My Pastes (last 10)
+        {{else}}
+            Public pastes (last 10)
+        {{end}}
+    </div>
+    {{if .Pastes}}
+    <div class="list-group list-group-flush">
+        {{range .Pastes}}
+            {{template "paste.html" .}}
+        {{end}}
+    </div>
+    <div class="card-footer text-center">
+        <a href="/l/" class="btn btn-outline-secondary btn-sm">All my pastes</a>
+    </div>
+    {{else}}
+    <div class="card-body">
+        <p class="card-text text-muted"><em>You will see all your pastes here once you login.</em></p>
+    </div>
+    {{end}}
+</div>

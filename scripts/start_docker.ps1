@@ -1,0 +1,1 @@
+docker run --rm --env-file .env -e GOPB_WEB_HOST=0.0.0.0 -e GOPB_WEB_LOG_MODE=debug -v "${PWD}/.tmp:/.tmp" --network go-pb_go-pb_dev -p 8080:8080 -p 8084:8084 iliaf/go-pb:latest

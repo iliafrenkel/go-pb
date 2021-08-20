@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head.html" .}}
+</head>
+<body class="container">
+    <div class="row justify-content-center">
+        <div class="col-9">
+            <h2 class="display-1 text-center mt-5 mb-5"><span class="badge bg-danger rounded-pill">{{ .ErrorCode}}</span> {{ .ErrorText}}</h2>
+            {{if .ErrorMessage}}
+            <p class="lead text-center my-5">{{ .ErrorMessage }}</p>
+            {{end}}
+            <p class="text-center mt-3">
+                <a href="/" class="btn btn-lg btn-outline-primary" title="Take me home">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-house mx-4" viewBox="0 0 18 18">
+                        <path fill-rule="evenodd" d="M2 13.5V7h1v6.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V7h1v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5zm11-11V6l-2-2V2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5z"/>
+                        <path fill-rule="evenodd" d="M7.293 1.5a1 1 0 0 1 1.414 0l6.647 6.646a.5.5 0 0 1-.708.708L8 2.207 1.354 8.854a.5.5 0 1 1-.708-.708L7.293 1.5z"/>
+                    </svg>
+                    
+                </a>
+            </p>
+        </div>
+    </div>
+
+    {{template "footer.html" .}}
+
+</body>
+</html>

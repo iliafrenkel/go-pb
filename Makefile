@@ -23,7 +23,9 @@ dep: ## Get the dependencies
 	@go mod download
 
 lint: ## Lint all Golang files
-	@golint -set_exit_status ${PKG_LIST}
+	@gosec ${PKG_LIST}
+	@go vet ${PKG_LIST}
+	@staticcheck ${PKG_LIST}
 
 test: ## Run all the unit tests
 	@go test -short ${PKG_LIST}

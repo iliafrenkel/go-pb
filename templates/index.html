@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head.html" .}}
+</head>
+<body class="container">
+    
+    {{template "header.html" . }}
+    
+    <div class="row justify-content-center">
+        <div class="col-sm-9">
+            <div class="card border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-left">New Paste</h5>
+                    {{template "form.html"}}
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            {{template "sidebar.html" .}}
+        </div>
+    </div>
+
+    {{template "footer.html" .}}
+
+</body>
+</html>

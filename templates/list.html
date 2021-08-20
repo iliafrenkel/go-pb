@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head.html" .}}
+</head>
+<body class="container">
+    
+    {{template "header.html" .}}
+    
+    <div class="row justify-content-center">
+        <div class="col-9">
+            {{if .Pastes}}
+                <h5 class="card-title text-center">My Pastes</h5>
+                <div class="list-group">
+                {{range .Pastes}}
+                    {{template "paste.html" .}}
+                {{end}}
+                </div>
+            {{else}}
+                <h1 class="display-6 text-center">Nothing to see here yet.</h1>
+            {{end}}
+        </div>
+        <div class="col-3">
+            {{template "sidebar.html" .}}
+        </div>
+    </div>
+
+    {{template "footer.html" .}}
+
+</body>
+</html>

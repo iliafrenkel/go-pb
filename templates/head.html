@@ -1,0 +1,152 @@
+<title>{{ .Title }}</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" value="Pastebin alternative written in Golang">
+<meta name="keywords" value="pastebin, golang, selfhosted">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+<link rel="manifest" href="/assets/favicon/site.webmanifest">
+<link rel="mask-icon" href="/assets/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" type="text/css" href="/assets/bootstrap-{{.Theme}}.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script>
+    function getCookies() {
+        return document.cookie.split("; ").reduce((c, x) => {
+            const splitted = x.split("=");
+            c[splitted[0]] = splitted[1];
+            return c;
+        }, {});
+    }
+
+    function req(endpoint, data = {}) {
+        const cloneData = Object.assign({}, data);
+        const cookies = getCookies();
+        const token = cookies["XSRF-TOKEN"];
+
+        if (cloneData.hasOwnProperty("headers")) {
+            cloneData.headers = new Headers(cloneData.headers);
+        } else {
+            cloneData.headers = new Headers();
+        }
+
+        if (token) {
+            cloneData.headers.append("X-XSRF-TOKEN", token);
+        }
+
+        return fetch(endpoint, cloneData).then(resp => {
+            if (resp.status >= 400) {
+                throw resp;
+            }
+            return resp.json().catch(() => null);
+        });
+    }
+
+    function errorHandler(err) {
+        if (err instanceof Response) {
+            err.text().then(text => {
+                try {
+                    const data = JSON.parse(text);
+                    if (data.error) {
+                        console.error(data.error);
+                        return;
+                    }
+                } catch {
+                }
+                console.error(text);
+            });
+            return;
+        }
+        console.error(err.message);
+    }
+
+    function login(prov) {
+        return new Promise((resolve, reject) => {
+            const url = window.location.href + "?close=true";
+            const eurl = encodeURIComponent(url);
+            const win = window.open(
+            "/auth/" + prov + "/login?id=go-pb&from=" + eurl
+            );
+            const interval = setInterval(() => {
+                try {
+                    if (win.closed) {
+                        reject(new Error("Login aborted"));
+                        clearInterval(interval);
+                        return;
+                    }
+                    if (win.location.search.indexOf("error") !== -1) {
+                        reject(new Error(win.location.search));
+                        win.close();
+                        clearInterval(interval);
+                        return;
+                    }
+                    if (win.location.href.indexOf(url) === 0) {
+                        resolve();
+                        win.close();
+                        clearInterval(interval);
+                    }
+                } catch (e) {
+                }
+            }, 100);
+        });
+    }
+    window.onload = function() {
+        dev = document.getElementById('devLogin');
+        if (dev) {
+            dev.addEventListener("click", e => {
+                e.preventDefault();
+                login("dev")
+                    .then(() => {
+                        window.location.replace(window.location.href);
+                    })
+                    .catch(errorHandler);
+            });
+        }
+        ghb = document.getElementById('githubLogin');
+        if (ghb) {
+            ghb.addEventListener("click", e => {
+                e.preventDefault();
+                login("github")
+                    .then(() => {
+                        window.location.replace(window.location.href);
+                    })
+                    .catch(errorHandler);
+            });
+        }
+        ggl = document.getElementById('googleLogin');
+        if (ggl) {
+            ggl.addEventListener("click", e => {
+                e.preventDefault();
+                login("google")
+                    .then(() => {
+                        window.location.replace(window.location.href);
+                    })
+                    .catch(errorHandler);
+            });
+        }
+        twt = document.getElementById('twitterLogin');
+        if (twt) {
+            twt.addEventListener("click", e => {
+                e.preventDefault();
+                login("twitter")
+                    .then(() => {
+                        window.location.replace(window.location.href);
+                    })
+                    .catch(errorHandler);
+            });
+        }
+        logout = document.getElementById('logout');
+        if (logout) {
+            logout.addEventListener("click", e => {
+                e.preventDefault();
+                req("/auth/logout")
+                    .then(() => {
+                        window.location.replace(window.location.href);
+                    })
+                    .catch(errorHandler);
+            });
+        }
+    }
+</script>
