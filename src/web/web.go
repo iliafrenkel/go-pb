@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-pkgz/auth"
@@ -131,8 +132,17 @@ var dbgLogFormatter handlers.LogFormatter = func(writer io.Writer, params handle
 // ListenAndServe starts an HTTP server and binds it to the provided address.
 // You have to call New() first to initialise the WebServer.
 func (h *WebServer) ListenAndServe() error {
-	w := lgr.ToWriter(h.log, "")
 	var hdlr http.Handler
+	var w io.Writer
+	var err error
+	if h.options.LogFile == "" {
+		w = lgr.ToWriter(h.log, "")
+	} else {
+		w, err = os.OpenFile(h.options.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
+			return fmt.Errorf("WebServer.ListenAndServer: cannot open log file: [%s]: %w", h.options.LogFile, err)
+		}
+	}
 	if h.options.LogMode == "debug" {
 		hdlr = handlers.CustomLoggingHandler(w, h.router, dbgLogFormatter)
 	} else {
