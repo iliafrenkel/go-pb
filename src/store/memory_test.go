@@ -7,6 +7,90 @@ import (
 	"time"
 )
 
+// testCaseForFind used by TestFind test
+type testCaseForFind struct {
+	name  string // test case name
+	uid   string // user id
+	sort  string // sort direction
+	limit int    // max records
+	skip  int    // records to skip
+	exp   int    // expected result length
+}
+
+var findTestCases = []testCaseForFind{
+	{
+		name:  "All user pastes",
+		uid:   "find_user_1",
+		sort:  "",
+		limit: 11,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check limit",
+		uid:   "find_user_2",
+		sort:  "",
+		limit: 5,
+		skip:  0,
+		exp:   5,
+	}, {
+		name:  "Check skip",
+		uid:   "find_user_2",
+		sort:  "",
+		limit: 5,
+		skip:  6,
+		exp:   4,
+	}, {
+		name:  "Check skip over limit",
+		uid:   "find_user_2",
+		sort:  "",
+		limit: 5,
+		skip:  12,
+		exp:   0,
+	}, {
+		name:  "Check sort by -created",
+		uid:   "find_user_1",
+		sort:  "-created",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by +created",
+		uid:   "find_user_1",
+		sort:  "+created",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by -expires",
+		uid:   "find_user_1",
+		sort:  "-expires",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by +expires",
+		uid:   "find_user_1",
+		sort:  "+expires",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by -views",
+		uid:   "find_user_1",
+		sort:  "-views",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by +views",
+		uid:   "find_user_1",
+		sort:  "+views",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	},
+}
+
 // TestCount tests that we can count pastes and users correctly.
 func TestCount(t *testing.T) {
 	t.Parallel()
@@ -81,15 +165,15 @@ func TestDelete(t *testing.T) {
 func TestFind(t *testing.T) {
 	// Create 2 users with 10 pastes each and 10 anonymous pastes
 	usr1 := randomUser()
+	usr1.ID = "find_user_1"
 	usr2 := randomUser()
-	var pastes1 []Paste
+	usr2.ID = "find_user_2"
 	for i := 0; i < 10; i++ {
 		p1 := randomPaste(usr1)
 		p1.CreatedAt = time.Now().AddDate(0, 0, -1*i)
 		p1.Expires = time.Now().AddDate(0, 1*i, 0)
 		p1.Views = int64(10 * i)
 		mdb.Create(p1)
-		pastes1 = append(pastes1, p1)
 		p2 := randomPaste(usr2)
 		p2.CreatedAt = time.Now().AddDate(0, 0, -1*i)
 		mdb.Create(p2)
@@ -98,143 +182,44 @@ func TestFind(t *testing.T) {
 		mdb.Create(p3)
 	}
 
-	// Check all pastes for a user
-	pastes, err := mdb.Find(FindRequest{
-		UserID: usr1.ID,
-		Limit:  11,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if len(pastes) != len(pastes1) {
-		t.Errorf("expected to find %d pastes, got %d", len(pastes1), len(pastes))
-	}
-	// Check limit
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr2.ID,
-		Limit:  5,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if len(pastes) != 5 {
-		t.Errorf("expected to find %d pastes, got %d", 5, len(pastes))
-	}
-	// Check skip
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr2.ID,
-		Limit:  5,
-		Skip:   6,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if len(pastes) != 4 {
-		t.Errorf("expected to find %d pastes, got %d", 4, len(pastes))
-	}
-	// Check skip over limit
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr2.ID,
-		Limit:  5,
-		Skip:   12,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if len(pastes) != 0 {
-		t.Errorf("expected to find %d pastes, got %d", 0, len(pastes))
-	}
-	// Check sort by -created
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr1.ID,
-		Sort:   "-created",
-		Limit:  10,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if !sort.SliceIsSorted(pastes, func(i, j int) bool {
-		return pastes[i].CreatedAt.After(pastes[j].CreatedAt)
-	}) {
-		t.Errorf("expected pastes to be sorted by -created, got %+v", pastes)
-	}
-	// Check sort by +created
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr1.ID,
-		Sort:   "+created",
-		Limit:  5,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if !sort.SliceIsSorted(pastes, func(i, j int) bool {
-		return pastes[i].CreatedAt.Before(pastes[j].CreatedAt)
-	}) {
-		t.Errorf("expected pastes to be sorted by +created, got %+v", pastes)
-	}
-	// Check sort by -expires
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr1.ID,
-		Sort:   "-expires",
-		Limit:  10,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if !sort.SliceIsSorted(pastes, func(i, j int) bool {
-		return pastes[i].Expires.After(pastes[j].Expires)
-	}) {
-		t.Errorf("expected pastes to be sorted by -expires, got %+v", pastes)
-	}
-	// Check sort by +expires
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr1.ID,
-		Sort:   "+expires",
-		Limit:  5,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if !sort.SliceIsSorted(pastes, func(i, j int) bool {
-		return pastes[i].Expires.Before(pastes[j].Expires)
-	}) {
-		t.Errorf("expected pastes to be sorted by +expires, got %+v", pastes)
-	}
-	// Check sort by -views
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr1.ID,
-		Sort:   "-views",
-		Limit:  10,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if !sort.SliceIsSorted(pastes, func(i, j int) bool {
-		return pastes[i].Views > pastes[j].Views
-	}) {
-		t.Errorf("expected pastes to be sorted by -views, got %+v", pastes)
-	}
-	// Check sort by +views
-	pastes, err = mdb.Find(FindRequest{
-		UserID: usr1.ID,
-		Sort:   "+views",
-		Limit:  5,
-		Skip:   0,
-	})
-	if err != nil {
-		t.Fatalf("failed to find pastes: %v", err)
-	}
-	if !sort.SliceIsSorted(pastes, func(i, j int) bool {
-		return pastes[i].Views < pastes[j].Views
-	}) {
-		t.Errorf("expected pastes to be sorted by +views, got %+v", pastes)
+	for _, tc := range findTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pastes, err := mdb.Find(FindRequest{
+				UserID: tc.uid,
+				Sort:   tc.sort,
+				Limit:  tc.limit,
+				Skip:   tc.skip,
+			})
+			if err != nil {
+				t.Fatalf("failed to find pastes: %v", err)
+			}
+			if len(pastes) != tc.exp {
+				t.Errorf("expected to find %d pastes, got %d", tc.exp, len(pastes))
+			}
+			if tc.sort == "" {
+				return
+			}
+			if !sort.SliceIsSorted(pastes, func(i, j int) bool {
+				switch tc.sort {
+				case "-created":
+					return pastes[i].CreatedAt.After(pastes[j].CreatedAt)
+				case "+created":
+					return pastes[i].CreatedAt.Before(pastes[j].CreatedAt)
+				case "-expires":
+					return pastes[i].Expires.After(pastes[j].Expires)
+				case "+expires":
+					return pastes[i].Expires.Before(pastes[j].Expires)
+				case "-views":
+					return pastes[i].Views > pastes[j].Views
+				case "+views":
+					return pastes[i].Views < pastes[j].Views
+				default:
+					return false
+				}
+			}) {
+				t.Errorf("expected pastes to be sorted by %s, got %+v", tc.sort, pastes)
+			}
+		})
 	}
 }
 
