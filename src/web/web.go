@@ -25,8 +25,8 @@ import (
 	"github.com/iliafrenkel/go-pb/src/service"
 )
 
-// WebServerOptions defines various parameters needed to run the WebServer
-type WebServerOptions struct {
+// ServerOptions defines various parameters needed to run the WebServer
+type ServerOptions struct {
 	Addr               string        // address to listen on, see http.Server docs for details
 	Proto              string        // protocol, either "http" or "https"
 	ReadTimeout        time.Duration // maximum duration for reading the entire request.
@@ -57,13 +57,13 @@ type WebServerOptions struct {
 	TwitterCSEC        string        // twitter client secret for oauth
 }
 
-// WebServer encapsulates a router and a server.
+// Server encapsulates a router and a server.
 // Normally, you'd create a new instance by calling New which configures the
 // rotuer and then call ListenAndServe to start serving incoming requests.
-type WebServer struct {
+type Server struct {
 	router    *mux.Router
 	server    *http.Server
-	options   WebServerOptions
+	options   ServerOptions
 	templates *template.Template
 	log       *lgr.Logger
 	service   *service.Service
@@ -131,7 +131,7 @@ var dbgLogFormatter handlers.LogFormatter = func(writer io.Writer, params handle
 
 // ListenAndServe starts an HTTP server and binds it to the provided address.
 // You have to call New() first to initialise the WebServer.
-func (h *WebServer) ListenAndServe() error {
+func (h *Server) ListenAndServe() error {
 	var hdlr http.Handler
 	var w io.Writer
 	var err error
@@ -159,7 +159,8 @@ func (h *WebServer) ListenAndServe() error {
 	return h.server.ListenAndServe()
 }
 
-func (h *WebServer) Shutdown(ctx context.Context) error {
+// Shutdown gracefully shutdown the server with the givem context.
+func (h *Server) Shutdown(ctx context.Context) error {
 	return h.server.Shutdown(ctx)
 }
 
@@ -167,8 +168,8 @@ func (h *WebServer) Shutdown(ctx context.Context) error {
 // loaded templates and routes. You can call ListenAndServe on a newly
 // created instance to initialise the HTTP server and start handling incoming
 // requests.
-func New(l *lgr.Logger, opts WebServerOptions) *WebServer {
-	var handler WebServer
+func New(l *lgr.Logger, opts ServerOptions) *Server {
+	var handler Server
 	handler.log = l
 	handler.options = opts
 

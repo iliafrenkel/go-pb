@@ -15,14 +15,14 @@ import (
 	"github.com/iliafrenkel/go-pb/src/store"
 )
 
-var webSrv *WebServer
+var webSrv *Server
 
 // TestMain is a setup function for the test suite. It creates a new WebServer
 // with options suitable for testing.
 func TestMain(m *testing.M) {
 	log := lgr.New(lgr.Debug, lgr.CallerFile, lgr.CallerFunc, lgr.Msec, lgr.LevelBraces)
 
-	webSrv = New(log, WebServerOptions{
+	webSrv = New(log, ServerOptions{
 		Addr:               "localhost:8080",
 		Proto:              "http",
 		ReadTimeout:        2,
