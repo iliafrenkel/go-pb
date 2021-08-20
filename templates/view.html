@@ -17,11 +17,17 @@
                     <h5 class="card-title text-center mb-2">{{if .Title}}{{.Title}}{{else}}untitled{{end}}</h5>
                     <h6 class="card-subtitle mb-2 text-muted" style="font-size: 90%;">
                         <span class="badge bg-transparent text-dark fw-light text-uppercase border shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
+                                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+                            </svg>
+                            {{if .User.Name}}{{ .User.Name }}{{else}}Anonymous{{end}}
+                        </span>
+                        <span class="badge bg-transparent text-dark fw-light text-uppercase border shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-calendar2 align-text-bottom" viewBox="0 0 16 16">
                                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H2z"/>
                                 <path d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V4z"/>
                             </svg>
-                            {{ .Created.Local.Format "Jan 2, 2006 15:04" }}
+                            {{ .CreatedAt.Local.Format "Jan 2, 2006 15:04" }}
                         </span>
                         <span class="badge bg-transparent text-dark fw-light text-uppercase border shadow-sm" title="Expires {{ .Expires.Local.Format "Jan 2, 2006 15:04" }}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-stopwatch align-text-bottom" viewBox="0 0 16 16">
@@ -67,6 +73,13 @@
                             burn after read
                         </span>
                         {{end}}
+                        <span class="badge bg-transparent text-primary fw-light border shadow-sm" title="URL">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-link align-text-bottom" viewBox="0 0 16 16">
+                                <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9c-.086 0-.17.01-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/>
+                                <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z"/>
+                            </svg>
+                            <a href="{{.URL}}">{{.URL}}</a>
+                        </span>
                     </h6>
                     {{end}}
                     <div class="card-text">
@@ -100,7 +113,7 @@
                             </h2>
                             <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingTwo">
                                 <div class="accordion-body">
-                                    {{if .URL }}
+                                    {{if .Paste.URL }}
                                     <div class="input-group mb-3">
                                         <span class="input-group-text border-primary bg-white text-primary" id="basic-addon1">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-link align-text-bottom" viewBox="0 0 16 16">
@@ -108,7 +121,7 @@
                                                 <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z"/>
                                             </svg>
                                         </span>
-                                        <input type="text" class="form-control border-primary bg-white text-primary" id="url" onClick="this.select();" readonly value="{{ .Server }}/p/{{ .URL }}" placeholder="URL" aria-label="URL" aria-describedby="basic-addon1">
+                                        <input type="text" class="form-control border-primary bg-white text-primary" id="url" onClick="this.select();" readonly value="{{ .Server }}/p/{{ .Paste.URL }}" placeholder="URL" aria-label="URL" aria-describedby="basic-addon1">
                                         <button class="btn btn-primary" type="button" id="buttonClippboard">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
                                                 <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
@@ -125,11 +138,11 @@
             </div>
         </div>
         <div class="col-3">
-            {{template "sidebar.html" .pastes}}
+            {{template "sidebar.html" .}}
         </div>
     </div>
 
-    {{template "footer.html" .version}}
+    {{template "footer.html" .}}
 
 </body>
 </html>

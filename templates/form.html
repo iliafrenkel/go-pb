@@ -1,6 +1,6 @@
 <form method="POST" action="/p/">
-    <div class="mb-5 row">
-        <div class="col-9 pt-3">
+    <div class="mb-5 row rounded border">
+        <div class="col-sm-9 pt-3 border-end">
             <div class="form-floating mb-3">
                 <input type="text" name="title" id="pasteTitle" placeholder="Paste title" class="form-control" aria-describedby="titleHelpBlock">
                 <label for="pasteTitle" class="form-label text-muted">Title (optional)</label>
@@ -10,7 +10,7 @@
                 <label for="pasteBody" class="form-label text-muted">Content</label>
             </div>
         </div>
-        <div class="col-3 d-flex flex-column justify-content-top pt-3 bg-light rounded">
+        <div class="col-sm-3 d-flex flex-column justify-content-top pt-3 bg-light rounded-end">
             <div class="form-floating mb-3">
                 <select class="form-select" id="pasteSyntax" name="syntax" aria-describedby="syntaxHelpBlock">
                     <option value="none" selected>Plain Text</option>
@@ -168,14 +168,14 @@
                     <option value="xquery">XQuery</option>
                     <option value="yaml">YAML</option>
                 </select>
-                <label for="pasteSyntax" class="form-label text-muted">Syntax highlighting</label>
+                <label for="pasteSyntax" class="form-label text-muted">Syntax</label>
             </div>
             <div class="form-floating mb-3">
                 <select class="form-select" id="pasteDeleteAfterRead" name="delete_after_read" aria-describedby="deleteafterreadHelpBlock">
-                    <option value="false" selected>No</option>
-                    <option value="true">Yes</option>
+                    <option value="no" selected>No</option>
+                    <option value="yes">Yes</option>
                 </select>
-                <label for="pasteDeleteAfterRead" class="form-label text-muted">Delete after first read</label>
+                <label for="pasteDeleteAfterRead" class="form-label text-muted">Burner</label>
             </div>
             <div class="form-floating mb-3">
                 <select class="form-select" id="pasteExpires" name="expires" aria-describedby="expiresHelpBlock">
@@ -195,7 +195,7 @@
                     <option value="1y">1 year</option>
                     <option value="3y">3 years</option>
                 </select>
-                <label for="pasteExpires" class="form-label text-muted">Paste will expire after</label>
+                <label for="pasteExpires" class="form-label text-muted">Expires</label>
             </div>
             <div class="form-floating mb-3">
                 <select class="form-select" id="pastePrivacy" name="privacy" aria-describedby="privacyHelpBlock">
@@ -203,18 +203,18 @@
                     <option value="private">Private</option>
                     <option value="unlisted">Unlisted</option>
                 </select>
-                <label for="pasteExpires" class="form-label text-muted">Paste privacy</label>
+                <label for="pasteExpires" class="form-label text-muted">Privacy</label>
             </div>
             <div class="form-floating mb-3">
                 <input type="text" name="password" id="pastePassword"  placeholder="Paste password" class="form-control" aria-describedby="pastePasswordHelpBlock">
-                <label for="pastePassword" class="form-label text-muted">Password (optional)</label>
+                <label for="pastePassword" class="form-label text-muted">Password</label>
             </div>
         </div>
     </div>
     <div class="mb-5 row">
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <input type="reset" value="Clear" class="btn btn-outline-secondary btn-lg me-md-2 w-25">
-            <input type="submit" value="Paste" class="btn btn-primary btn-lg me-md-2 w-25">
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-end">
+            <input type="reset" value="Clear" class="btn btn-outline-secondary btn-lg me-sm-2 w-25">
+            <input type="submit" value="Paste" class="btn btn-primary btn-lg me-sm-2 w-25">
         </div>
     </div>
 </form>

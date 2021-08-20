@@ -1,15 +1,19 @@
-<div class="card text-dark bg-white shadow-sm">
+<div class="card text-dark bg-white">
     <div class="card-header">
-        My Pastes (last 10)
+        {{if .User.Name}}
+            My Pastes (last 10)
+        {{else}}
+            Public pastes (last 10)
+        {{end}}
     </div>
-    {{if .}}
+    {{if .Pastes}}
     <div class="list-group list-group-flush">
-        {{range .}}
+        {{range .Pastes}}
             {{template "paste.html" .}}
         {{end}}
     </div>
     <div class="card-footer text-center">
-        <a href="/p/list" class="btn btn-outline-secondary btn-sm">All my pastes</a>
+        <a href="/l/" class="btn btn-outline-secondary btn-sm">All my pastes</a>
     </div>
     {{else}}
     <div class="card-body">

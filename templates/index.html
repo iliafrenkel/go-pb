@@ -8,7 +8,7 @@
     {{template "header.html" . }}
     
     <div class="row justify-content-center">
-        <div class="col-9">
+        <div class="col-sm-9">
             <div class="card border-0">
                 <div class="card-body">
                     <h5 class="card-title text-left">New Paste</h5>
@@ -16,12 +16,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-3">
-            {{template "sidebar.html" .pastes}}
+        <div class="col-sm-3">
+            {{template "sidebar.html" .}}
         </div>
     </div>
 
-    {{template "footer.html" .version}}
+    {{template "footer.html" .}}
 
 </body>
 </html>
