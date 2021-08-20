@@ -8,7 +8,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/handlers v1.5.1
-	github.com/gorilla/mux v1.7.3
+	github.com/gorilla/mux v1.8.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/lib/pq v1.10.2 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
