@@ -59,7 +59,8 @@ var opts struct {
 		TwitterCID     string        `long:"twitter-cid" env:"TWITTER_CID" default:"" description:"twitter client id used for oauth"`
 		TwitterCSEC    string        `long:"twitter-csec" env:"TWITTER_CSEC" default:"" description:"twitter client secret used for oauth"`
 	} `group:"auth" namespace:"auth" env-namespace:"GOPB_AUTH"`
-	Debug bool `long:"debug" env:"DEBUG" description:"debug mode"`
+	Debug   bool   `long:"debug" env:"GOPB_DEBUG" description:"debug mode"`
+	LogFile string `long:"log-file" env:"GOPB_LOG_FILE" default:"" description:"full path to the log file, default is stdout"`
 }
 
 func main() {
@@ -77,7 +78,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	log := setupLog(opts.Debug)
+	log := setupLog(opts.Debug, opts.LogFile)
 
 	if opts.Debug {
 		log.Logf("INFO Options: %+v", opts)
@@ -151,9 +152,30 @@ func main() {
 	log.Logf("INFO Sayōnara!")
 }
 
-func setupLog(dbg bool) *lgr.Logger {
-	if dbg {
-		return lgr.New(lgr.Debug, lgr.CallerFile, lgr.CallerFunc, lgr.Msec, lgr.LevelBraces)
+func setupLog(dbg bool, lf string) *lgr.Logger {
+	var stdout, stderr *os.File
+	var err error
+	if lf != "" {
+		stdout, err = os.OpenFile(lf, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
+			fmt.Printf("error opening log file: %v", err)
+			os.Exit(2)
+		}
+		stderr = stdout
+	} else {
+		stdout = os.Stdout
+		stderr = os.Stderr
 	}
-	return lgr.New()
+	if dbg {
+		return lgr.New(
+			lgr.Debug,
+			lgr.CallerFile,
+			lgr.CallerFunc,
+			lgr.Msec,
+			lgr.LevelBraces,
+			lgr.Out(stdout),
+			lgr.Err(stderr),
+		)
+	}
+	return lgr.New(lgr.Out(stdout), lgr.Err(stderr))
 }
