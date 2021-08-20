@@ -79,7 +79,7 @@ func (h *WebServer) showInternalError(w http.ResponseWriter, err error) {
 	}
 }
 
-// handleGetHomePage shows the homepage in reponse to a GET / request.
+// handleGetHomePage shows the homepage in response to a GET / request.
 func (h *WebServer) handleGetHomePage(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
 
