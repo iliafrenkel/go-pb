@@ -107,8 +107,12 @@ func (pg *PostgresDB) Find(req FindRequest) (pastes []Paste, err error) {
 		}
 	}
 
-	// err = pg.db.Limit(req.Limit).Offset(req.Skip).Find(&pastes, Paste{User: User{ID: req.UserID}}).Order(sort).Error
-	err = pg.db.Limit(req.Limit).Offset(req.Skip).Order(sort).Find(&pastes, "user_id = ?", req.UserID).Error
+	err = pg.db.
+		Limit(req.Limit).
+		Offset(req.Skip).
+		Order(sort).
+		Select("id", "title", "expires", "delete_after_read", "privacy", "password", "created_at", "syntax", "views").
+		Find(&pastes, "user_id = ?", req.UserID).Error
 	if err != nil {
 		return pastes, fmt.Errorf("PostgresDB.Find: %w", err)
 	}
