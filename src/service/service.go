@@ -9,7 +9,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -24,17 +23,23 @@ type Service struct {
 	store store.Interface
 }
 
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
 // ErrPasteNotFound and other common errors.
-var (
-	ErrPasteNotFound    = errors.New("paste not found")
-	ErrUserNotFound     = errors.New("user not found")
-	ErrPasteIsPrivate   = errors.New("paste is private")
-	ErrPasteHasPassword = errors.New("paste has password")
-	ErrWrongPassword    = errors.New("paste password is incorrect")
-	ErrStoreFailure     = errors.New("store opertation failed")
-	ErrEmptyBody        = errors.New("body is empty")
-	ErrWrongPrivacy     = errors.New("privacy is wrong")
-	ErrWrongDuration    = errors.New("wrong duration format")
+const (
+	ErrPasteNotFound    = Error("paste not found")
+	ErrUserNotFound     = Error("user not found")
+	ErrPasteIsPrivate   = Error("paste is private")
+	ErrPasteHasPassword = Error("paste has password")
+	ErrWrongPassword    = Error("paste password is incorrect")
+	ErrStoreFailure     = Error("store opertation failed")
+	ErrEmptyBody        = Error("body is empty")
+	ErrWrongPrivacy     = Error("privacy is wrong")
+	ErrWrongDuration    = Error("wrong duration format")
 )
 
 // PasteRequest is an input to Create method, normally comes from a web form.
