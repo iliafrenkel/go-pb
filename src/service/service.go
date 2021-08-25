@@ -244,7 +244,7 @@ func (s Service) UserPastes(uid string) ([]store.Paste, error) {
 	return pastes, nil
 }
 
-// GetCount returns total count of pastes and users.
-func (s Service) GetCount() (pastes, users int64) {
-	return s.store.Count()
+// GetTotals returns total count of pastes and users.
+func (s Service) GetTotals() (pastes, users int64) {
+	return s.store.Totals()
 }

@@ -18,14 +18,24 @@ import (
 // Interface defines methods that an implementation of a concrete storage
 // must provide.
 type Interface interface {
-	Count() (pastes, users int64)             // return total counts for pastes and users
+	Totals() (pastes, users int64)            // return total counts for pastes and users
 	Create(paste Paste) (id int64, err error) // create new paste and return its id
 	Delete(id int64) error                    // delete paste by id
 	Find(req FindRequest) ([]Paste, error)    // find pastes
+	Count(uid string) int64                   // return pastes count for a user
 	Get(id int64) (Paste, error)              // get paste by id
 	Update(paste Paste) (Paste, error)        // update paste information and return updated paste
 	SaveUser(usr User) (id string, err error) // creates or updates a user
 	User(id string) (User, error)             // get user by id
+}
+
+// FindRequest is an input to the Find method
+type FindRequest struct {
+	UserID string
+	Sort   string
+	Since  time.Time
+	Limit  int
+	Skip   int
 }
 
 // User represents a single user.
@@ -119,13 +129,4 @@ func (p Paste) Expiration() string {
 	}
 
 	return p.Expires.Sub(p.CreatedAt).String()
-}
-
-// FindRequest is an input to the Find method
-type FindRequest struct {
-	UserID string
-	Sort   string
-	Since  time.Time
-	Limit  int
-	Skip   int
 }

@@ -38,7 +38,7 @@ type PageData struct {
 // Generate HTML from a template with PageData.
 func (h *Server) generateHTML(tpl string, p PageData) []byte {
 	var html bytes.Buffer
-	pcnt, ucnt := h.service.GetCount()
+	pcnt, ucnt := h.service.GetTotals()
 	var pd = PageData{
 		Title:        h.options.BrandName + " - " + p.Title,
 		Brand:        h.options.BrandName,

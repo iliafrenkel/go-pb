@@ -91,8 +91,8 @@ var findTestCases = []testCaseForFind{
 	},
 }
 
-// TestCount tests that we can count pastes and users correctly.
-func TestCount(t *testing.T) {
+// TestTotals tests that we can count pastes and users correctly.
+func TestTotals(t *testing.T) {
 	t.Parallel()
 
 	// We need a dedicated store because other test running in parallel
@@ -127,13 +127,35 @@ func TestCount(t *testing.T) {
 	// Check the counts
 	wantUsers := uCnt
 	wantPastes := uCnt * pCnt
-	gotPastes, gotUsers := m.Count()
+	gotPastes, gotUsers := m.Totals()
 
 	if wantUsers != gotUsers {
 		t.Errorf("users count is incorrect, want %d, got %d", wantUsers, gotUsers)
 	}
 	if wantPastes != gotPastes {
 		t.Errorf("pastes count is incorrect, want %d, got %d", wantPastes, gotPastes)
+	}
+}
+
+func TestCount(t *testing.T) {
+	t.Parallel()
+
+	usr := randomUser()
+	_, err := mdb.SaveUser(usr)
+	if err != nil {
+		t.Fatalf("failed to save user: %v", err)
+	}
+	pCnt := rand.Int63n(20)
+	for i := int64(0); i < pCnt; i++ {
+		paste := randomPaste(usr)
+		_, err = mdb.Create(paste)
+		if err != nil {
+			t.Fatalf("failed to create paste: %v", err)
+		}
+	}
+	got := mdb.Count(usr.ID)
+	if got != pCnt {
+		t.Errorf("pastes count for user %s is incorrect, want %d got %d", usr.ID, pCnt, got)
 	}
 }
 
