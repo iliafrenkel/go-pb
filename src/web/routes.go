@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-pkgz/auth/token"
 	"github.com/gorilla/mux"
@@ -26,6 +27,7 @@ type PageData struct {
 	User         token.User
 	Pastes       []store.Paste
 	Paste        store.Paste
+	Count        int64
 	Server       string
 	Version      string
 	ErrorCode    int
@@ -49,6 +51,7 @@ func (h *Server) generateHTML(tpl string, p PageData) []byte {
 		User:         p.User,
 		Pastes:       p.Pastes,
 		Paste:        p.Paste,
+		Count:        p.Count,
 		Server:       h.options.Proto + "://" + h.options.Addr,
 		Version:      h.options.Version,
 		ErrorCode:    p.ErrorCode,
@@ -308,14 +311,26 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 // handleGetPastesList generates a page to view a list of pastes.
 func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
+	limit := 10
+	vars := mux.Vars(r)
+	skip, err := strconv.Atoi(vars["skip"])
+	if err != nil {
+		skip = 0
+	}
 
-	pastes, err := h.service.UserPastes(usr.ID)
+	pastes, err := h.service.GetPastes(usr.ID, "-created", limit, skip)
 	if err != nil {
 		h.showInternalError(w, err)
 		return
 	}
 
-	_, e := w.Write(h.generateHTML("list.html", PageData{Title: "Pastes", Pastes: pastes, User: usr}))
+	count := h.service.PastesCount(usr.ID)
+	_, e := w.Write(h.generateHTML("list.html", PageData{
+		Title:  "Pastes",
+		Count:  count,
+		Pastes: pastes,
+		User:   usr,
+	}))
 	if e != nil {
 		h.log.Logf("ERROR handleGetPastesList: failed to write: %v", e)
 	}
