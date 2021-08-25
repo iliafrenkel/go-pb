@@ -229,7 +229,7 @@ func (s Service) GetOrUpdateUser(usr store.User) (store.User, error) {
 	return usr, nil
 }
 
-// UserPastes returns a list of the last 10 paste for a user.
+// UserPastes returns a list of the last 10 paste for a user ordered by creation date.
 func (s Service) UserPastes(uid string) ([]store.Paste, error) {
 	pastes, err := s.store.Find(store.FindRequest{
 		UserID: uid,
@@ -242,6 +242,25 @@ func (s Service) UserPastes(uid string) ([]store.Paste, error) {
 		return nil, fmt.Errorf("Service.UserPastes: %w: (%v)", ErrStoreFailure, err)
 	}
 	return pastes, nil
+}
+
+func (s Service) GetPastes(uid string, sort string, limit int, skip int) ([]store.Paste, error) {
+	pastes, err := s.store.Find(store.FindRequest{
+		UserID: uid,
+		Sort:   sort,
+		Since:  time.Time{},
+		Limit:  limit,
+		Skip:   skip,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Service.GetPastes: %w: (%v)", ErrStoreFailure, err)
+	}
+	return pastes, nil
+}
+
+// PastesCount return a number of pastes for a user.
+func (s Service) PastesCount(uid string) int64 {
+	return s.store.Count(uid)
 }
 
 // GetTotals returns total count of pastes and users.
