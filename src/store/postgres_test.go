@@ -1,10 +1,31 @@
 package store
 
 import (
+	"math/rand"
 	"sort"
 	"testing"
 	"time"
 )
+
+func TestCountPDB(t *testing.T) {
+	usr := randomUser()
+	_, err := pdb.SaveUser(usr)
+	if err != nil {
+		t.Fatalf("failed to save user: %v", err)
+	}
+	pCnt := rand.Int63n(20)
+	for i := int64(0); i < pCnt; i++ {
+		paste := randomPaste(usr)
+		_, err = pdb.Create(paste)
+		if err != nil {
+			t.Fatalf("failed to create paste: %v", err)
+		}
+	}
+	got := pdb.Count(usr.ID)
+	if got != pCnt {
+		t.Errorf("pastes count for user %s is incorrect, want %d got %d", usr.ID, pCnt, got)
+	}
+}
 
 // TestDelete tests that we can delete a paste.
 func TestDeletePDB(t *testing.T) {
