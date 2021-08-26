@@ -7,6 +7,7 @@ package web
 import (
 	"bytes"
 	"errors"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -15,6 +16,14 @@ import (
 	"github.com/iliafrenkel/go-pb/src/service"
 	"github.com/iliafrenkel/go-pb/src/store"
 )
+
+// Paginator struct used to build paginators on list pages.
+type Paginator struct {
+	Number    int
+	Offset    int
+	Size      int
+	IsCurrent bool
+}
 
 // PageData contains the data that any page template may need.
 type PageData struct {
@@ -27,7 +36,7 @@ type PageData struct {
 	User         token.User
 	Pastes       []store.Paste
 	Paste        store.Paste
-	Count        int64
+	Pages        []Paginator
 	Server       string
 	Version      string
 	ErrorCode    int
@@ -51,7 +60,7 @@ func (h *Server) generateHTML(tpl string, p PageData) []byte {
 		User:         p.User,
 		Pastes:       p.Pastes,
 		Paste:        p.Paste,
-		Count:        p.Count,
+		Pages:        p.Pages,
 		Server:       h.options.Proto + "://" + h.options.Addr,
 		Version:      h.options.Version,
 		ErrorCode:    p.ErrorCode,
@@ -311,9 +320,8 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 // handleGetPastesList generates a page to view a list of pastes.
 func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
-	limit := 10
-	vars := mux.Vars(r)
-	skip, err := strconv.Atoi(vars["skip"])
+	limit := 10 //TODO: make it configurable as PageSize
+	skip, err := strconv.Atoi(r.FormValue("skip"))
 	if err != nil {
 		skip = 0
 	}
@@ -323,12 +331,23 @@ func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 		h.showInternalError(w, err)
 		return
 	}
-
 	count := h.service.PastesCount(usr.ID)
+	pageCount := int(math.Ceil(float64(count) / float64(limit)))
+
+	pages := make([]Paginator, pageCount)
+	for i := 1; i <= pageCount; i++ {
+		pages[i-1] = Paginator{
+			Number:    i,
+			Offset:    (i - 1) * limit,
+			Size:      limit,
+			IsCurrent: skip/limit == i-1,
+		}
+	}
+
 	_, e := w.Write(h.generateHTML("list.html", PageData{
 		Title:  "Pastes",
-		Count:  count,
 		Pastes: pastes,
+		Pages:  pages,
 		User:   usr,
 	}))
 	if e != nil {

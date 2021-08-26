@@ -120,8 +120,7 @@ func (pg *PostgresDB) Find(req FindRequest) (pastes []Paste, err error) {
 }
 
 func (pg *PostgresDB) Count(uid string) (pastes int64) {
-	pg.db.Model(&Paste{}).Count(&pastes).Where("user_id = ?", uid)
-	fmt.Printf("user: %s, count: %d", uid, pastes)
+	pg.db.Model(&Paste{}).Where("user_id = ?", uid).Count(&pastes)
 	return
 }
 
