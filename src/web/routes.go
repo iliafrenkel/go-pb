@@ -23,7 +23,7 @@ func (h *Server) showInternalError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
 	p := page.New(h.templates,
 		page.Template("error.html"),
-		page.Title("Error"),
+		page.Title(h.options.BrandName+" - Error"),
 		page.ErrorCode(http.StatusInternalServerError),
 		page.ErrorText(http.StatusText(http.StatusInternalServerError)),
 	)
@@ -39,7 +39,7 @@ func (h *Server) showError(w http.ResponseWriter, httpError int, msg string) {
 	w.WriteHeader(httpError)
 	p := page.New(h.templates,
 		page.Template("error.html"),
-		page.Title("Error"),
+		page.Title(h.options.BrandName+" - Error"),
 		page.ErrorCode(httpError),
 		page.ErrorText(http.StatusText(httpError)),
 		page.ErrorMessage(msg),
@@ -89,7 +89,7 @@ func (h *Server) handleGetHomePage(w http.ResponseWriter, r *http.Request) {
 
 	h.showPage(w,
 		page.Template("index.html"),
-		page.Title("Home"),
+		page.Title(h.options.BrandName+" - Home"),
 		page.Pastes(pastes),
 		page.User(usr),
 	)
@@ -154,7 +154,7 @@ func (h *Server) handlePostPaste(w http.ResponseWriter, r *http.Request) {
 
 	h.showPage(w,
 		page.Template("view.html"),
-		page.Title("Paste"),
+		page.Title(h.options.BrandName+" - Paste"),
 		page.Pastes(pastes),
 		page.Paste(paste),
 		page.User(usr),
@@ -195,9 +195,10 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 		}
 		// Check if paste is password-protected
 		if errors.Is(err, service.ErrPasteHasPassword) || errors.Is(err, service.ErrWrongPassword) {
+			w.WriteHeader(http.StatusUnauthorized)
 			h.showPage(w,
 				page.Template("password.html"),
-				page.Title("Password"),
+				page.Title(h.options.BrandName+" - Password"),
 				page.PasteID(id),
 				page.User(usr),
 				page.ErrorMessage("This paste is protected by a password"),
@@ -218,7 +219,7 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 
 	h.showPage(w,
 		page.Template("view.html"),
-		page.Title("Paste"),
+		page.Title(h.options.BrandName+" - Paste"),
 		page.Pastes(pastes),
 		page.Paste(paste),
 		page.User(usr),
@@ -228,7 +229,7 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 // handleGetPastesList generates a page to view a list of pastes.
 func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
-	limit := 10 //TODO: make it configurable as PageSize
+	limit := 10 //TODO: make it configurable as PageSize or MaxPastesPerPage
 	skip, err := strconv.Atoi(r.FormValue("skip"))
 	if err != nil {
 		skip = 0
@@ -239,24 +240,28 @@ func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 		h.showInternalError(w, err)
 		return
 	}
-	count := h.service.PastesCount(usr.ID)
-	pageCount := int(math.Ceil(float64(count) / float64(limit)))
+	count := h.service.PastesCount(usr.ID)                       // number of user pastes
+	pageCount := int(math.Ceil(float64(count) / float64(limit))) // number of pages
 
-	pages := make([]page.Paginator, pageCount)
+	paginator := page.Paginator{
+		Current:    skip/limit + 1,
+		Last:       pageCount,
+		LastOffset: (pageCount - 1) * limit,
+		Pages:      make([]page.PaginatorLink, pageCount),
+	}
+
 	for i := 1; i <= pageCount; i++ {
-		pages[i-1] = page.Paginator{
-			Number:    i,
-			Offset:    (i - 1) * limit,
-			Size:      limit,
-			IsCurrent: skip/limit == i-1,
+		paginator.Pages[i-1] = page.PaginatorLink{
+			Number: i,
+			Offset: (i - 1) * limit,
 		}
 	}
 
 	h.showPage(w,
 		page.Template("list.html"),
-		page.Title("Pastes"),
+		page.Title(h.options.BrandName+" - Pastes"),
 		page.Pastes(pastes),
-		page.Pages(pages),
+		page.PageLinks(paginator),
 		page.User(usr),
 	)
 }

@@ -25,11 +25,12 @@ type Page struct {
 	Totals  Stats  // totals, such as total number of pastes and users
 
 	// not common for all pages
-	User    token.User    // user details parsed from the JWT token
-	PasteID string        // paste ID (URL) for pages that need redirect/post back
-	Pastes  []store.Paste // a list of pastes
-	Paste   store.Paste   // a single paste
-	Pages   []Paginator   // paginator for list pages
+	User      token.User    // user details parsed from the JWT token
+	PasteID   string        // paste ID (URL) for pages that need redirect/post back
+	Pastes    []store.Paste // a list of pastes
+	Paste     store.Paste   // a single paste
+	PageLinks Paginator     // paginator for list pages
+	LastPage  int           // offset for the last paginator link
 
 	// only for error pages
 	ErrorCode    int    // error code, to show on the error page (404, 500, etc.)
@@ -50,12 +51,18 @@ type Stats struct {
 	Users  int64
 }
 
+// PaginatorLink contains all the data needed to construct a single paginator link.
+type PaginatorLink struct {
+	Number int // page number
+	Offset int // offset for the page
+}
+
 // Paginator struct used to build paginators on list pages.
 type Paginator struct {
-	Number    int
-	Offset    int
-	Size      int
-	IsCurrent bool
+	Current    int             // current page number
+	Last       int             // last page number
+	LastOffset int             // last page number
+	Pages      []PaginatorLink // a list of links
 }
 
 // Title sets page title.
@@ -142,10 +149,10 @@ func Paste(paste store.Paste) Data {
 	}
 }
 
-// Paste sets a single paste.
-func Pages(pages []Paginator) Data {
+// PageLinks sets paginator for the page.
+func PageLinks(paginator Paginator) Data {
 	return func(p *Page) {
-		p.Pages = pages
+		p.PageLinks = paginator
 	}
 }
 
