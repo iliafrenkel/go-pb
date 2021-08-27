@@ -16,11 +16,41 @@
                     {{template "paste.html" .}}
                 {{end}}
                 </div>
-                {{if and .Pages (gt (len .Pages) 1)}}
+                {{if .PageLinks.Pages}}
                 <nav class="mt-3" aria-label="...">
                     <ul class="pagination justify-content-center">
-                        {{range .Pages}}
-                            <li class="page-item{{if .IsCurrent}} active{{end}}"><a class="page-link" href="/l/?skip={{.Offset}}">{{.Number}}</a></li>
+                        {{if eq .PageLinks.Current 1}}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {{else}}
+                        <li class="page-item">
+                            <a class="page-link" href="/l/" aria-label="First">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {{end}}
+                        {{range .PageLinks.Pages}}
+                            {{if eq .Number $.PageLinks.Current}}
+                                <li class="page-item active"><span class="page-link">{{.Number}}</span></li>
+                            {{else}}
+                                <li class="page-item"><a class="page-link" href="/l/?skip={{.Offset}}">{{.Number}}</a></li>
+                            {{end}}
+                        {{end}}
+                        {{if eq .PageLinks.Current .PageLinks.Last}}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tab-index="-1" aria-disabled="true">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {{else}}
+                        <li class="page-item">
+                            <a class="page-link" href="/l/?skip={{.PageLinks.LastOffset}}" aria-label="Last">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
                         {{end}}
                     </ul>
                 </nav>
