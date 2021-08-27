@@ -7,13 +7,23 @@ package web
 import (
 	"bytes"
 	"errors"
+	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/go-pkgz/auth/token"
 	"github.com/gorilla/mux"
 	"github.com/iliafrenkel/go-pb/src/service"
 	"github.com/iliafrenkel/go-pb/src/store"
 )
+
+// Paginator struct used to build paginators on list pages.
+type Paginator struct {
+	Number    int
+	Offset    int
+	Size      int
+	IsCurrent bool
+}
 
 // PageData contains the data that any page template may need.
 type PageData struct {
@@ -26,6 +36,7 @@ type PageData struct {
 	User         token.User
 	Pastes       []store.Paste
 	Paste        store.Paste
+	Pages        []Paginator
 	Server       string
 	Version      string
 	ErrorCode    int
@@ -38,7 +49,7 @@ type PageData struct {
 // Generate HTML from a template with PageData.
 func (h *Server) generateHTML(tpl string, p PageData) []byte {
 	var html bytes.Buffer
-	pcnt, ucnt := h.service.GetCount()
+	pcnt, ucnt := h.service.GetTotals()
 	var pd = PageData{
 		Title:        h.options.BrandName + " - " + p.Title,
 		Brand:        h.options.BrandName,
@@ -49,6 +60,7 @@ func (h *Server) generateHTML(tpl string, p PageData) []byte {
 		User:         p.User,
 		Pastes:       p.Pastes,
 		Paste:        p.Paste,
+		Pages:        p.Pages,
 		Server:       h.options.Proto + "://" + h.options.Addr,
 		Version:      h.options.Version,
 		ErrorCode:    p.ErrorCode,
@@ -308,14 +320,36 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 // handleGetPastesList generates a page to view a list of pastes.
 func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
+	limit := 10 //TODO: make it configurable as PageSize
+	skip, err := strconv.Atoi(r.FormValue("skip"))
+	if err != nil {
+		skip = 0
+	}
 
-	pastes, err := h.service.UserPastes(usr.ID)
+	pastes, err := h.service.GetPastes(usr.ID, "-created", limit, skip)
 	if err != nil {
 		h.showInternalError(w, err)
 		return
 	}
+	count := h.service.PastesCount(usr.ID)
+	pageCount := int(math.Ceil(float64(count) / float64(limit)))
 
-	_, e := w.Write(h.generateHTML("list.html", PageData{Title: "Pastes", Pastes: pastes, User: usr}))
+	pages := make([]Paginator, pageCount)
+	for i := 1; i <= pageCount; i++ {
+		pages[i-1] = Paginator{
+			Number:    i,
+			Offset:    (i - 1) * limit,
+			Size:      limit,
+			IsCurrent: skip/limit == i-1,
+		}
+	}
+
+	_, e := w.Write(h.generateHTML("list.html", PageData{
+		Title:  "Pastes",
+		Pastes: pastes,
+		Pages:  pages,
+		User:   usr,
+	}))
 	if e != nil {
 		h.log.Logf("ERROR handleGetPastesList: failed to write: %v", e)
 	}

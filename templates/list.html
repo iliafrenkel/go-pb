@@ -16,6 +16,15 @@
                     {{template "paste.html" .}}
                 {{end}}
                 </div>
+                {{if and .Pages (gt (len .Pages) 1)}}
+                <nav class="mt-3" aria-label="...">
+                    <ul class="pagination justify-content-center">
+                        {{range .Pages}}
+                            <li class="page-item{{if .IsCurrent}} active{{end}}"><a class="page-link" href="/l/?skip={{.Offset}}">{{.Number}}</a></li>
+                        {{end}}
+                    </ul>
+                </nav>
+                {{end}}
             {{else}}
                 <h1 class="display-6 text-center">Nothing to see here yet.</h1>
             {{end}}

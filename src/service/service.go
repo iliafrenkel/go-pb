@@ -9,7 +9,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -24,17 +23,23 @@ type Service struct {
 	store store.Interface
 }
 
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
 // ErrPasteNotFound and other common errors.
-var (
-	ErrPasteNotFound    = errors.New("paste not found")
-	ErrUserNotFound     = errors.New("user not found")
-	ErrPasteIsPrivate   = errors.New("paste is private")
-	ErrPasteHasPassword = errors.New("paste has password")
-	ErrWrongPassword    = errors.New("paste password is incorrect")
-	ErrStoreFailure     = errors.New("store opertation failed")
-	ErrEmptyBody        = errors.New("body is empty")
-	ErrWrongPrivacy     = errors.New("privacy is wrong")
-	ErrWrongDuration    = errors.New("wrong duration format")
+const (
+	ErrPasteNotFound    = Error("paste not found")
+	ErrUserNotFound     = Error("user not found")
+	ErrPasteIsPrivate   = Error("paste is private")
+	ErrPasteHasPassword = Error("paste has password")
+	ErrWrongPassword    = Error("paste password is incorrect")
+	ErrStoreFailure     = Error("store opertation failed")
+	ErrEmptyBody        = Error("body is empty")
+	ErrWrongPrivacy     = Error("privacy is wrong")
+	ErrWrongDuration    = Error("wrong duration format")
 )
 
 // PasteRequest is an input to Create method, normally comes from a web form.
@@ -224,7 +229,7 @@ func (s Service) GetOrUpdateUser(usr store.User) (store.User, error) {
 	return usr, nil
 }
 
-// UserPastes returns a list of the last 10 paste for a user.
+// UserPastes returns a list of the last 10 paste for a user ordered by creation date.
 func (s Service) UserPastes(uid string) ([]store.Paste, error) {
 	pastes, err := s.store.Find(store.FindRequest{
 		UserID: uid,
@@ -239,7 +244,28 @@ func (s Service) UserPastes(uid string) ([]store.Paste, error) {
 	return pastes, nil
 }
 
-// GetCount returns total count of pastes and users.
-func (s Service) GetCount() (pastes, users int64) {
-	return s.store.Count()
+// Get a list of pastes for a particular user.
+//
+func (s Service) GetPastes(uid string, sort string, limit int, skip int) ([]store.Paste, error) {
+	pastes, err := s.store.Find(store.FindRequest{
+		UserID: uid,
+		Sort:   sort,
+		Since:  time.Time{},
+		Limit:  limit,
+		Skip:   skip,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Service.GetPastes: %w: (%v)", ErrStoreFailure, err)
+	}
+	return pastes, nil
+}
+
+// PastesCount return a number of pastes for a user.
+func (s Service) PastesCount(uid string) int64 {
+	return s.store.Count(uid)
+}
+
+// GetTotals returns total count of pastes and users.
+func (s Service) GetTotals() (pastes, users int64) {
+	return s.store.Totals()
 }

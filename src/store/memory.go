@@ -32,7 +32,7 @@ func NewMemDB() *MemDB {
 }
 
 // Count returns total count of pastes and users.
-func (m *MemDB) Count() (pastes, users int64) {
+func (m *MemDB) Totals() (pastes, users int64) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -105,6 +105,19 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 	}
 
 	return pastes[skip:end], nil
+}
+
+func (m *MemDB) Count(uid string) int64 {
+	m.RLock()
+	defer m.RUnlock()
+	// Count all the pastes for a user
+	var cnt int64
+	for _, p := range m.pastes {
+		if p.User.ID == uid {
+			cnt++
+		}
+	}
+	return cnt
 }
 
 // Get returns a paste by ID.
