@@ -48,7 +48,7 @@ func NewPostgresDB(conn string, autoMigrate bool) (*PostgresDB, error) {
 	return &pg, nil
 }
 
-// Count returns total count of pastes and users.
+// Totals returns total count of pastes and users.
 func (pg *PostgresDB) Totals() (pastes, users int64) {
 	pg.db.Model(&Paste{}).Count(&pastes)
 	pg.db.Model(&User{}).Count(&users)
@@ -119,6 +119,7 @@ func (pg *PostgresDB) Find(req FindRequest) (pastes []Paste, err error) {
 	return pastes, nil
 }
 
+// Count returns a number of pastes for a user.
 func (pg *PostgresDB) Count(uid string) (pastes int64) {
 	pg.db.Model(&Paste{}).Where("user_id = ?", uid).Count(&pastes)
 	return

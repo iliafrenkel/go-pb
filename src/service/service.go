@@ -23,6 +23,7 @@ type Service struct {
 	store store.Interface
 }
 
+// Error is a base type for all other service errors.
 type Error string
 
 func (e Error) Error() string {
@@ -244,8 +245,7 @@ func (s Service) UserPastes(uid string) ([]store.Paste, error) {
 	return pastes, nil
 }
 
-// Get a list of pastes for a particular user.
-//
+// GetPastes returns a list of pastes for a particular user.
 func (s Service) GetPastes(uid string, sort string, limit int, skip int) ([]store.Paste, error) {
 	pastes, err := s.store.Find(store.FindRequest{
 		UserID: uid,

@@ -31,7 +31,7 @@ func NewMemDB() *MemDB {
 	return &s
 }
 
-// Count returns total count of pastes and users.
+// Totals returns total count of pastes and users.
 func (m *MemDB) Totals() (pastes, users int64) {
 	m.RLock()
 	defer m.RUnlock()
@@ -107,6 +107,7 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 	return pastes[skip:end], nil
 }
 
+// Count returns a number of pastes for a user.
 func (m *MemDB) Count(uid string) int64 {
 	m.RLock()
 	defer m.RUnlock()
