@@ -150,6 +150,10 @@ func (s Service) NewPaste(pr PasteRequest) (store.Paste, error) {
 			return store.Paste{}, fmt.Errorf("Service.NewPaste: %w: user id [%s] (%v)", ErrUserNotFound, pr.UserID, err)
 		}
 	}
+	// Set privacy to public for Anonymous user
+	if usr.ID == "" {
+		pr.Privacy = "public"
+	}
 	// Default syntax to "text"
 	if pr.Syntax == "" {
 		pr.Syntax = "text"
