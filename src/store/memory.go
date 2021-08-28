@@ -68,7 +68,9 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 	// Find all the pastes for a user
 	for _, p := range m.pastes {
 		if p.User.ID == req.UserID && p.CreatedAt.After(req.Since) {
-			pastes = append(pastes, p)
+			if req.Privacy != "" && p.Privacy == req.Privacy {
+				pastes = append(pastes, p)
+			}
 		}
 	}
 	m.RUnlock()

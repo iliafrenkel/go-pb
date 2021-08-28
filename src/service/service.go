@@ -264,6 +264,22 @@ func (s Service) GetPastes(uid string, sort string, limit int, skip int) ([]stor
 	return pastes, nil
 }
 
+// GetPublicPastes returns a list of public pastes.
+func (s Service) GetPublicPastes(uid string, sort string, limit int, skip int) ([]store.Paste, error) {
+	pastes, err := s.store.Find(store.FindRequest{
+		UserID:  uid,
+		Sort:    sort,
+		Since:   time.Time{},
+		Limit:   limit,
+		Skip:    skip,
+		Privacy: "public",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Service.GetPublicPastes: %w: (%v)", ErrStoreFailure, err)
+	}
+	return pastes, nil
+}
+
 // PastesCount return a number of pastes for a user.
 func (s Service) PastesCount(uid string) int64 {
 	return s.store.Count(uid)

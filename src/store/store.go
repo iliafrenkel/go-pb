@@ -31,11 +31,12 @@ type Interface interface {
 
 // FindRequest is an input to the Find method
 type FindRequest struct {
-	UserID string
-	Sort   string
-	Since  time.Time
-	Limit  int
-	Skip   int
+	UserID  string
+	Sort    string
+	Since   time.Time
+	Limit   int
+	Skip    int
+	Privacy string
 }
 
 // User represents a single user.

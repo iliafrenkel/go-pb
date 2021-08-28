@@ -184,7 +184,7 @@ func Template(name string) Data {
 	}
 }
 
-// NewPage returns a new page with all common properties set.
+// New returns a new page.
 func New(t *template.Template, data ...Data) *Page {
 	p := Page{
 		templates: t,

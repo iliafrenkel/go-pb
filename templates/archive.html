@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head.html" .}}
+</head>
+<body class="container">
+    
+    {{template "header.html" .}}
+    
+    <div class="row justify-content-center">
+        <div class="col-9">
+            {{if .Pastes}}
+                <h5 class="card-title text-center">Archive of Public Pastes</h5>
+                <div class="list-group">
+                {{range .Pastes}}
+                    {{template "paste.html" .}}
+                {{end}}
+                </div>
+                {{if .PageLinks.Pages}}
+                <nav class="mt-3" aria-label="...">
+                    <ul class="pagination justify-content-center">
+                        {{if eq .PageLinks.Current 1}}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {{else}}
+                        <li class="page-item">
+                            <a class="page-link" href="/a/" aria-label="First">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {{end}}
+                        {{range .PageLinks.Pages}}
+                            {{if eq .Number $.PageLinks.Current}}
+                                <li class="page-item active"><span class="page-link">{{.Number}}</span></li>
+                            {{else}}
+                                <li class="page-item"><a class="page-link" href="/a/?skip={{.Offset}}">{{.Number}}</a></li>
+                            {{end}}
+                        {{end}}
+                        {{if eq .PageLinks.Current .PageLinks.Last}}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tab-index="-1" aria-disabled="true">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {{else}}
+                        <li class="page-item">
+                            <a class="page-link" href="/a/?skip={{.PageLinks.LastOffset}}" aria-label="Last">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {{end}}
+                    </ul>
+                </nav>
+                {{end}}
+            {{else}}
+                <h1 class="display-6 text-center">Nothing to see here yet.</h1>
+            {{end}}
+        </div>
+        <div class="col-3">
+            {{template "sidebar.html" .}}
+        </div>
+    </div>
+
+    {{template "footer.html" .}}
+
+</body>
+</html>
