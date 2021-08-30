@@ -20,9 +20,21 @@ import (
 // showInternalError writes 500 Internal Server Error page.
 func (h *Server) showInternalError(w http.ResponseWriter, err error) {
 	h.log.Logf("ERROR : %v", err)
+	pastes, users := h.service.GetTotals()
+	totals := page.Stats{
+		Pastes: pastes,
+		Users:  users,
+	}
 	w.WriteHeader(http.StatusInternalServerError)
 	p := page.New(h.templates,
 		page.Template("error.html"),
+		page.Brand(h.options.BrandName),
+		page.Tagline(h.options.BrandTagline),
+		page.Logo(h.options.Logo),
+		page.Theme(h.options.BootstrapTheme),
+		page.Server(h.options.Proto+"://"+h.options.Addr),
+		page.Version(h.options.Version),
+		page.Totals(totals),
 		page.Title(h.options.BrandName+" - Error"),
 		page.ErrorCode(http.StatusInternalServerError),
 		page.ErrorText(http.StatusText(http.StatusInternalServerError)),
@@ -36,9 +48,21 @@ func (h *Server) showInternalError(w http.ResponseWriter, err error) {
 
 // showError writes an error page.
 func (h *Server) showError(w http.ResponseWriter, httpError int, msg string) {
+	pastes, users := h.service.GetTotals()
+	totals := page.Stats{
+		Pastes: pastes,
+		Users:  users,
+	}
 	w.WriteHeader(httpError)
 	p := page.New(h.templates,
 		page.Template("error.html"),
+		page.Brand(h.options.BrandName),
+		page.Tagline(h.options.BrandTagline),
+		page.Logo(h.options.Logo),
+		page.Theme(h.options.BootstrapTheme),
+		page.Server(h.options.Proto+"://"+h.options.Addr),
+		page.Version(h.options.Version),
+		page.Totals(totals),
 		page.Title(h.options.BrandName+" - Error"),
 		page.ErrorCode(httpError),
 		page.ErrorText(http.StatusText(httpError)),
