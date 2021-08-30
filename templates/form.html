@@ -201,6 +201,7 @@
                 {{if .User.Name}}
                 <select class="form-select" id="pastePrivacy" name="privacy" aria-describedby="privacyHelpBlock">
                 {{else}}
+                <input type="hidden" name="privacy" value="public">
                 <select class="form-select" id="pastePrivacy" name="privacy" aria-describedby="privacyHelpBlock" aria-label="Disabled" disabled title="Only logged in users can change privacy">
                 {{end}}
                     <option value="public" selected>Public</option>
