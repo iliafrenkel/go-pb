@@ -195,8 +195,10 @@ func TestNewPasteWithExpirationMonths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create new paste: %v", err)
 	}
-	if time.Until(p.Expires.AddDate(0, -6, 0)) > time.Second {
-		t.Errorf("expected paste expiration to be less than 6 months, got %v", p.Expires)
+	got := time.Until(p.Expires.AddDate(0, -6, 0))
+	want := time.Second * 10
+	if got > want {
+		t.Errorf("expected paste expiration [%v] to be less than 6 months, got %v", p.Expires.AddDate(0, -6, 0), got)
 	}
 }
 
@@ -414,7 +416,7 @@ func TestGetUserPastes(t *testing.T) {
 		}
 	}
 
-	pastes, err := svc.UserPastes(u.ID)
+	pastes, err := svc.GetPastes(u.ID, "", 10, 0)
 	if err != nil {
 		t.Errorf("failed to get user pastes: %v", err)
 	}

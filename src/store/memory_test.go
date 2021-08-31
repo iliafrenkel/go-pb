@@ -153,7 +153,7 @@ func TestCount(t *testing.T) {
 			t.Fatalf("failed to create paste: %v", err)
 		}
 	}
-	got := mdb.Count(usr.ID)
+	got := mdb.Count(FindRequest{UserID: usr.ID})
 	if got != pCnt {
 		t.Errorf("pastes count for user %s is incorrect, want %d got %d", usr.ID, pCnt, got)
 	}

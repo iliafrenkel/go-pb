@@ -65,12 +65,14 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 	pastes = []Paste{}
 
 	m.RLock()
-	// Find all the pastes for a user
+	// Find all the pastes for a user.
 	for _, p := range m.pastes {
-		if p.User.ID == req.UserID && p.CreatedAt.After(req.Since) {
+		if req.UserID == "" {
 			if req.Privacy != "" && p.Privacy == req.Privacy {
 				pastes = append(pastes, p)
 			}
+		} else if p.User.ID == req.UserID {
+			pastes = append(pastes, p)
 		}
 	}
 	m.RUnlock()
@@ -110,13 +112,17 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 }
 
 // Count returns a number of pastes for a user.
-func (m *MemDB) Count(uid string) int64 {
+func (m *MemDB) Count(req FindRequest) int64 {
 	m.RLock()
 	defer m.RUnlock()
 	// Count all the pastes for a user
 	var cnt int64
 	for _, p := range m.pastes {
-		if p.User.ID == uid {
+		if p.User.ID == "" {
+			if req.Privacy != "" && p.Privacy == req.Privacy {
+				cnt++
+			}
+		} else if p.User.ID == req.UserID && p.CreatedAt.After(req.Since) {
 			cnt++
 		}
 	}

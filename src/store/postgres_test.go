@@ -21,7 +21,7 @@ func TestCountPDB(t *testing.T) {
 			t.Fatalf("failed to create paste: %v", err)
 		}
 	}
-	got := pdb.Count(usr.ID)
+	got := pdb.Count(FindRequest{UserID: usr.ID})
 	if got != pCnt {
 		t.Errorf("pastes count for user %s is incorrect, want %d got %d", usr.ID, pCnt, got)
 	}

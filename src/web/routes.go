@@ -101,11 +101,22 @@ func (h *Server) showPage(w http.ResponseWriter, data ...page.Data) {
 	}
 }
 
+//getUserPastes returns 10 most recent posts for the user. If there is no user
+// anonymous user is assumed and 10 most recent public pastes are retuned.
+func (h *Server) getUserPastes(uid string) (pastes []store.Paste, err error) {
+	if uid == "" {
+		pastes, err = h.service.GetPublicPastes("", "-created", 10, 0)
+	} else {
+		pastes, err = h.service.GetPastes(uid, "-created", 10, 0)
+	}
+	return
+}
+
 // handleGetHomePage shows the homepage in response to a GET / request.
 func (h *Server) handleGetHomePage(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
 
-	pastes, err := h.service.UserPastes(usr.ID)
+	pastes, err := h.getUserPastes(usr.ID)
 	if err != nil {
 		h.showInternalError(w, err)
 		return
@@ -114,7 +125,7 @@ func (h *Server) handleGetHomePage(w http.ResponseWriter, r *http.Request) {
 	h.showPage(w,
 		page.Template("index.html"),
 		page.Title(h.options.BrandName+" - Home"),
-		page.Pastes(pastes),
+		page.UserPastes(pastes),
 		page.User(usr),
 	)
 }
@@ -170,7 +181,7 @@ func (h *Server) handlePostPaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Get a list of user pastes
-	pastes, err := h.service.UserPastes(usr.ID)
+	pastes, err := h.getUserPastes(usr.ID)
 	if err != nil {
 		h.showInternalError(w, err)
 		return
@@ -179,7 +190,7 @@ func (h *Server) handlePostPaste(w http.ResponseWriter, r *http.Request) {
 	h.showPage(w,
 		page.Template("view.html"),
 		page.Title(h.options.BrandName+" - Paste"),
-		page.Pastes(pastes),
+		page.UserPastes(pastes),
 		page.Paste(paste),
 		page.User(usr),
 	)
@@ -235,7 +246,7 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user pastes
-	pastes, err := h.service.UserPastes(usr.ID)
+	pastes, err := h.getUserPastes(usr.ID)
 	if err != nil {
 		h.showInternalError(w, err)
 		return
@@ -244,7 +255,7 @@ func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 	h.showPage(w,
 		page.Template("view.html"),
 		page.Title(h.options.BrandName+" - Paste"),
-		page.Pastes(pastes),
+		page.UserPastes(pastes),
 		page.Paste(paste),
 		page.User(usr),
 	)
@@ -259,7 +270,12 @@ func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 		skip = 0
 	}
 
-	pastes, err := h.service.GetPastes(usr.ID, "-created", limit, skip)
+	var pastes []store.Paste
+	if usr.ID != "" {
+		pastes, err = h.service.GetPastes(usr.ID, "-created", limit, skip)
+	} else {
+		pastes, err = h.service.GetPublicPastes("", "-created", limit, skip)
+	}
 	if err != nil {
 		h.showInternalError(w, err)
 		return
@@ -279,52 +295,19 @@ func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 			Number: i,
 			Offset: (i - 1) * limit,
 		}
+	}
+
+	userPastes, err := h.getUserPastes(usr.ID)
+	if err != nil {
+		h.showInternalError(w, err)
+		return
 	}
 
 	h.showPage(w,
 		page.Template("list.html"),
 		page.Title(h.options.BrandName+" - Pastes"),
 		page.Pastes(pastes),
-		page.PageLinks(paginator),
-		page.User(usr),
-	)
-}
-
-// handleGetArchive generates a page to view a list of public pastes.
-func (h *Server) handleGetArchive(w http.ResponseWriter, r *http.Request) {
-	usr, _ := token.GetUserInfo(r)
-	limit := 10 //TODO: make it configurable as PageSize or MaxPastesPerPage
-	skip, err := strconv.Atoi(r.FormValue("skip"))
-	if err != nil {
-		skip = 0
-	}
-
-	pastes, err := h.service.GetPublicPastes("", "-created", limit, skip)
-	if err != nil {
-		h.showInternalError(w, err)
-		return
-	}
-	count := h.service.PastesCount(usr.ID)                       // number of user pastes
-	pageCount := int(math.Ceil(float64(count) / float64(limit))) // number of pages
-
-	paginator := page.Paginator{
-		Current:    skip/limit + 1,
-		Last:       pageCount,
-		LastOffset: (pageCount - 1) * limit,
-		Pages:      make([]page.PaginatorLink, pageCount),
-	}
-
-	for i := 1; i <= pageCount; i++ {
-		paginator.Pages[i-1] = page.PaginatorLink{
-			Number: i,
-			Offset: (i - 1) * limit,
-		}
-	}
-
-	h.showPage(w,
-		page.Template("archive.html"),
-		page.Title(h.options.BrandName+" - Archive"),
-		page.Pastes(pastes),
+		page.UserPastes(userPastes),
 		page.PageLinks(paginator),
 		page.User(usr),
 	)

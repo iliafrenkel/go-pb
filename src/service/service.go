@@ -149,9 +149,12 @@ func (s Service) NewPaste(pr PasteRequest) (store.Paste, error) {
 		if err != nil || usr == (store.User{}) {
 			return store.Paste{}, fmt.Errorf("Service.NewPaste: %w: user id [%s] (%v)", ErrUserNotFound, pr.UserID, err)
 		}
+	} else {
+		usr.ID = "anonymous"
+		usr.Name = "Anonymous"
 	}
-	// Set privacy to public for Anonymous user
-	if usr.ID == "" {
+	// Set privacy to public for anonymous user
+	if usr.ID == "anonymous" {
 		pr.Privacy = "public"
 	}
 	// Default syntax to "text"
@@ -234,21 +237,6 @@ func (s Service) GetOrUpdateUser(usr store.User) (store.User, error) {
 	return usr, nil
 }
 
-// UserPastes returns a list of the last 10 paste for a user ordered by creation date.
-func (s Service) UserPastes(uid string) ([]store.Paste, error) {
-	pastes, err := s.store.Find(store.FindRequest{
-		UserID: uid,
-		Sort:   "-created",
-		Since:  time.Time{},
-		Limit:  10,
-		Skip:   0,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Service.UserPastes: %w: (%v)", ErrStoreFailure, err)
-	}
-	return pastes, nil
-}
-
 // GetPastes returns a list of pastes for a particular user.
 func (s Service) GetPastes(uid string, sort string, limit int, skip int) ([]store.Paste, error) {
 	pastes, err := s.store.Find(store.FindRequest{
@@ -282,7 +270,7 @@ func (s Service) GetPublicPastes(uid string, sort string, limit int, skip int) (
 
 // PastesCount return a number of pastes for a user.
 func (s Service) PastesCount(uid string) int64 {
-	return s.store.Count(uid)
+	return s.store.Count(store.FindRequest{UserID: uid})
 }
 
 // GetTotals returns total count of pastes and users.
