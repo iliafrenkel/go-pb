@@ -313,6 +313,53 @@ func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
+// handleGetArchive generates an archive page to view a list of public pastes.
+func (h *Server) handleGetArchive(w http.ResponseWriter, r *http.Request) {
+	usr, _ := token.GetUserInfo(r)
+	limit := 10 //TODO: make it configurable as PageSize or MaxPastesPerPage
+	skip, err := strconv.Atoi(r.FormValue("skip"))
+	if err != nil {
+		skip = 0
+	}
+
+	pastes, err := h.service.GetPublicPastes("", "-created", limit, skip)
+	if err != nil {
+		h.showInternalError(w, err)
+		return
+	}
+	count := h.service.PastesCount(usr.ID)                       // number of user pastes
+	pageCount := int(math.Ceil(float64(count) / float64(limit))) // number of pages
+
+	paginator := page.Paginator{
+		Current:    skip/limit + 1,
+		Last:       pageCount,
+		LastOffset: (pageCount - 1) * limit,
+		Pages:      make([]page.PaginatorLink, pageCount),
+	}
+
+	for i := 1; i <= pageCount; i++ {
+		paginator.Pages[i-1] = page.PaginatorLink{
+			Number: i,
+			Offset: (i - 1) * limit,
+		}
+	}
+
+	userPastes, err := h.getUserPastes(usr.ID)
+	if err != nil {
+		h.showInternalError(w, err)
+		return
+	}
+
+	h.showPage(w,
+		page.Template("archive.html"),
+		page.Title(h.options.BrandName+" - Archive"),
+		page.Pastes(pastes),
+		page.UserPastes(userPastes),
+		page.PageLinks(paginator),
+		page.User(usr),
+	)
+}
+
 // Show 404 Not Found error page
 func (h *Server) notFound(w http.ResponseWriter, r *http.Request) {
 	h.showError(w, http.StatusNotFound, "Unfortunately the page you are looking for is not there 🙁")

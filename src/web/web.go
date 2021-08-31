@@ -238,7 +238,7 @@ func New(l *lgr.Logger, opts ServerOptions) *Server {
 	handler.router.HandleFunc("/p/{id}", handler.handleGetPastePage).Methods("GET")
 	handler.router.HandleFunc("/p/{id}", handler.handleGetPastePage).Methods("POST")
 	handler.router.HandleFunc("/l/", handler.handleGetPastesList).Methods("GET")
-	handler.router.HandleFunc("/a/", handler.handleGetPastesList).Methods("GET")
+	handler.router.HandleFunc("/a/", handler.handleGetArchive).Methods("GET")
 
 	// Common error routes
 	handler.router.NotFoundHandler = handler.router.NewRoute().BuildOnly().HandlerFunc(handler.notFound).GetHandler()
