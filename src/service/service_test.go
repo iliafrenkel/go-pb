@@ -196,9 +196,9 @@ func TestNewPasteWithExpirationMonths(t *testing.T) {
 		t.Fatalf("failed to create new paste: %v", err)
 	}
 	got := time.Until(p.Expires.AddDate(0, -6, 0))
-	want := time.Second * 10
+	want := time.Hour * 72
 	if got > want {
-		t.Errorf("expected paste expiration [%v] to be less than 6 months, got %v", p.Expires.AddDate(0, -6, 0), got)
+		t.Errorf("expected paste expiration [%v] to be less than 6 months, got %v", p.Expires, got)
 	}
 }
 
