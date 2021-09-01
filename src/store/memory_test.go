@@ -7,90 +7,6 @@ import (
 	"time"
 )
 
-// testCaseForFind used by TestFind test
-type testCaseForFind struct {
-	name  string // test case name
-	uid   string // user id
-	sort  string // sort direction
-	limit int    // max records
-	skip  int    // records to skip
-	exp   int    // expected result length
-}
-
-var findTestCases = []testCaseForFind{
-	{
-		name:  "All user pastes",
-		uid:   "find_user_1",
-		sort:  "",
-		limit: 11,
-		skip:  0,
-		exp:   10,
-	}, {
-		name:  "Check limit",
-		uid:   "find_user_2",
-		sort:  "",
-		limit: 5,
-		skip:  0,
-		exp:   5,
-	}, {
-		name:  "Check skip",
-		uid:   "find_user_2",
-		sort:  "",
-		limit: 5,
-		skip:  6,
-		exp:   4,
-	}, {
-		name:  "Check skip over limit",
-		uid:   "find_user_2",
-		sort:  "",
-		limit: 5,
-		skip:  12,
-		exp:   0,
-	}, {
-		name:  "Check sort by -created",
-		uid:   "find_user_1",
-		sort:  "-created",
-		limit: 10,
-		skip:  0,
-		exp:   10,
-	}, {
-		name:  "Check sort by +created",
-		uid:   "find_user_1",
-		sort:  "+created",
-		limit: 10,
-		skip:  0,
-		exp:   10,
-	}, {
-		name:  "Check sort by -expires",
-		uid:   "find_user_1",
-		sort:  "-expires",
-		limit: 10,
-		skip:  0,
-		exp:   10,
-	}, {
-		name:  "Check sort by +expires",
-		uid:   "find_user_1",
-		sort:  "+expires",
-		limit: 10,
-		skip:  0,
-		exp:   10,
-	}, {
-		name:  "Check sort by -views",
-		uid:   "find_user_1",
-		sort:  "-views",
-		limit: 10,
-		skip:  0,
-		exp:   10,
-	}, {
-		name:  "Check sort by +views",
-		uid:   "find_user_1",
-		sort:  "+views",
-		limit: 10,
-		skip:  0,
-		exp:   10,
-	},
-}
-
 // TestTotals tests that we can count pastes and users correctly.
 func TestTotals(t *testing.T) {
 	t.Parallel()
@@ -157,6 +73,11 @@ func TestCount(t *testing.T) {
 	if got != pCnt {
 		t.Errorf("pastes count for user %s is incorrect, want %d got %d", usr.ID, pCnt, got)
 	}
+	// count public
+	got = mdb.Count(FindRequest{Privacy: "public"})
+	if got < pCnt {
+		t.Errorf("public pastes count is incorrect, expected %d to be greater than %d", got, pCnt)
+	}
 }
 
 // TestDelete tests that we can delete a paste.
@@ -185,6 +106,7 @@ func TestDelete(t *testing.T) {
 
 // TestFind tests that we can find a paste using various parameters.
 func TestFind(t *testing.T) {
+	t.Parallel()
 	// Create 2 users with 10 pastes each and 10 anonymous pastes
 	usr1 := randomUser()
 	usr1.ID = "find_user_1"
@@ -201,16 +123,18 @@ func TestFind(t *testing.T) {
 		mdb.Create(p2)
 		p3 := randomPaste(User{})
 		p3.CreatedAt = time.Now().AddDate(0, 0, -1*i)
+		p3.Privacy = "private"
 		mdb.Create(p3)
 	}
 
 	for _, tc := range findTestCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pastes, err := mdb.Find(FindRequest{
-				UserID: tc.uid,
-				Sort:   tc.sort,
-				Limit:  tc.limit,
-				Skip:   tc.skip,
+				UserID:  tc.uid,
+				Sort:    tc.sort,
+				Limit:   tc.limit,
+				Skip:    tc.skip,
+				Privacy: tc.privacy,
 			})
 			if err != nil {
 				t.Fatalf("failed to find pastes: %v", err)

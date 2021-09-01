@@ -118,7 +118,7 @@ func (m *MemDB) Count(req FindRequest) int64 {
 	// Count all the pastes for a user
 	var cnt int64
 	for _, p := range m.pastes {
-		if p.User.ID == "" {
+		if req.UserID == "" {
 			if req.Privacy != "" && p.Privacy == req.Privacy {
 				cnt++
 			}
