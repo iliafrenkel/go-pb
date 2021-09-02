@@ -72,7 +72,11 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 				pastes = append(pastes, p)
 			}
 		} else if p.User.ID == req.UserID {
-			pastes = append(pastes, p)
+			if req.Privacy == "" {
+				pastes = append(pastes, p)
+			} else if p.Privacy == req.Privacy {
+				pastes = append(pastes, p)
+			}
 		}
 	}
 	m.RUnlock()
@@ -122,8 +126,12 @@ func (m *MemDB) Count(req FindRequest) int64 {
 			if req.Privacy != "" && p.Privacy == req.Privacy {
 				cnt++
 			}
-		} else if p.User.ID == req.UserID && p.CreatedAt.After(req.Since) {
-			cnt++
+		} else if p.User.ID == req.UserID {
+			if req.Privacy == "" {
+				cnt++
+			} else if p.Privacy == req.Privacy {
+				cnt++
+			}
 		}
 	}
 	return cnt
