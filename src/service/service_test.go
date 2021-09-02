@@ -417,19 +417,19 @@ func TestGetUserPastes(t *testing.T) {
 		}
 	}
 
-	pastes, err := svc.GetPastes(u.ID, "", 10, 0)
+	pastes, err := svc.GetPastes(u.ID, "", 10, 0, "")
 	if err != nil {
 		t.Errorf("failed to get user pastes: %v", err)
 	}
 	if len(pastes) != 10 {
 		t.Errorf("expected to get 10 pastes, got %d", len(pastes))
 	}
-	count := svc.PastesCount(u.ID)
+	count := svc.PastesCount(u.ID, "")
 	if count != int64(numOfPastes) {
 		t.Errorf("expected to get %d pastes, got %d", numOfPastes, count)
 	}
 	// public pastes
-	pastes, err = svc.GetPublicPastes("", "", 10, 0)
+	pastes, err = svc.GetPastes("", "", 10, 0, "public")
 	if err != nil {
 		t.Errorf("failed to get user pastes: %v", err)
 	}

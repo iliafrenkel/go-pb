@@ -137,7 +137,7 @@ func (pg *PostgresDB) Count(req FindRequest) (pastes int64) {
 		cond = cond.Where("privacy = ?", req.Privacy)
 	}
 	cond.Model(&Paste{}).Count(&pastes)
-	return
+	return pastes
 }
 
 // Get returns a paste by ID.

@@ -105,9 +105,9 @@ func (h *Server) showPage(w http.ResponseWriter, data ...page.Data) {
 // anonymous user is assumed and 10 most recent public pastes are retuned.
 func (h *Server) getUserPastes(uid string) (pastes []store.Paste, err error) {
 	if uid == "" {
-		pastes, err = h.service.GetPublicPastes("", "-created", 10, 0)
+		pastes, err = h.service.GetPastes("", "-created", 10, 0, "public")
 	} else {
-		pastes, err = h.service.GetPastes(uid, "-created", 10, 0)
+		pastes, err = h.service.GetPastes(uid, "-created", 10, 0, "")
 	}
 	return
 }
@@ -271,16 +271,18 @@ func (h *Server) handleGetPastesList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var pastes []store.Paste
+	var count int64
 	if usr.ID != "" {
-		pastes, err = h.service.GetPastes(usr.ID, "-created", limit, skip)
+		pastes, err = h.service.GetPastes(usr.ID, "-created", limit, skip, "")
+		count = h.service.PastesCount(usr.ID, "")
 	} else {
-		pastes, err = h.service.GetPublicPastes("", "-created", limit, skip)
+		pastes, err = h.service.GetPastes("", "-created", limit, skip, "public")
+		count = h.service.PastesCount("", "public")
 	}
 	if err != nil {
 		h.showInternalError(w, err)
 		return
 	}
-	count := h.service.PastesCount(usr.ID)                       // number of user pastes
 	pageCount := int(math.Ceil(float64(count) / float64(limit))) // number of pages
 
 	paginator := page.Paginator{
@@ -322,12 +324,12 @@ func (h *Server) handleGetArchive(w http.ResponseWriter, r *http.Request) {
 		skip = 0
 	}
 
-	pastes, err := h.service.GetPublicPastes("", "-created", limit, skip)
+	pastes, err := h.service.GetPastes("", "-created", limit, skip, "public")
 	if err != nil {
 		h.showInternalError(w, err)
 		return
 	}
-	count := h.service.PastesCount(usr.ID)                       // number of user pastes
+	count := h.service.PastesCount("", "public")
 	pageCount := int(math.Ceil(float64(count) / float64(limit))) // number of pages
 
 	paginator := page.Paginator{
