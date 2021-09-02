@@ -405,7 +405,8 @@ func TestGetUserPastes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
-	for i := 0; i < 12; i++ {
+	numOfPastes := 12
+	for i := 0; i < numOfPastes; i++ {
 		_, err := svc.NewPaste(PasteRequest{
 			Body:    "Test body",
 			Privacy: "public",
@@ -422,5 +423,17 @@ func TestGetUserPastes(t *testing.T) {
 	}
 	if len(pastes) != 10 {
 		t.Errorf("expected to get 10 pastes, got %d", len(pastes))
+	}
+	count := svc.PastesCount(u.ID)
+	if count != int64(numOfPastes) {
+		t.Errorf("expected to get %d pastes, got %d", numOfPastes, count)
+	}
+	// public pastes
+	pastes, err = svc.GetPublicPastes("", "", 10, 0)
+	if err != nil {
+		t.Errorf("failed to get user pastes: %v", err)
+	}
+	if len(pastes) != 10 {
+		t.Errorf("expected to get 10 public pastes, got %d", len(pastes))
 	}
 }
