@@ -438,36 +438,10 @@ func TestGetUserPastes(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to create user: %+v", err)
 	}
-	p1, err := webSrv.service.NewPaste(service.PasteRequest{
-		Title:           "Test 1",
-		Body:            "Test paste 1",
-		Expires:         "",
-		DeleteAfterRead: false,
-		Privacy:         "public",
-		Password:        "",
-		Syntax:          "text",
-		UserID:          usr.ID,
-	})
-	if err != nil {
-		t.Errorf("failed to create paste: %+v", err)
-	}
-	p2, err := webSrv.service.NewPaste(service.PasteRequest{
-		Title:           "Test 2",
-		Body:            "Test paste 2",
-		Expires:         "",
-		DeleteAfterRead: false,
-		Privacy:         "public",
-		Password:        "",
-		Syntax:          "text",
-		UserID:          usr.ID,
-	})
-	if err != nil {
-		t.Errorf("failed to create paste: %+v", err)
-	}
 
 	// create 10 more pastes to test the paginator
-	for i := 3; i < 13; i++ {
-		_, _ = webSrv.service.NewPaste(service.PasteRequest{
+	for i := 0; i < 15; i++ {
+		_, err = webSrv.service.NewPaste(service.PasteRequest{
 			Title:           fmt.Sprintf("Test %d", i),
 			Body:            fmt.Sprintf("Test paste %d", i),
 			Expires:         "",
@@ -477,6 +451,9 @@ func TestGetUserPastes(t *testing.T) {
 			Syntax:          "text",
 			UserID:          usr.ID,
 		})
+		if err != nil {
+			t.Errorf("failed to create paste: %+v", err)
+		}
 	}
 
 	w := httptest.NewRecorder()
@@ -498,14 +475,14 @@ func TestGetUserPastes(t *testing.T) {
 		t.Errorf("Response should have title [%s], got [%s]", want, got)
 	}
 
-	want = p1.Title
+	want = `<h5 class="card-title text-center">My Pastes</h5>`
 	if !strings.Contains(got, want) {
-		t.Errorf("Response should have body [%s], got [%s]", want, got)
+		t.Errorf("Response should have header [%s], got [%s]", want, got)
 	}
 
-	want = p2.Title
+	want = "Test"
 	if !strings.Contains(got, want) {
-		t.Errorf("Response should have body [%s], got [%s]", want, got)
+		t.Errorf("Response should have [%s] in the body, got [%s]", want, got)
 	}
 }
 
