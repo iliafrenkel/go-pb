@@ -22,7 +22,7 @@ type Interface interface {
 	Create(paste Paste) (id int64, err error) // create new paste and return its id
 	Delete(id int64) error                    // delete paste by id
 	Find(req FindRequest) ([]Paste, error)    // find pastes
-	Count(uid string) int64                   // return pastes count for a user
+	Count(req FindRequest) int64              // return pastes count for a user
 	Get(id int64) (Paste, error)              // get paste by id
 	Update(paste Paste) (Paste, error)        // update paste information and return updated paste
 	SaveUser(usr User) (id string, err error) // creates or updates a user
@@ -31,11 +31,12 @@ type Interface interface {
 
 // FindRequest is an input to the Find method
 type FindRequest struct {
-	UserID string
-	Sort   string
-	Since  time.Time
-	Limit  int
-	Skip   int
+	UserID  string
+	Sort    string
+	Since   time.Time
+	Limit   int
+	Skip    int
+	Privacy string
 }
 
 // User represents a single user.

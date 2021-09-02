@@ -107,12 +107,20 @@ func (pg *PostgresDB) Find(req FindRequest) (pastes []Paste, err error) {
 		}
 	}
 
-	err = pg.db.
+	cond := pg.db
+	if req.UserID != "" {
+		cond = cond.Where("user_id = ?", req.UserID)
+	}
+	if req.Privacy != "" {
+		cond = cond.Where("privacy = ?", req.Privacy)
+	}
+
+	err = cond.
 		Limit(req.Limit).
 		Offset(req.Skip).
 		Order(sort).
 		Select("id", "title", "expires", "delete_after_read", "privacy", "password", "created_at", "syntax", "views").
-		Find(&pastes, "user_id = ?", req.UserID).Error
+		Find(&pastes).Error
 	if err != nil {
 		return pastes, fmt.Errorf("PostgresDB.Find: %w", err)
 	}
@@ -120,9 +128,16 @@ func (pg *PostgresDB) Find(req FindRequest) (pastes []Paste, err error) {
 }
 
 // Count returns a number of pastes for a user.
-func (pg *PostgresDB) Count(uid string) (pastes int64) {
-	pg.db.Model(&Paste{}).Where("user_id = ?", uid).Count(&pastes)
-	return
+func (pg *PostgresDB) Count(req FindRequest) (pastes int64) {
+	cond := pg.db
+	if req.UserID != "" {
+		cond = cond.Where("user_id = ?", req.UserID)
+	}
+	if req.Privacy != "" {
+		cond = cond.Where("privacy = ?", req.Privacy)
+	}
+	cond.Model(&Paste{}).Count(&pastes)
+	return pastes
 }
 
 // Get returns a paste by ID.

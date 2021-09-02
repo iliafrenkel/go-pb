@@ -25,12 +25,13 @@ type Page struct {
 	Totals  Stats  // totals, such as total number of pastes and users
 
 	// not common for all pages
-	User      token.User    // user details parsed from the JWT token
-	PasteID   string        // paste ID (URL) for pages that need redirect/post back
-	Pastes    []store.Paste // a list of pastes
-	Paste     store.Paste   // a single paste
-	PageLinks Paginator     // paginator for list pages
-	LastPage  int           // offset for the last paginator link
+	User       token.User    // user details parsed from the JWT token
+	PasteID    string        // paste ID (URL) for pages that need redirect/post back
+	Pastes     []store.Paste // a list of pastes for the list pages
+	UserPastes []store.Paste // a list of pastes for the sidebar
+	Paste      store.Paste   // a single paste
+	PageLinks  Paginator     // paginator for list pages
+	LastPage   int           // offset for the last paginator link
 
 	// only for error pages
 	ErrorCode    int    // error code, to show on the error page (404, 500, etc.)
@@ -142,6 +143,13 @@ func Pastes(pastes []store.Paste) Data {
 	}
 }
 
+// UserPastes sets a list of user pastes.
+func UserPastes(pastes []store.Paste) Data {
+	return func(p *Page) {
+		p.UserPastes = pastes
+	}
+}
+
 // Paste sets a single paste.
 func Paste(paste store.Paste) Data {
 	return func(p *Page) {
@@ -184,7 +192,7 @@ func Template(name string) Data {
 	}
 }
 
-// NewPage returns a new page with all common properties set.
+// New returns a new page.
 func New(t *template.Template, data ...Data) *Page {
 	p := Page{
 		templates: t,

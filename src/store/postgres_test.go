@@ -21,9 +21,14 @@ func TestCountPDB(t *testing.T) {
 			t.Fatalf("failed to create paste: %v", err)
 		}
 	}
-	got := pdb.Count(usr.ID)
+	got := pdb.Count(FindRequest{UserID: usr.ID})
 	if got != pCnt {
 		t.Errorf("pastes count for user %s is incorrect, want %d got %d", usr.ID, pCnt, got)
+	}
+	// count public
+	got = pdb.Count(FindRequest{Privacy: "public"})
+	if got != pCnt {
+		t.Errorf("public pastes count is incorrect, want %d got %d", pCnt, got)
 	}
 }
 
@@ -87,10 +92,11 @@ func TestFindPDB(t *testing.T) {
 	for _, tc := range findTestCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pastes, err := pdb.Find(FindRequest{
-				UserID: tc.uid,
-				Sort:   tc.sort,
-				Limit:  tc.limit,
-				Skip:   tc.skip,
+				UserID:  tc.uid,
+				Sort:    tc.sort,
+				Limit:   tc.limit,
+				Skip:    tc.skip,
+				Privacy: tc.privacy,
 			})
 			if err != nil {
 				t.Fatalf("failed to find pastes: %v", err)

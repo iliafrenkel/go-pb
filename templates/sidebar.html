@@ -3,17 +3,21 @@
         {{if .User.Name}}
             My Pastes (last 10)
         {{else}}
-            Public pastes (last 10)
+            Public Pastes (last 10)
         {{end}}
     </div>
-    {{if .Pastes}}
+    {{if .UserPastes}}
     <div class="list-group list-group-flush">
-        {{range .Pastes}}
+        {{range .UserPastes}}
             {{template "paste.html" .}}
         {{end}}
     </div>
     <div class="card-footer text-center">
-        <a href="/l/" class="btn btn-outline-secondary btn-sm">All my pastes</a>
+        {{if .User.Name}}
+            <a href="/l/" class="btn btn-outline-secondary btn-sm">All my pastes</a>
+        {{else}}
+            <a href="/a/" class="btn btn-outline-secondary btn-sm">Archive</a>
+        {{end}}
     </div>
     {{else}}
     <div class="card-body">

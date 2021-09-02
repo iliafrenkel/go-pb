@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -423,32 +424,45 @@ func TestGetPasswordProtectedPasteWithPassword(t *testing.T) {
 }
 
 // Get a list of pastes for a user
-func TestGetUserPaste(t *testing.T) {
+func TestGetUserPastes(t *testing.T) {
 	t.Parallel()
+	// fake user
+	var usr = store.User{
+		ID:    "test",
+		Name:  "Test User",
+		Email: "test@example.com",
+		IP:    "127.0.0.1",
+		Admin: false,
+	}
+	usr, err := webSrv.service.GetOrUpdateUser(usr)
+	if err != nil {
+		t.Errorf("failed to create user: %+v", err)
+	}
 
-	p1, _ := webSrv.service.NewPaste(service.PasteRequest{
-		Title:           "Test 1",
-		Body:            "Test paste 1",
-		Expires:         "",
-		DeleteAfterRead: false,
-		Privacy:         "public",
-		Password:        "",
-		Syntax:          "text",
-		UserID:          "",
-	})
-	p2, _ := webSrv.service.NewPaste(service.PasteRequest{
-		Title:           "Test 2",
-		Body:            "Test paste 2",
-		Expires:         "",
-		DeleteAfterRead: false,
-		Privacy:         "private",
-		Password:        "",
-		Syntax:          "text",
-		UserID:          "",
-	})
+	// create 10 more pastes to test the paginator
+	for i := 0; i < 15; i++ {
+		_, err = webSrv.service.NewPaste(service.PasteRequest{
+			Title:           fmt.Sprintf("Test %d", i),
+			Body:            fmt.Sprintf("Test paste %d", i),
+			Expires:         "",
+			DeleteAfterRead: false,
+			Privacy:         "public",
+			Password:        "",
+			Syntax:          "text",
+			UserID:          usr.ID,
+		})
+		if err != nil {
+			t.Errorf("failed to create paste: %+v", err)
+		}
+	}
 
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/l/", nil)
+	// embed fake user into context, hack?
+	r = token.SetUserInfo(r, token.User{
+		Name: usr.Name,
+		ID:   usr.ID,
+	})
 	webSrv.router.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
@@ -461,12 +475,62 @@ func TestGetUserPaste(t *testing.T) {
 		t.Errorf("Response should have title [%s], got [%s]", want, got)
 	}
 
-	want = p1.Title
+	want = `<h5 class="card-title text-center">My Pastes</h5>`
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have header [%s], got [%s]", want, got)
+	}
+
+	want = "Test"
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have [%s] in the body, got [%s]", want, got)
+	}
+}
+
+// Get a list of public pastes
+func TestGetArchive(t *testing.T) {
+	t.Parallel()
+	// create 10 more pastes to test the paginator
+	for i := 3; i < 15; i++ {
+		_, err := webSrv.service.NewPaste(service.PasteRequest{
+			Title:           fmt.Sprintf("Test %d", i),
+			Body:            fmt.Sprintf("Test paste %d", i),
+			Expires:         "",
+			DeleteAfterRead: false,
+			Privacy:         "public",
+			Password:        "",
+			Syntax:          "text",
+			UserID:          "",
+		})
+		if err != nil {
+			t.Errorf("failed to create paste: %+v", err)
+		}
+	}
+
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/a/", nil)
+	// embed fake user into context, hack?
+	r = token.SetUserInfo(r, token.User{
+		ID: "anonymous",
+	})
+	webSrv.router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status should be %d, got %d", http.StatusOK, w.Code)
+	}
+
+	want := webSrv.options.BrandName + " - Archive"
+	got := w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have title [%s], got [%s]", want, got)
+	}
+
+	//check paginator - we are on the first page
+	want = `<li class="page-item active"><span class="page-link">1</span></li>`
 	if !strings.Contains(got, want) {
 		t.Errorf("Response should have body [%s], got [%s]", want, got)
 	}
-
-	want = p2.Title
+	//check paginator - there is a link to the second page
+	want = `<li class="page-item"><a class="page-link" href="/a/?skip=10">2</a></li>`
 	if !strings.Contains(got, want) {
 		t.Errorf("Response should have body [%s], got [%s]", want, got)
 	}

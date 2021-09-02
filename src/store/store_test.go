@@ -13,6 +13,99 @@ var mdb *MemDB
 var pdb *PostgresDB
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+// testCaseForFind used by TestFind test
+type testCaseForFind struct {
+	name    string // test case name
+	uid     string // user id
+	sort    string // sort direction
+	limit   int    // max records
+	skip    int    // records to skip
+	privacy string // filter by paste privacy
+	exp     int    // expected result length
+}
+
+var findTestCases = []testCaseForFind{
+	{
+		name:  "All user pastes",
+		uid:   "find_user_1",
+		sort:  "",
+		limit: 11,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check limit",
+		uid:   "find_user_2",
+		sort:  "",
+		limit: 5,
+		skip:  0,
+		exp:   5,
+	}, {
+		name:  "Check skip",
+		uid:   "find_user_2",
+		sort:  "",
+		limit: 5,
+		skip:  6,
+		exp:   4,
+	}, {
+		name:  "Check skip over limit",
+		uid:   "find_user_2",
+		sort:  "",
+		limit: 5,
+		skip:  12,
+		exp:   0,
+	}, {
+		name:  "Check sort by -created",
+		uid:   "find_user_1",
+		sort:  "-created",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by +created",
+		uid:   "find_user_1",
+		sort:  "+created",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by -expires",
+		uid:   "find_user_1",
+		sort:  "-expires",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by +expires",
+		uid:   "find_user_1",
+		sort:  "+expires",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by -views",
+		uid:   "find_user_1",
+		sort:  "-views",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:  "Check sort by +views",
+		uid:   "find_user_1",
+		sort:  "+views",
+		limit: 10,
+		skip:  0,
+		exp:   10,
+	}, {
+		name:    "Check public",
+		uid:     "",
+		sort:    "-created",
+		limit:   20,
+		skip:    0,
+		privacy: "public",
+		exp:     20,
+	},
+}
+
 // TestMain is a setup function for the test suite. It creates a new MemDB
 // instance and seeds random generator.
 func TestMain(m *testing.M) {
