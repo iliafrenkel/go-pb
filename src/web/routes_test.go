@@ -512,37 +512,9 @@ func TestGetUserPastes(t *testing.T) {
 // Get a list of public pastes
 func TestGetArchive(t *testing.T) {
 	t.Parallel()
-
-	p1, err := webSrv.service.NewPaste(service.PasteRequest{
-		Title:           "Test 1",
-		Body:            "Test paste 1",
-		Expires:         "",
-		DeleteAfterRead: false,
-		Privacy:         "public",
-		Password:        "",
-		Syntax:          "text",
-		UserID:          "",
-	})
-	if err != nil {
-		t.Errorf("failed to create paste: %+v", err)
-	}
-	p2, err := webSrv.service.NewPaste(service.PasteRequest{
-		Title:           "Test 2",
-		Body:            "Test paste 2",
-		Expires:         "",
-		DeleteAfterRead: false,
-		Privacy:         "public",
-		Password:        "",
-		Syntax:          "text",
-		UserID:          "",
-	})
-	if err != nil {
-		t.Errorf("failed to create paste: %+v", err)
-	}
-
 	// create 10 more pastes to test the paginator
 	for i := 3; i < 15; i++ {
-		_, _ = webSrv.service.NewPaste(service.PasteRequest{
+		_, err := webSrv.service.NewPaste(service.PasteRequest{
 			Title:           fmt.Sprintf("Test %d", i),
 			Body:            fmt.Sprintf("Test paste %d", i),
 			Expires:         "",
@@ -552,6 +524,9 @@ func TestGetArchive(t *testing.T) {
 			Syntax:          "text",
 			UserID:          "",
 		})
+		if err != nil {
+			t.Errorf("failed to create paste: %+v", err)
+		}
 	}
 
 	w := httptest.NewRecorder()
@@ -570,16 +545,6 @@ func TestGetArchive(t *testing.T) {
 	got := w.Body.String()
 	if !strings.Contains(got, want) {
 		t.Errorf("Response should have title [%s], got [%s]", want, got)
-	}
-
-	want = p1.Title
-	if !strings.Contains(got, want) {
-		t.Errorf("Response should have body [%s], got [%s]", want, got)
-	}
-
-	want = p2.Title
-	if !strings.Contains(got, want) {
-		t.Errorf("Response should have body [%s], got [%s]", want, got)
 	}
 
 	//check paginator - we are on the first page
