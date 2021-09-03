@@ -25,6 +25,7 @@ func (h *Server) showInternalError(w http.ResponseWriter, err error) {
 		Pastes: pastes,
 		Users:  users,
 	}
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusInternalServerError)
 	p := page.New(h.templates,
 		page.Template("error.html"),
@@ -53,6 +54,7 @@ func (h *Server) showError(w http.ResponseWriter, httpError int, msg string) {
 		Pastes: pastes,
 		Users:  users,
 	}
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(httpError)
 	p := page.New(h.templates,
 		page.Template("error.html"),
@@ -82,6 +84,8 @@ func (h *Server) showPage(w http.ResponseWriter, data ...page.Data) {
 		Pastes: pastes,
 		Users:  users,
 	}
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
 	p := page.New(h.templates,
 		page.Brand(h.options.BrandName),
 		page.Tagline(h.options.BrandTagline),
@@ -97,7 +101,7 @@ func (h *Server) showPage(w http.ResponseWriter, data ...page.Data) {
 
 	e := p.Show(w)
 	if e != nil {
-		h.log.Logf("ERROR showError: failed to generate page: %v", e)
+		h.log.Logf("ERROR showPage: failed to generate page: %v", e)
 	}
 }
 
