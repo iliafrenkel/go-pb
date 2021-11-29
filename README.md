@@ -10,7 +10,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/iliafrenkel/go-pb/badge.svg?branch=main)](https://coveralls.io/github/iliafrenkel/go-pb?branch=main)
 [![Test](https://github.com/iliafrenkel/go-pb/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/iliafrenkel/go-pb/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/iliafrenkel/go-pb)](https://goreportcard.com/report/github.com/iliafrenkel/go-pb)
- 
+
 </div>
 
 Go PB is paste service similar to [Pastebin](https://pastebin.com) that you can
@@ -20,6 +20,12 @@ you can share with anybody. This is the gist. But there is more!
 
 ⚠**Warning**: this project is very much a work in progress. A lot of changes are
 made regularly, including breaking changes. This is not a usable product yet!
+
+<div align="center">
+
+  ![Contains Technical Debt](https://github.com/iliafrenkel/go-pb/blob/5c415d61c48a9fe3420d1b32752a32152bc51848/docs/contains%20technical%20debt.png)
+
+</div>
 
 ## Features
 
