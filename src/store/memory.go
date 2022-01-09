@@ -67,20 +67,34 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 	m.RLock()
 	// Find all the pastes for a user.
 	for _, p := range m.pastes {
-		if req.UserID == "" {
-			if req.Privacy != "" && p.Privacy == req.Privacy {
-				pastes = append(pastes, p)
-			}
-		} else if p.User.ID == req.UserID {
-			if req.Privacy == "" {
-				pastes = append(pastes, p)
-			} else if p.Privacy == req.Privacy {
-				pastes = append(pastes, p)
-			}
+		if filterPaste(req, p) {
+			pastes = append(pastes, p)
 		}
 	}
 	m.RUnlock()
 	// Sort
+	sortPastes(req, pastes)
+	// Slice with skip and limit
+	return limitPastes(req, pastes), nil
+}
+
+func filterPaste(req FindRequest, paste Paste) bool {
+	if req.UserID == "" {
+		if req.Privacy != "" && paste.Privacy == req.Privacy {
+			return true
+		}
+	} else if paste.User.ID == req.UserID {
+		if req.Privacy == "" {
+			return true
+		} else if paste.Privacy == req.Privacy {
+			return true
+		}
+	}
+
+	return false
+}
+
+func sortPastes(req FindRequest, pastes []Paste) {
 	sort.Slice(pastes, func(i, j int) bool {
 		switch req.Sort {
 		case "+created", "-created":
@@ -102,6 +116,9 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 			return pastes[i].CreatedAt.Before(pastes[j].CreatedAt)
 		}
 	})
+}
+
+func limitPastes(req FindRequest, pastes []Paste) []Paste {
 	// Slice with skip and limit
 	skip := req.Skip
 	if skip > len(pastes) {
@@ -112,7 +129,7 @@ func (m *MemDB) Find(req FindRequest) (pastes []Paste, err error) {
 		end = len(pastes)
 	}
 
-	return pastes[skip:end], nil
+	return pastes[skip:end]
 }
 
 // Count returns a number of pastes for a user.

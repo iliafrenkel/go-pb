@@ -64,6 +64,16 @@ func New(store store.Interface) *Service {
 	return s
 }
 
+// NewWithDiskDB returns new Service with a disk file system as a store.
+func NewWithDiskDB(config *store.DiskConfig) (*Service, error) {
+	s, err := store.NewDiskStorage(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return New(s), nil
+}
+
 // NewWithMemDB returns new Service with memory as a store.
 func NewWithMemDB() *Service {
 	return New(store.NewMemDB())
@@ -153,8 +163,8 @@ func (s Service) NewPaste(pr PasteRequest) (store.Paste, error) {
 		usr.ID = "anonymous"
 		usr.Name = "Anonymous"
 	}
-	// Set privacy to public for anonymous user
-	if usr.ID == "anonymous" {
+	// Do not allow privacy to be be private for anonymous users.
+	if usr.ID == "anonymous" && pr.Privacy == "private" {
 		pr.Privacy = "public"
 	}
 	// Default syntax to "text"
