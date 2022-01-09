@@ -144,11 +144,9 @@ func TestDiskFind(t *testing.T) {
 		p1.Expires = time.Now().AddDate(0, 1*i, 0)
 		p1.Views = int64(10 * i)
 		ddb.Create(p1)
-		time.Sleep(time.Millisecond)
 		p2 := randomPaste(usr2)
 		p2.CreatedAt = time.Now().AddDate(0, 0, -1*i)
 		ddb.Create(p2)
-		time.Sleep(time.Millisecond)
 		p3 := randomPaste(User{})
 		p3.CreatedAt = time.Now().AddDate(0, 0, -1*i)
 		p3.Privacy = "private"

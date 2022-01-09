@@ -134,12 +134,13 @@ func TestMain(m *testing.M) {
 		fmt.Printf("Failed to create a PostgresDB store: %v\n", err)
 		os.Exit(1)
 	}
-
 	rand.Seed(time.Now().UnixNano())
+
 	c := m.Run()
 
 	pdb.db.Delete(Paste{})
 	pdb.db.Delete(User{})
+
 	os.RemoveAll(dir)
 	os.Exit(c)
 }

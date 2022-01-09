@@ -74,7 +74,7 @@ func NewDiskStorage(config *DiskConfig) (*DiskStore, error) {
 func (f *DiskStore) cleanExpired() {
 	expiring := make(map[string]time.Time)
 
-	// Store all expiring pastes in memory on startup.
+	// Store all expiring paste IDs in memory on startup.
 	// This may be slow on systems with a lot of pastes.
 	// Should be okay though since this runs in a go routine.
 	for key := range f.pastes.Keys(nil) {
@@ -265,8 +265,8 @@ func (f *DiskStore) Find(req FindRequest) ([]Paste, error) {
 
 	var sortCreated bool
 	if req.Sort == "+created" {
-		sort.Strings(keys)
 		sortCreated = true
+		sort.Strings(keys)
 	} else if req.Sort == "-created" {
 		sortCreated = true
 		sort.Sort(sort.Reverse(sort.StringSlice(keys)))
@@ -325,7 +325,6 @@ func (f *DiskStore) Get(pasteID int64) (Paste, error) {
 
 	if !paste.Expires.IsZero() && paste.Expires.Before(time.Now()) {
 		_ = f.Delete(pasteID)
-
 		return Paste{}, fmt.Errorf("paste expired")
 	}
 
