@@ -23,6 +23,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/iliafrenkel/go-pb/src/service"
+	"github.com/iliafrenkel/go-pb/src/store"
 )
 
 // ServerOptions defines various parameters needed to run the WebServer
@@ -55,6 +56,7 @@ type ServerOptions struct {
 	GoogleCSEC         string        // google client secret for oauth
 	TwitterCID         string        // twitter client id for oauth
 	TwitterCSEC        string        // twitter client secret for oauth
+	store.DiskConfig
 }
 
 // Server encapsulates a router and a server.
@@ -183,6 +185,11 @@ func New(l *lgr.Logger, opts ServerOptions) *Server {
 
 	// Initialise the service
 	switch opts.DBType {
+	case "disk":
+		handler.service, err = service.NewWithDiskDB(&opts.DiskConfig)
+		if err != nil {
+			handler.log.Logf("FATAL error creating Disk storage service: %v", err)
+		}
 	case "memory":
 		handler.service = service.NewWithMemDB()
 	case "postgres":
@@ -216,15 +223,20 @@ func New(l *lgr.Logger, opts ServerOptions) *Server {
 	authSvc.AddProvider("github", handler.options.GitHubCID, handler.options.GitHubCSEC)
 	authSvc.AddProvider("google", handler.options.GoogleCID, handler.options.GoogleCSEC)
 	authSvc.AddProvider("twitter", handler.options.TwitterCID, handler.options.TwitterCSEC)
-	authSvc.AddProvider("dev", "", "") // dev auth, runs dev oauth2 server on :8084
 
-	go func() {
-		devAuthServer, err := authSvc.DevAuth()
-		if err != nil {
-			handler.log.Logf("FATAL %v", err)
-		}
-		devAuthServer.Run(context.Background())
-	}()
+	if opts.LogMode == "debug" {
+		authSvc.AddProvider("dev", "", "") // dev auth, runs dev oauth2 server on :8084
+
+		go func() {
+			devAuthServer, err := authSvc.DevAuth()
+			if err != nil {
+				handler.log.Logf("FATAL %v", err)
+			}
+
+			devAuthServer.Run(context.Background())
+		}()
+	}
+
 	m := authSvc.Middleware()
 	handler.router.Use(m.Trace)
 	authRoutes, avaRoutes := authSvc.Handlers()

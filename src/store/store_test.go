@@ -9,9 +9,12 @@ import (
 	"time"
 )
 
-var mdb *MemDB
-var pdb *PostgresDB
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var (
+	mdb     *MemDB
+	pdb     *PostgresDB
+	ddb     *DiskStore
+	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+)
 
 // testCaseForFind used by TestFind test
 type testCaseForFind struct {
@@ -109,8 +112,20 @@ var findTestCases = []testCaseForFind{
 // TestMain is a setup function for the test suite. It creates a new MemDB
 // instance and seeds random generator.
 func TestMain(m *testing.M) {
-	var err error
 	mdb = NewMemDB()
+
+	dir, err := os.MkdirTemp("", "go-pb-tests")
+	if err != nil {
+		fmt.Printf("got error making disk store folder: %s\n", err)
+		os.Exit(1)
+	}
+
+	ddb, err = NewDiskStorage(&DiskConfig{DataDir: dir})
+	if err != nil {
+		fmt.Printf("got error making disk store: %s\n", err)
+		os.Exit(1)
+	}
+
 	pdb, err = NewPostgresDB("host=localhost user=test password=test dbname=test port=5432 sslmode=disable", true)
 	pdb.db.AllowGlobalUpdate = true
 	pdb.db.Delete(Paste{})
@@ -119,13 +134,13 @@ func TestMain(m *testing.M) {
 		fmt.Printf("Failed to create a PostgresDB store: %v\n", err)
 		os.Exit(1)
 	}
-	rand.Seed(time.Now().UnixNano())
 
+	rand.Seed(time.Now().UnixNano())
 	c := m.Run()
 
 	pdb.db.Delete(Paste{})
 	pdb.db.Delete(User{})
-
+	os.RemoveAll(dir)
 	os.Exit(c)
 }
 
