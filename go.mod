@@ -9,6 +9,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jessevdk/go-flags v1.5.0
 	golang.org/x/crypto v0.0.0-20220208050332-20e1d8d225ab
-	gorm.io/driver/postgres v1.3.4
+	gorm.io/driver/postgres v1.3.5
 	gorm.io/gorm v1.23.4
 )
