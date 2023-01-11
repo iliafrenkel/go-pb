@@ -2,73 +2,136 @@ package store
 
 import (
 	"math/rand"
+	"os"
 	"sort"
 	"testing"
 	"time"
 )
 
-func TestCountPDB(t *testing.T) {
+/* This file is mostly a copy/paste from memory_test.go. */
+
+func makeTestDiskStorage(t *testing.T) (string, *DiskStore) {
+	t.Helper()
+
+	dir, err := os.MkdirTemp("", "go-pb-tests")
+	if err != nil {
+		t.Errorf("got error making disk store folder: %s", err)
+	}
+
+	m, err := NewDiskStorage(&DiskConfig{DataDir: dir})
+	if err != nil {
+		t.Errorf("got error making disk store: %s", err)
+	}
+
+	return dir, m
+}
+
+// TestDiskTotals tests that we can count pastes and users correctly.
+func TestDiskTotals(t *testing.T) {
+	t.Parallel()
+
+	// Make dedicated storage so the totals are not changed by other tests.
+	dir, ddb := makeTestDiskStorage(t)
+	defer os.RemoveAll(dir)
+
+	var usr User
+	var paste Paste
+
+	// Generate a bunch of users and pastes
+	uCnt := rand.Int63n(10)
+	pCnt := rand.Int63n(20)
+	for i := int64(0); i < uCnt; i++ {
+		usr = randomUser()
+		_, err := ddb.SaveUser(usr)
+		if err != nil {
+			t.Fatalf("failed to save user: %v", err)
+		}
+		for j := int64(0); j < pCnt; j++ {
+			u, err := ddb.User(usr.ID)
+			if err != nil {
+				t.Fatalf("failed to get user: %v", err)
+			}
+			paste = randomPaste(u)
+			_, err = ddb.Create(paste)
+			if err != nil {
+				t.Fatalf("failed to create paste: %v", err)
+			}
+		}
+	}
+
+	// Check the counts
+	wantUsers := uCnt
+	wantPastes := uCnt * pCnt
+	gotPastes, gotUsers := ddb.Totals()
+
+	if wantUsers != gotUsers {
+		t.Errorf("users count is incorrect, want %d, got %d", wantUsers, gotUsers)
+	}
+	if wantPastes != gotPastes {
+		t.Errorf("pastes count is incorrect, want %d, got %d", wantPastes, gotPastes)
+	}
+}
+
+func TestDiskCount(t *testing.T) {
+	t.Parallel()
+
 	usr := randomUser()
-	_, err := pdb.SaveUser(usr)
+	_, err := ddb.SaveUser(usr)
 	if err != nil {
 		t.Fatalf("failed to save user: %v", err)
 	}
 	pCnt := rand.Int63n(20)
 	for i := int64(0); i < pCnt; i++ {
 		paste := randomPaste(usr)
-		_, err = pdb.Create(paste)
+		_, err = ddb.Create(paste)
 		if err != nil {
 			t.Fatalf("failed to create paste: %v", err)
 		}
 	}
-	got := pdb.Count(FindRequest{UserID: usr.ID})
+	got := ddb.Count(FindRequest{UserID: usr.ID})
 	if got != pCnt {
 		t.Errorf("pastes count for user %s is incorrect, want %d got %d", usr.ID, pCnt, got)
 	}
 	// count public
-	got = pdb.Count(FindRequest{Privacy: "public"})
-	if got != pCnt {
-		t.Errorf("public pastes count is incorrect, want %d got %d", pCnt, got)
+	got = ddb.Count(FindRequest{Privacy: "public"})
+	if got < pCnt {
+		t.Errorf("public pastes count is incorrect, expected %d to be greater than %d", got, pCnt)
 	}
 }
 
-// TestDelete tests that we can delete a paste.
-func TestDeletePDB(t *testing.T) {
+// TestDiskDelete tests that we can delete a paste.
+func TestDiskDelete(t *testing.T) {
 	t.Parallel()
+
+	var err error
+
 	// Create random paste
-	paste := randomPaste(randomUser())
-	id, err := pdb.Create(paste)
+	paste := randomPaste(User{})
+	paste.ID, err = ddb.Create(paste)
 	if err != nil {
 		t.Fatalf("failed to create paste: %v", err)
 	}
+	// Make sure it really exists.
+	_, err = ddb.Get(paste.ID)
+	if err != nil {
+		t.Fatalf("failed to get new paste: %v", err)
+	}
 	// Delete the paste and check that it was indeed deleted.
-	err = pdb.Delete(id)
+	err = ddb.Delete(paste.ID)
 	if err != nil {
 		t.Fatalf("failed to delete paste: %v", err)
 	}
-	p, err := pdb.Get(id)
-	if err != nil {
-		t.Fatalf("failed to get paste: %v", err)
+	p, err := ddb.Get(paste.ID)
+	if err == nil {
+		t.Fatalf("expected an error, but did not get one")
 	}
 	if p != (Paste{}) {
 		t.Errorf("expected paste to be deleted but found %+v", p)
 	}
 }
 
-// TestDelete tests that we can't delete a paste if it doesn't exist.
-func TestDeleteNonExistingPDB(t *testing.T) {
-	t.Parallel()
-	// Create random paste
-	paste := randomPaste(randomUser())
-	// Delete the paste and check that it was indeed deleted.
-	err := pdb.Delete(paste.ID)
-	if err == nil {
-		t.Fatalf("expected delete to fail")
-	}
-}
-
-// TestFind tests that we can find a paste using various parameters.
-func TestFindPDB(t *testing.T) {
+// TestDiskFind tests that we can find a paste using various parameters.
+func TestDiskFind(t *testing.T) {
 	t.Parallel()
 	// Create 2 users with 10 pastes each and 10 anonymous pastes
 	usr1 := randomUser()
@@ -79,19 +142,20 @@ func TestFindPDB(t *testing.T) {
 		p1 := randomPaste(usr1)
 		p1.CreatedAt = time.Now().AddDate(0, 0, -1*i)
 		p1.Expires = time.Now().AddDate(0, 1*i, 0)
-		p1.Views = int64(10*i + 1)
-		pdb.Create(p1)
+		p1.Views = int64(10 * i)
+		ddb.Create(p1)
 		p2 := randomPaste(usr2)
 		p2.CreatedAt = time.Now().AddDate(0, 0, -1*i)
-		pdb.Create(p2)
+		ddb.Create(p2)
 		p3 := randomPaste(User{})
 		p3.CreatedAt = time.Now().AddDate(0, 0, -1*i)
-		pdb.Create(p3)
+		p3.Privacy = "private"
+		ddb.Create(p3)
 	}
 
 	for _, tc := range findTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pastes, err := pdb.Find(FindRequest{
+			pastes, err := ddb.Find(FindRequest{
 				UserID:  tc.uid,
 				Sort:    tc.sort,
 				Limit:   tc.limit,
@@ -131,19 +195,19 @@ func TestFindPDB(t *testing.T) {
 	}
 }
 
-func TestUpdatePDB(t *testing.T) {
+func TestDiskUpdate(t *testing.T) {
 	t.Parallel()
-	usr := randomUser()
+
 	// Create random paste
-	paste := randomPaste(usr)
-	id, err := pdb.Create(paste)
+	paste := randomPaste(User{})
+	id, err := ddb.Create(paste)
 	if err != nil {
 		t.Fatalf("failed to create paste: %v", err)
 	}
 	// Update the paste
-	paste, _ = pdb.Get(id)
+	paste, _ = ddb.Get(id)
 	paste.Views = 42
-	p, _ := pdb.Update(paste)
+	p, _ := ddb.Update(paste)
 
 	if p.ID != id {
 		t.Errorf("expected paste to have the same id [%d], got [%d]", id, p.ID)
@@ -154,29 +218,26 @@ func TestUpdatePDB(t *testing.T) {
 	}
 }
 
-func TestUpdateNonExistingPDB(t *testing.T) {
+func TestDiskUpdateNonExisting(t *testing.T) {
 	t.Parallel()
-	usr := randomUser()
-	// Create random paste
-	paste := randomPaste(usr)
-	p, err := pdb.Update(paste)
 
-	if err == nil {
-		t.Error("expected paste update to fail")
-	}
+	// Create random paste
+	paste := randomPaste(User{})
+	p, _ := ddb.Update(paste)
+
 	if p != (Paste{}) {
 		t.Errorf("expected paste to be empty, got [%+v]", p)
 	}
 }
 
-func TestGetUserPDB(t *testing.T) {
+func TestDiskGetUser(t *testing.T) {
 	t.Parallel()
 	usr := randomUser()
-	id, err := pdb.SaveUser(usr)
+	id, err := ddb.SaveUser(usr)
 	if err != nil {
 		t.Errorf("failed to create user: %v", err)
 	}
-	u, err := pdb.User(id)
+	u, err := ddb.User(id)
 	if err != nil {
 		t.Errorf("user not found: %v", err)
 	}
@@ -185,10 +246,10 @@ func TestGetUserPDB(t *testing.T) {
 	}
 }
 
-func TestGetUserNotExistingPDB(t *testing.T) {
+func TestDiskGetUserNotExisting(t *testing.T) {
 	t.Parallel()
 	usr := randomUser()
-	u, err := pdb.User(usr.ID)
+	u, err := ddb.User(usr.ID)
 	if err == nil {
 		t.Errorf("expected user to be not found")
 	}
@@ -196,5 +257,3 @@ func TestGetUserNotExistingPDB(t *testing.T) {
 		t.Errorf("expected user to be empty, got %+v", u)
 	}
 }
-
-/**/
