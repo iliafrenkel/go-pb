@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jessevdk/go-flags v1.5.0
-	golang.org/x/crypto v0.4.0
+	golang.org/x/crypto v0.5.0
 	gorm.io/driver/postgres v1.4.6
 	gorm.io/gorm v1.24.2
 )
