@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-pkgz/auth v1.20.0
-	github.com/go-pkgz/lgr v0.10.4
+	github.com/go-pkgz/lgr v0.11.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jessevdk/go-flags v1.5.0
