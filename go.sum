@@ -108,8 +108,8 @@ github.com/go-oauth2/oauth2/v4 v4.5.1 h1:3vxp+cjLqDe1TbogbwtMyeHRHr1tD+ksrK7xNpp
 github.com/go-oauth2/oauth2/v4 v4.5.1/go.mod h1:wk/2uLImWIa9VVQDgxz99H2GDbhmfi/9/Xr+GvkSUSQ=
 github.com/go-pkgz/auth v1.20.0 h1:9SHkolgv9+zOI9U+8IFXra0pl/H90oE4+ciJWtXoDl4=
 github.com/go-pkgz/auth v1.20.0/go.mod h1:jz0djN+4XoCyieuOzc+rB9l0RdqeuiXoQfE02yonLAI=
-github.com/go-pkgz/lgr v0.10.4 h1:l7qyFjqEZgwRgaQQSEp6tve4A3OU80VrfzpvtEX8ngw=
-github.com/go-pkgz/lgr v0.10.4/go.mod h1:CD0s1z6EFpIUplV067gitF77tn25JItzwHNKAPqeCF0=
+github.com/go-pkgz/lgr v0.11.0 h1:9XH5o+vj09L0sRWEswIGK1lJ6g07xVB4/Z28RV9Z+qM=
+github.com/go-pkgz/lgr v0.11.0/go.mod h1:4rdRmMSs4yGFjnUg0rSDbKx21LmFNZoH4y8OLl3qDnU=
 github.com/go-pkgz/repeater v1.1.3 h1:q6+JQF14ESSy28Dd7F+wRelY4F+41HJ0LEy/szNnMiE=
 github.com/go-pkgz/repeater v1.1.3/go.mod h1:hVTavuO5x3Gxnu8zW7d6sQBfAneKV8X2FjU48kGfpKw=
 github.com/go-pkgz/rest v1.16.0 h1:3An51XJXUq1XtICHvfAEp048ZCbUHBEga3g0WEu3zK0=
