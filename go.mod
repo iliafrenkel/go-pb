@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/peterbourgon/diskv/v3 v3.0.1
-	golang.org/x/crypto v0.6.0
+	golang.org/x/crypto v0.7.0
 	gorm.io/driver/postgres v1.4.8
 	gorm.io/gorm v1.24.6
 )
@@ -44,11 +44,11 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/mongo-driver v1.10.2 // indirect
 	golang.org/x/image v0.5.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 )
