@@ -11,7 +11,7 @@ require (
 	github.com/peterbourgon/diskv/v3 v3.0.1
 	golang.org/x/crypto v0.14.0
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.4
+	gorm.io/gorm v1.25.5
 )
 
 require (
