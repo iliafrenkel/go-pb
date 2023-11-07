@@ -6,7 +6,7 @@ require (
 	github.com/go-pkgz/auth v1.22.0
 	github.com/go-pkgz/lgr v0.11.1
 	github.com/gorilla/handlers v1.5.1
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/peterbourgon/diskv/v3 v3.0.1
 	golang.org/x/crypto v0.14.0
