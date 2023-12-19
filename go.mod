@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/peterbourgon/diskv/v3 v3.0.1
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
 )
