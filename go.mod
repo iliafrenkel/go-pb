@@ -10,7 +10,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/peterbourgon/diskv/v3 v3.0.1
 	golang.org/x/crypto v0.21.0
-	gorm.io/driver/postgres v1.5.6
+	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.7
 )
 
