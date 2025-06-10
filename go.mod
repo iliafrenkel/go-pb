@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/go-pkgz/auth v1.25.1
-	github.com/go-pkgz/lgr v0.12.0
+	github.com/go-pkgz/lgr v0.12.1
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/jessevdk/go-flags v1.6.1
