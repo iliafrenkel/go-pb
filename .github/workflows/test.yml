@@ -24,7 +24,7 @@ jobs:
         id: go
 
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Test
         run: |
