@@ -22,6 +22,52 @@ password protection, and user accounts for managing pastes.
 
 ### Architecture
 
+```mermaid
+graph TD
+    Client[User / Client]
+    
+    subgraph "go-pb Application"
+        entry[cmd/main.go]
+        
+        subgraph "Web Package (src/web)"
+            WebServer[Web Server]
+            Router[Router & Handlers]
+            Auth[Authentication]
+        end
+        
+        subgraph "Service Package (src/service)"
+            Logic[Business Logic]
+        end
+        
+        subgraph "Store Package (src/store)"
+            StoreInt[Store Interface]
+            
+            subgraph "Implementations"
+                Mem[In-Memory]
+                PG[PostgreSQL]
+                Disk[On-Disk]
+            end
+        end
+    end
+
+    ExtDB[(External PostgreSQL)]
+    FileSystem[(File System)]
+
+    Client -- HTTP/HTTPS --> entry
+    entry -- Initializes --> WebServer
+    WebServer -- "Routes Requests" --> Router
+    Router -- "Authenticates" --> Auth
+    Router -- "Delegates Logic" --> Logic
+    Logic -- "Persists Data" --> StoreInt
+    
+    StoreInt -.-> Mem
+    StoreInt -.-> PG
+    StoreInt -.-> Disk
+    
+    PG -- SQL --> ExtDB
+    Disk -- Read/Write --> FileSystem
+```
+
 The application is structured into three main packages:
 
 *   `cmd`: Contains the main application entry point (`main.go`). It handles command-line argument
