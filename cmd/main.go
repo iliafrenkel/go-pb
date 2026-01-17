@@ -160,7 +160,7 @@ func setupLog(dbg bool, lf string) *lgr.Logger {
 	var stdout, stderr *os.File
 	var err error
 	if lf != "" {
-		stdout, err = os.OpenFile(lf, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		stdout, err = os.OpenFile(lf, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600) // #nosec G304 (see #213)
 		if err != nil {
 			fmt.Printf("error opening log file: %v", err)
 			os.Exit(2)
