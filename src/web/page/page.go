@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"io"
 
-	"github.com/go-pkgz/auth/token"
+	"github.com/go-pkgz/auth/v2/token"
 	"github.com/iliafrenkel/go-pb/src/store"
 )
 

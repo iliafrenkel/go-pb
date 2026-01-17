@@ -84,6 +84,7 @@ func main() {
 
 	if opts.Debug {
 		log.Logf("INFO Options: %+v", opts)
+		opts.Web.LogMode = "debug"
 	}
 
 	// Start the server
