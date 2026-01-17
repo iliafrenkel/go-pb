@@ -1,27 +1,18 @@
-// Copyright 2021 Ilia Frenkel. All rights reserved.
-// Use of this source code is governed by a MIT-style
-// license that can be found in the LICENSE.txt file.
-
 // Package web implements a web server that provides a front-end for the
 // go-pb application.
 package web
 
 import (
 	"context"
-	"fmt"
 	"html/template"
-	"io"
-	"net"
 	"net/http"
-	"os"
+	"strings"
 	"time"
 
 	"github.com/go-pkgz/auth/v2"
 	"github.com/go-pkgz/auth/v2/avatar"
 	"github.com/go-pkgz/auth/v2/token"
 	"github.com/go-pkgz/lgr"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"github.com/iliafrenkel/go-pb/src/service"
 	"github.com/iliafrenkel/go-pb/src/store"
 )
@@ -63,7 +54,7 @@ type ServerOptions struct {
 // Normally, you'd create a new instance by calling New which configures the
 // rotuer and then call ListenAndServe to start serving incoming requests.
 type Server struct {
-	router    *mux.Router
+	router    *router
 	server    *http.Server
 	options   ServerOptions
 	templates *template.Template
@@ -71,91 +62,36 @@ type Server struct {
 	service   *service.Service
 }
 
-var dbgLogFormatter handlers.LogFormatter = func(writer io.Writer, params handlers.LogFormatterParams) {
-	const (
-		green   = "\033[97;42m"
-		white   = "\033[90;47m"
-		yellow  = "\033[90;43m"
-		red     = "\033[97;41m"
-		blue    = "\033[97;44m"
-		magenta = "\033[97;45m"
-		cyan    = "\033[97;46m"
-		reset   = "\033[0m"
-	)
+// router is a wrapper around http.ServeMux that allows to set a NotFoundHandler
+type router struct {
+	*http.ServeMux
+	notFoundHandler http.Handler
+}
 
-	code := params.StatusCode
-	cclr := ""
-	switch {
-	case code >= http.StatusOK && code < http.StatusMultipleChoices:
-		cclr = green
-	case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
-		cclr = white
-	case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
-		cclr = yellow
-	default:
-		cclr = red
+// ServeHTTP makes the router implement the http.Handler interface.
+func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h, _ := r.Handler(req)
+	if h == nil {
+		r.notFoundHandler.ServeHTTP(w, req)
+		return
 	}
+	h.ServeHTTP(w, req)
+}
 
-	method := params.Request.Method
-	mclr := ""
-	switch method {
-	case http.MethodGet:
-		mclr = blue
-	case http.MethodPost:
-		mclr = cyan
-	case http.MethodPut:
-		mclr = yellow
-	case http.MethodDelete:
-		mclr = red
-	case http.MethodPatch:
-		mclr = green
-	case http.MethodHead:
-		mclr = magenta
-	case http.MethodOptions:
-		mclr = white
-	default:
-		mclr = reset
-	}
-
-	host, _, err := net.SplitHostPort(params.Request.RemoteAddr)
-	if err != nil {
-		host = params.Request.RemoteAddr
-	}
-
-	fmt.Fprintf(writer, "|%s %3d %s| %15s |%s %-7s %s| %8d | %s \n",
-		cclr, code, reset,
-		host,
-		mclr, method, reset,
-		params.Size,
-		params.URL.RequestURI(),
-	)
+// NotFound sets the not-found handler.
+func (r *router) NotFound(h http.Handler) {
+	r.notFoundHandler = h
 }
 
 // ListenAndServe starts an HTTP server and binds it to the provided address.
 // You have to call New() first to initialise the WebServer.
 func (h *Server) ListenAndServe() error {
-	var hdlr http.Handler
-	var w io.Writer
-	var err error
-	if h.options.LogFile == "" {
-		w = lgr.ToWriter(h.log, "")
-	} else {
-		w, err = os.OpenFile(h.options.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-		if err != nil {
-			return fmt.Errorf("WebServer.ListenAndServer: cannot open log file: [%s]: %w", h.options.LogFile, err)
-		}
-	}
-	if h.options.LogMode == "debug" {
-		hdlr = handlers.CustomLoggingHandler(w, h.router, dbgLogFormatter)
-	} else {
-		hdlr = handlers.CombinedLoggingHandler(w, h.router)
-	}
 	h.server = &http.Server{
 		Addr:         h.options.Addr,
 		WriteTimeout: h.options.WriteTimeout,
 		ReadTimeout:  h.options.ReadTimeout,
 		IdleTimeout:  h.options.IdleTimeout,
-		Handler:      hdlr,
+		Handler:      h.router,
 	}
 
 	return h.server.ListenAndServe()
@@ -202,10 +138,13 @@ func New(l *lgr.Logger, opts ServerOptions) *Server {
 	}
 
 	// Initialise the router
-	handler.router = mux.NewRouter()
-
+	mux := http.NewServeMux()
+	handler.router = &router{
+		ServeMux:        mux,
+		notFoundHandler: http.HandlerFunc(handler.notFound),
+	}
 	// Templates and static files
-	handler.router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir(handler.options.Assets))))
+	handler.router.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(handler.options.Assets))))
 
 	// Auth middleware
 	authSvc := auth.NewService(auth.Opts{
@@ -238,22 +177,44 @@ func New(l *lgr.Logger, opts ServerOptions) *Server {
 	}
 
 	m := authSvc.Middleware()
-	handler.router.Use(m.Trace)
 	authRoutes, avaRoutes := authSvc.Handlers()
-	handler.router.PathPrefix("/auth").Handler(authRoutes)
-	handler.router.PathPrefix("/avatar").Handler(avaRoutes)
+	handler.router.Handle("/auth/", authRoutes)
+	handler.router.Handle("/avatar/", avaRoutes)
 
 	// Define routes
-	handler.router.HandleFunc("/", handler.handleGetHomePage).Methods("GET")
-	handler.router.HandleFunc("/p/", handler.handlePostPaste).Methods("POST")
-	handler.router.HandleFunc("/p/", handler.handleGetHomePage).Methods("GET")
-	handler.router.HandleFunc("/p/{id}", handler.handleGetPastePage).Methods("GET")
-	handler.router.HandleFunc("/p/{id}", handler.handleGetPastePage).Methods("POST")
-	handler.router.HandleFunc("/l/", handler.handleGetPastesList).Methods("GET")
-	handler.router.HandleFunc("/a/", handler.handleGetArchive).Methods("GET")
-
-	// Common error routes
-	handler.router.NotFoundHandler = handler.router.NewRoute().BuildOnly().HandlerFunc(handler.notFound).GetHandler()
+	pHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := strings.TrimPrefix(r.URL.Path, "/p/")
+		if r.Method == http.MethodPost {
+			if len(id) > 0 {
+				handler.handleGetPastePage(w, r) // This is for password-protected pastes
+				return
+			}
+			handler.handlePostPaste(w, r) // This is for new pastes
+			return
+		}
+		if r.Method == http.MethodGet {
+			if len(id) > 0 {
+				handler.handleGetPastePage(w, r)
+				return
+			}
+			handler.handleGetHomePage(w, r)
+			return
+		}
+		handler.notFound(w, r)
+	})
+	handler.router.Handle("/p/", m.Trace(pHandler))
+	handler.router.Handle("/l/", m.Trace(http.HandlerFunc(handler.handleGetPastesList)))
+	handler.router.Handle("/a/", m.Trace(http.HandlerFunc(handler.handleGetArchive)))
+	// The default handler will catch everything that is not handled by other handlers.
+	handler.router.Handle("/", m.Trace(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// We only want to handle the root path here.
+		// Everything else should be a 404.
+		if r.URL.Path != "/" {
+			handler.notFound(w, r)
+			return
+		}
+		handler.handleGetHomePage(w, r)
+	})))
 
 	return &handler
 }
