@@ -23,7 +23,7 @@ dep: ## Get the dependencies
 	@go mod download
 
 lint: ## Lint all Golang files
-	@gosec ${PKG_LIST}
+	@gosec ./...
 	@go vet ${PKG_LIST}
 	@staticcheck ${PKG_LIST}
 
