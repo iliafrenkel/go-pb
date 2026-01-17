@@ -109,8 +109,7 @@ var findTestCases = []testCaseForFind{
 	},
 }
 
-// TestMain is a setup function for the test suite. It creates a new MemDB
-// instance and seeds random generator.
+// TestMain is a setup function for the test suite.
 func TestMain(m *testing.M) {
 	mdb = NewMemDB()
 
@@ -127,14 +126,13 @@ func TestMain(m *testing.M) {
 	}
 
 	pdb, err = NewPostgresDB("host=localhost user=test password=test dbname=test port=5432 sslmode=disable", true)
-	pdb.db.AllowGlobalUpdate = true
-	pdb.db.Delete(Paste{})
-	pdb.db.Delete(User{})
 	if err != nil {
 		fmt.Printf("Failed to create a PostgresDB store: %v\n", err)
 		os.Exit(1)
 	}
-	rand.Seed(time.Now().UnixNano())
+	pdb.db.AllowGlobalUpdate = true
+	pdb.db.Delete(Paste{})
+	pdb.db.Delete(User{})
 
 	c := m.Run()
 
