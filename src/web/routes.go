@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-pkgz/auth/token"
+	"github.com/go-pkgz/auth/v2/token"
 	"github.com/gorilla/mux"
 	"github.com/iliafrenkel/go-pb/src/service"
 	"github.com/iliafrenkel/go-pb/src/store"

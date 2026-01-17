@@ -16,9 +16,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-pkgz/auth"
-	"github.com/go-pkgz/auth/avatar"
-	"github.com/go-pkgz/auth/token"
+	"github.com/go-pkgz/auth/v2"
+	"github.com/go-pkgz/auth/v2/avatar"
+	"github.com/go-pkgz/auth/v2/token"
 	"github.com/go-pkgz/lgr"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"

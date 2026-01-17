@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-pkgz/auth/token"
+	"github.com/go-pkgz/auth/v2/token"
 	"github.com/go-pkgz/lgr"
 	"github.com/iliafrenkel/go-pb/src/service"
 	"github.com/iliafrenkel/go-pb/src/store"
