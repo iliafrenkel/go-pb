@@ -10,7 +10,6 @@ package service
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 	"time"
 
@@ -59,7 +58,6 @@ type PasteRequest struct {
 func New(store store.Interface) *Service {
 	var s *Service = new(Service)
 	s.store = store
-	rand.Seed(time.Now().UnixNano())
 
 	return s
 }
