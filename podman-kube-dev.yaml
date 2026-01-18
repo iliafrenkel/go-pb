@@ -1,0 +1,101 @@
+# Can be run with Podman via:
+# podman play kube podman-kube-dev.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-healthcheck-script
+data:
+  db-healthcheck.sh: |
+    #!/bin/bash
+    set -eo pipefail
+
+    host="$(hostname -i || echo '127.0.0.1')"
+    user="${POSTGRES_USER:-postgres}"
+    db="${POSTGRES_DB:-$POSTGRES_USER}"
+    export PGPASSWORD="${POSTGRES_PASSWORD:-}"
+
+    args=(
+        # force postgres to not use the local unix socket (test "external" connectibility)
+        --host "$host"
+        --username "$user"
+        --dbname "$db"
+        --quiet --no-align --tuples-only
+    )
+
+    if select="$(echo 'SELECT 1' | psql "${args[@]}")" && [ "$select" = '1' ]; then
+        exit 0
+    fi
+
+    exit 1
+  init-test-db.sql: |
+    CREATE USER test WITH PASSWORD 'test';
+    CREATE DATABASE test;
+    GRANT ALL PRIVILEGES ON DATABASE test TO test;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data-dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: go-pb-dev-pod
+  labels:
+    app: go-pb-dev
+spec:
+  restartPolicy: Never
+  containers:
+    - name: db-server
+      image: postgres:13-alpine
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POSTGRES_USER
+          value: iliaf
+        - name: POSTGRES_PASSWORD
+          value: iliaf
+        - name: POSTGRES_DB
+          value: iliaf
+        - name: POSTGRES_PORT
+          value: "5432"
+      volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: db-healthcheck
+          mountPath: /db-healthcheck.sh
+          subPath: db-healthcheck.sh
+        - name: db-healthcheck
+          mountPath: /docker-entrypoint-initdb.d/init-test-db.sql
+          subPath: init-test-db.sql
+      livenessProbe:
+        exec:
+          command:
+            - /db-healthcheck.sh
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 5
+    - name: adminer
+      image: adminer
+      ports:
+        - containerPort: 8080
+          hostPort: 8888
+  volumes:
+    - name: postgres-data
+      persistentVolumeClaim:
+        claimName: postgres-data-dev
+    - name: db-healthcheck
+      configMap:
+        name: db-healthcheck-script
+        defaultMode: 0755
