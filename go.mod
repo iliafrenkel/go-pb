@@ -7,8 +7,6 @@ toolchain go1.24.2
 require (
 	github.com/go-pkgz/auth/v2 v2.1.1
 	github.com/go-pkgz/lgr v0.12.1
-	github.com/gorilla/handlers v1.5.2
-	github.com/gorilla/mux v1.8.1
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/peterbourgon/diskv/v3 v3.0.1
 	golang.org/x/crypto v0.47.0
@@ -19,7 +17,6 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/dghubble/oauth1 v0.7.3 // indirect
-	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-oauth2/oauth2/v4 v4.5.4 // indirect
 	github.com/go-pkgz/repeater/v2 v2.0.1 // indirect
 	github.com/go-pkgz/rest v1.20.4 // indirect

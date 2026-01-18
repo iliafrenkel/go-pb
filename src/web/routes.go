@@ -9,9 +9,9 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-pkgz/auth/v2/token"
-	"github.com/gorilla/mux"
 	"github.com/iliafrenkel/go-pb/src/service"
 	"github.com/iliafrenkel/go-pb/src/store"
 	"github.com/iliafrenkel/go-pb/src/web/page"
@@ -204,9 +204,8 @@ func (h *Server) handlePostPaste(w http.ResponseWriter, r *http.Request) {
 func (h *Server) handleGetPastePage(w http.ResponseWriter, r *http.Request) {
 	usr, _ := token.GetUserInfo(r)
 	// Get paste encoded ID
-	vars := mux.Vars(r)
-	id, ok := vars["id"]
-	if !ok {
+	id := strings.TrimPrefix(r.URL.Path, "/p/")
+	if id == "" {
 		h.log.Logf("WARN handleGetPastePage: paste id not found")
 		h.showError(w, http.StatusBadRequest, "")
 		return
