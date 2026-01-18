@@ -535,3 +535,101 @@ func TestGetArchive(t *testing.T) {
 		t.Errorf("Response should have body [%s], got [%s]", want, got)
 	}
 }
+
+// TestPostPasteDeleteAfterRead create a paste with delete_after_read="yes"
+func TestPostPasteDeleteAfterRead(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	form := url.Values{}
+	form.Add("body", "Test body delete")
+	form.Add("privacy", "public")
+	form.Add("delete_after_read", "yes")
+	req, _ := http.NewRequest("POST", "/p/", strings.NewReader(form.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	webSrv.router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status should be %d, got %d", http.StatusOK, w.Code)
+	}
+}
+
+// TestGetArchiveInvalidSkip verifies that invalid skip defaults to 0
+func TestGetArchiveInvalidSkip(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/a/?skip=invalid", nil)
+	r = token.SetUserInfo(r, token.User{
+		ID: "anonymous",
+	})
+	webSrv.router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status should be %d, got %d", http.StatusOK, w.Code)
+	}
+}
+
+// TestGetUserPastesInvalidSkip verifies that invalid skip defaults to 0
+func TestGetUserPastesInvalidSkip(t *testing.T) {
+	t.Parallel()
+	// fake user
+	var usr = store.User{
+		ID:    "test_skip",
+		Name:  "Test User Skip",
+		Email: "test_skip@example.com",
+		IP:    "127.0.0.1",
+		Admin: false,
+	}
+	usr, err := webSrv.service.GetOrUpdateUser(usr)
+	if err != nil {
+		t.Errorf("failed to create user: %+v", err)
+	}
+
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/l/?skip=invalid", nil)
+	r = token.SetUserInfo(r, token.User{
+		Name: usr.Name,
+		ID:   usr.ID,
+	})
+	webSrv.router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status should be %d, got %d", http.StatusOK, w.Code)
+	}
+}
+
+// TestGetArchivePagination follows pagination link
+func TestGetArchivePagination(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/a/?skip=10", nil)
+	r = token.SetUserInfo(r, token.User{
+		ID: "anonymous",
+	})
+	webSrv.router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status should be %d, got %d", http.StatusOK, w.Code)
+	}
+
+	want := webSrv.options.BrandName + " - Archive"
+	got := w.Body.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("Response should have title [%s], got [%s]", want, got)
+	}
+}
+
+func TestNewWebWithDisk(t *testing.T) {
+	tmpDir := t.TempDir()
+	log := lgr.New(lgr.Debug, lgr.Msec)
+	s := New(log, ServerOptions{
+		DBType: "disk",
+		DiskConfig: store.DiskConfig{
+			DataDir: tmpDir,
+		},
+		Templates: "../../templates",
+		Assets:    "../../assets",
+	})
+	if s == nil {
+		t.Error("Server should not be nil")
+	}
+}
