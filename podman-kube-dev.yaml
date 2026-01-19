@@ -54,13 +54,11 @@ spec:
   restartPolicy: Never
   containers:
     - name: db-server
-      image: postgres:13-alpine
+      image: postgres:18-alpine
       ports:
         - containerPort: 5432
           hostPort: 5432
       env:
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
         - name: POSTGRES_USER
           value: iliaf
         - name: POSTGRES_PASSWORD
@@ -71,7 +69,7 @@ spec:
           value: "5432"
       volumeMounts:
         - name: postgres-data
-          mountPath: /var/lib/postgresql/data
+          mountPath: /var/lib/postgresql
         - name: db-healthcheck
           mountPath: /db-healthcheck.sh
           subPath: db-healthcheck.sh

@@ -15,16 +15,15 @@ services:
 # because in the depended services you can specify "service_healthy" condition
 # which will make sure that the database is up and running.
   db-server:
-    image: postgres:13-alpine
+    image: postgres:18-alpine
     container_name: db-server
     restart: unless-stopped
     networks:
       - go-pb
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ./scripts/db-healthcheck.sh:/db-healthcheck.sh
     environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
