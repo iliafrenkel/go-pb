@@ -1,3 +1,4 @@
+version: 2
 env:
   - GO111MODULE=on
 before:
@@ -24,9 +25,6 @@ builds:
         goarch: arm64
     dir: ./cmd
     ldflags: "-s -w -X main.revision={{.Tag}}-{{.ShortCommit}}-{{.CommitDate}} -X main.version={{.Tag}} -X main.branch={{.Branch}}"
-    hooks:
-      post:
-        - upx "{{ .Path }}"
 dockers:
   - goos: linux
     goarch: amd64
@@ -58,9 +56,12 @@ archives:
       - src: ./templates
         dst: templates
         strip_parent: true
+    formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 checksum:
   algorithm: sha256
 changelog:
