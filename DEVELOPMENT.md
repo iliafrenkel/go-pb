@@ -1,13 +1,17 @@
 # Developer Guide
 
-This guide is designed to take you on a journey from running a simple, ephemeral instance of the application to configuring a full, production-like environment with a PostgreSQL database. We have structured this document by complexity, so you can dive as deep as your task requires.
+This guide is designed to take you on a journey from running a simple, ephemeral instance of the
+application to configuring a full, production-like environment with a PostgreSQL database. We have
+structured this document by complexity, so you can dive as deep as your task requires.
 
 ---
 
 ## 🐣 Level 1: The Quick Start
 **Goal:** Run the application instantly. No persistence, no extra dependencies.
 
-If you just want to see the application running, this is the place to start. By default, `go-pb` uses **In-Memory** storage. This means it's incredibly fast to start, but all your pastes will vanish if you restart the server.
+If you just want to see the application running, this is the place to start. By default, `go-pb`
+uses **In-Memory** storage. This means it's incredibly fast to start, but all your pastes will
+vanish if you restart the server.
 
 1.  **Get the code:**
     ```bash
@@ -25,20 +29,24 @@ If you just want to see the application running, this is the place to start. By 
     go run ./cmd/... --debug
     ```
 
-That's it! Open your browser to `http://localhost:8080`. The `--debug` is not technically necessary, but it will allow you to use the dev authenticator to login with different fake users.
+That's it! Open your browser to `http://localhost:8080`. The `--debug` is not technically necessary,
+but it will allow you to use the dev authenticator to login with different fake users.
 
 ---
 
 ## 💾 Level 2: Persistence (Disk Storage)
 **Goal:** Save your work. Data survives restarts.
 
-In-memory is great for testing UI changes, but if you're working on logic that requires data persistence, you'll want to switch to **Disk Storage**. This saves pastes as files in a directory of your choice.
+In-memory is great for testing UI changes, but if you're working on logic that requires data
+persistence, you'll want to switch to **Disk Storage**. This saves pastes as files in a directory of
+your choice.
 
 This requires setting **Environment Variables**.
 
 ### Setting up the Environment
 
-You can configure `go-pb` using command-line flags or environment variables. We recommend environment variables for local development.
+You can configure `go-pb` using command-line flags or environment variables. We recommend
+environment variables for local development.
 
 **Linux / MacOS:**
 ```bash
@@ -61,17 +69,20 @@ go run ./cmd/...
 
 > **Pro Tip:** You can create a `.env` file in the root directory to save these variables.
 > *   **Linux/Mac:** Run `source .env` before starting the app.
-> *   **Windows:** You'll need to set them manually or use a script, as PowerShell doesn't source `.env` files natively in the same way.
+> *   **Windows:** You'll need to set them manually or use a script, as PowerShell doesn't source
+>     `.env` files natively in the same way.
 
 ---
 
 ## 🐘 Level 3: The Full Setup (PostgreSQL)
 **Goal:** A production-like environment. Requires Docker or Podman.
 
-For backend development, performance testing, or working on database migrations, you need the real deal: a PostgreSQL database.
+For backend development, performance testing, or working on database migrations, you need the real
+deal: a PostgreSQL database.
 
 ### 1. Start the Database
-We have prepared helper scripts to spin up a database (and Adminer, a DB management UI) instantly. You don't need to install Postgres locally; you just need a container engine.
+We have prepared helper scripts to spin up a database (and Adminer, a DB management UI) instantly.
+You don't need to install Postgres locally; you just need a container engine.
 
 **If you use Docker:**
 ```bash
