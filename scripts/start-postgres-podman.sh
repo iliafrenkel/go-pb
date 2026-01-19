@@ -1,5 +1,5 @@
 #!/bin/bash
-# Starts the development environment using Podman native Kubernetes support.
+# Starts Postgres database with Adminer using Podman native Kubernetes support.
 
 set -e
 
@@ -8,7 +8,7 @@ if ! command -v podman &> /dev/null; then
     exit 1
 fi
 
-echo "Starting Podman development environment (podman play kube)..."
+echo "Starting Postgres database..."
 podman play kube podman-kube-dev.yaml
 
 echo "Development environment started."
@@ -17,6 +17,3 @@ echo "Adminer:   http://localhost:8888"
 echo ""
 echo "To stop the environment, run:"
 echo "podman play kube --down podman-kube-dev.yaml"
-echo ""
-echo "You can now run the app locally with:"
-echo "./scripts/start.sh"
