@@ -23,7 +23,7 @@ services:
     volumes:
       - postgres-data-dev:/var/lib/postgresql
       - ./scripts/db-healthcheck.sh:/db-healthcheck.sh
-      - ./scripts/test-db.sql:/docker-entrypoint-initdb.d/test-db.sql
+      - ./scripts/db-test.sql:/docker-entrypoint-initdb.d/db-test.sql
     environment:
       - POSTGRES_USER=iliaf
       - POSTGRES_PASSWORD=iliaf
