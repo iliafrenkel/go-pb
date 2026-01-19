@@ -15,16 +15,16 @@ services:
 # because in the depended services you can specify "service_healthy" condition
 # which will make sure that the database is up and running.
   db-server:
-    image: postgres:13-alpine
+    image: postgres:18-alpine
     container_name: db-server
     restart: unless-stopped
     networks:
       - go-pb_dev
     volumes:
-      - postgres-data-dev:/var/lib/postgresql/data
+      - postgres-data-dev:/var/lib/postgresql
       - ./scripts/db-healthcheck.sh:/db-healthcheck.sh
+      - ./scripts/test-db.sql:/docker-entrypoint-initdb.d/test-db.sql
     environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata
       - POSTGRES_USER=iliaf
       - POSTGRES_PASSWORD=iliaf
       - POSTGRES_DB=iliaf
