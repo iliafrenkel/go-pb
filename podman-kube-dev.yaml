@@ -32,6 +32,8 @@ data:
     CREATE USER test WITH PASSWORD 'test';
     CREATE DATABASE test;
     GRANT ALL PRIVILEGES ON DATABASE test TO test;
+    \c test
+    GRANT CREATE ON SCHEMA public TO test;
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
