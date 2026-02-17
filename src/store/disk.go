@@ -385,7 +385,7 @@ func (f *DiskStore) fillCaches() {
 	}
 }
 
-func (f *DiskStore) saveToDisk(disk *diskv.Diskv, storeID string, data interface{}) error {
+func (f *DiskStore) saveToDisk(disk *diskv.Diskv, storeID string, data any) error {
 	var (
 		buf bytes.Buffer
 		enc = gob.NewEncoder(&buf)
@@ -402,7 +402,7 @@ func (f *DiskStore) saveToDisk(disk *diskv.Diskv, storeID string, data interface
 	return nil
 }
 
-func (f *DiskStore) getFromDisk(disk *diskv.Diskv, storeID string, data interface{}) error {
+func (f *DiskStore) getFromDisk(disk *diskv.Diskv, storeID string, data any) error {
 	buf, err := disk.ReadStream(storeID, true)
 	if err != nil {
 		return fmt.Errorf("reading storage (id:%s): %w", storeID, err)

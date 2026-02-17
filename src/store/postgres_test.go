@@ -14,7 +14,7 @@ func TestCountPDB(t *testing.T) {
 		t.Fatalf("failed to save user: %v", err)
 	}
 	pCnt := rand.Int63n(20)
-	for i := int64(0); i < pCnt; i++ {
+	for range pCnt {
 		paste := randomPaste(usr)
 		_, err = pdb.Create(paste)
 		if err != nil {
@@ -75,7 +75,7 @@ func TestFindPDB(t *testing.T) {
 	usr1.ID = "find_user_1"
 	usr2 := randomUser()
 	usr2.ID = "find_user_2"
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p1 := randomPaste(usr1)
 		p1.CreatedAt = time.Now().AddDate(0, 0, -1*i)
 		p1.Expires = time.Now().AddDate(0, 1*i, 0)

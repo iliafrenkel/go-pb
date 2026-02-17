@@ -440,7 +440,7 @@ func TestGetUserPastes(t *testing.T) {
 	}
 
 	// create 10 more pastes to test the paginator
-	for i := 0; i < 15; i++ {
+	for i := range 15 {
 		_, err = webSrv.service.NewPaste(service.PasteRequest{
 			Title:           fmt.Sprintf("Test %d", i),
 			Body:            fmt.Sprintf("Test paste %d", i),
