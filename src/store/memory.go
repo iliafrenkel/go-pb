@@ -120,14 +120,8 @@ func sortPastes(req FindRequest, pastes []Paste) {
 
 func limitPastes(req FindRequest, pastes []Paste) []Paste {
 	// Slice with skip and limit
-	skip := req.Skip
-	if skip > len(pastes) {
-		skip = len(pastes)
-	}
-	end := skip + req.Limit
-	if end > len(pastes) {
-		end = len(pastes)
-	}
+	skip := min(req.Skip, len(pastes))
+	end := min(skip+req.Limit, len(pastes))
 
 	return pastes[skip:end]
 }
