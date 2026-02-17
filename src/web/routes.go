@@ -105,7 +105,7 @@ func (h *Server) showPage(w http.ResponseWriter, data ...page.Data) {
 	}
 }
 
-//getUserPastes returns 10 most recent posts for the user. If there is no user
+// getUserPastes returns 10 most recent posts for the user. If there is no user
 // anonymous user is assumed and 10 most recent public pastes are retuned.
 func (h *Server) getUserPastes(uid string) (pastes []store.Paste, err error) {
 	if uid == "" {
