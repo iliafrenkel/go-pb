@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/go-pkgz/auth/v2 v2.1.1
-	github.com/go-pkgz/lgr v0.12.2
+	github.com/go-pkgz/lgr v0.12.3
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/peterbourgon/diskv/v3 v3.0.1
 	golang.org/x/crypto v0.49.0
