@@ -40,13 +40,13 @@ func TestDiskTotals(t *testing.T) {
 	// Generate a bunch of users and pastes
 	uCnt := rand.Int63n(10)
 	pCnt := rand.Int63n(20)
-	for i := int64(0); i < uCnt; i++ {
+	for range uCnt {
 		usr = randomUser()
 		_, err := ddb.SaveUser(usr)
 		if err != nil {
 			t.Fatalf("failed to save user: %v", err)
 		}
-		for j := int64(0); j < pCnt; j++ {
+		for range pCnt {
 			u, err := ddb.User(usr.ID)
 			if err != nil {
 				t.Fatalf("failed to get user: %v", err)
@@ -81,7 +81,7 @@ func TestDiskCount(t *testing.T) {
 		t.Fatalf("failed to save user: %v", err)
 	}
 	pCnt := rand.Int63n(20)
-	for i := int64(0); i < pCnt; i++ {
+	for range pCnt {
 		paste := randomPaste(usr)
 		_, err = ddb.Create(paste)
 		if err != nil {
@@ -138,7 +138,7 @@ func TestDiskFind(t *testing.T) {
 	usr1.ID = "find_user_1"
 	usr2 := randomUser()
 	usr2.ID = "find_user_2"
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p1 := randomPaste(usr1)
 		p1.CreatedAt = time.Now().AddDate(0, 0, -1*i)
 		p1.Expires = time.Now().AddDate(0, 1*i, 0)

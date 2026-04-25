@@ -406,7 +406,7 @@ func TestGetUserPastes(t *testing.T) {
 		t.Fatalf("failed to create user: %v", err)
 	}
 	numOfPastes := 12
-	for i := 0; i < numOfPastes; i++ {
+	for range numOfPastes {
 		_, err := svc.NewPaste(PasteRequest{
 			Body:    "Test body",
 			Privacy: "public",
