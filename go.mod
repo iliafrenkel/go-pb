@@ -3,7 +3,7 @@ module github.com/iliafrenkel/go-pb
 go 1.25.0
 
 require (
-	github.com/go-pkgz/auth/v2 v2.1.3
+	github.com/go-pkgz/auth/v2 v2.1.4
 	github.com/go-pkgz/lgr v0.12.3
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/peterbourgon/diskv/v3 v3.0.1
